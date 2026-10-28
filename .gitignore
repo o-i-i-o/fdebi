@@ -28,3 +28,5 @@ po/locale/
 
 # 打包产物(scripts/build-deb.sh:staging 目录与 .deb)
 dist/
+
+deepin-deb-installer/
