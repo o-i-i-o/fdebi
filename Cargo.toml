@@ -16,25 +16,34 @@ tar = "0.4"
 flate2 = "1"
 clap = { version = "4", features = ["derive"] }
 libc = "0.2"
+
 # --- 纯 Rust 管道(无 libapt-pkg FFI,无 OpenSSL) ---
 # SAT 依赖求解器(CDCL,纯 Rust)
 varisat = "0.2"
+
 # HTTP 下载(默认 TLS 为 rustls,不引入系统 OpenSSL)
 ureq = { version = "2", default-features = true }
+
 # 下载完整性校验
 sha2 = "0.10"
+
 # conffile 预检(dpkg status 记录的装包时 md5 比对)
 md-5 = "0.10"
+
 # apt 列表解压(Packages 索引的四种压缩格式,均纯 Rust 后端)
 lz4_flex = "0.11"
 lzma-rs = "0.3"
 ruzstd = "0.7"
+
 # D-Bus(纯 Rust 实现,不依赖 libdbus)
 zbus = "5"
+
 # 信号体序列化 trait(zbus/zvariant 生态标准)
 serde = "1"
 async-channel = "2"
+
 # zbus 默认 async-io 运行时;守护进程工作线程用它 block_on 发信号
 async-io = "2"
+
 # 客户端信号流迭代(轻量 Stream 工具,无 proc 宏)
 futures-lite = "2"

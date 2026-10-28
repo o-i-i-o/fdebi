@@ -13,9 +13,12 @@ path = "src/main.rs"
 fdebm-core.workspace = true
 clap.workspace = true
 gtk4 = "0.9"
+
 # lintian 后台线程 → 主线程事件流(glib 0.20 无内置 channel)
 async-channel = "2"
+
 # 守护进程客户端(系统总线 org.fdebm;纯 Rust D-Bus 实现)
 zbus.workspace = true
+
 # 信号流迭代(StreamExt::next;zbus 只重导出 futures_core)
 futures-lite.workspace = true
