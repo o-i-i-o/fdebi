@@ -254,7 +254,7 @@ msgstr ""
 
 #: ../crates/gdebi-gtk/src/gtk_app.rs:647
 msgid "_About"
-msgstr ""
+msgstr "关于"
 
 #: ../crates/gdebi-gtk/src/gtk_app.rs:649
 msgid "_File"
@@ -272,7 +272,7 @@ msgstr "'%s' 不是一个 Debian 软件包"
 
 #: ../crates/gdebi-gtk/src/gtk_app.rs:697
 msgid "simple tool to view and install deb files"
-msgstr ""
+msgstr "一个轻量的查看和安装 deb 包的工具"
 
 #: ../crates/gdebi-gtk/src/gtk_app.rs:718
 msgid "Loading..."
@@ -291,7 +291,7 @@ msgstr "打开软件包失败\n"
 
 #: ../crates/gdebi-gtk/src/gtk_app.rs:768
 msgid "Error opening the cache"
-msgstr ""
+msgstr "打开缓存出错"
 
 #: ../crates/gdebi-gtk/src/gtk_app.rs:780
 #, fuzzy
