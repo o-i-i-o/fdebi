@@ -28,6 +28,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends libgtk-4-dev gettext
 
+      # 翻译校验:头部字段(Language/Plural-Forms)、占位符 {N} 一致性、
+      # HTML 标签、fuzzy/废弃条目残留;内含 msgfmt --check
+      - name: po lint
+        run: make -C po lint
+
       - name: cargo build
         run: cargo build --workspace
 

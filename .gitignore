@@ -26,6 +26,10 @@ rustc-ice-*.txt
 # gettext 编译产物(msgfmt 输出,po/Makefile mo 目标)
 po/locale/
 
+# Python(po/po_lint.py 运行产生的字节码缓存)
+__pycache__/
+*.pyc
+
 # 打包产物(scripts/build-deb.sh:staging 目录与 .deb)
 dist/
 

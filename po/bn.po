@@ -1,13 +1,12 @@
-# Bengali translation for gdebi
-# Copyright (c) (c) 2006 Canonical Ltd, and Rosetta Contributors 2006
-# This file is distributed under the same license as the gdebi package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2006.
+# Bengali translation for fdebm.
+# Copyright (C) fdebm contributors
+# Distributed under the terms of the GNU General Public License v3.0 or later.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: gdebi\n"
+"Project-Id-Version: fdebm 0.1.1\n"
 "Report-Msgid-Bugs-To: sebastian.heinlein@web.de\n"
-"POT-Creation-Date: 2026-10-22 14:45+0800\n"
+"POT-Creation-Date: 2026-10-22 23:27+0800\n"
 "PO-Revision-Date: 2009-11-08 06:24+0000\n"
 "Last-Translator: Khandakar Mujahidul Islam <suzan229@gmail.com>\n"
 "Language-Team: Bengali <bn@li.org>\n"
@@ -15,726 +14,364 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2014-03-12 19:04+0000\n"
-"X-Generator: Launchpad (build 16963)\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: ../crates/gdebi-core/src/depcheck.rs:170
-msgid "No Architecture field in the package"
-msgstr ""
-
-#: ../crates/gdebi-core/src/depcheck.rs:180
-#, rust-format
-msgid ""
-"Wrong architecture '{0}' -- Run dpkg --add-architecture to add it and update "
-"afterwards"
-msgstr ""
-
-#: ../crates/gdebi-core/src/depcheck.rs:192
-msgid "A later version is already installed"
-msgstr "ইতিমধ্যেই একটি পরবর্তী সংস্করণ ইনস্টল করা আছে"
-
-#: ../crates/gdebi-core/src/depcheck.rs:234
-#, fuzzy, rust-format
-#| msgid "Dependency is not satisfiable: %s\n"
-msgid "Dependency is not satisfiable: {0}\n"
-msgstr "নির্বরতা মেটাতে পারে নি: %s\n"
-
-#: ../crates/gdebi-core/src/depcheck.rs:237
-msgid "Failed to satisfy all dependencies (broken cache)"
-msgstr "সকল নির্ভরতা পূরণ করতে ব্যর্থ (ভাঙা ক্যাশ)"
-
-#: ../crates/gdebi-core/src/depcheck.rs:336
-#, fuzzy, rust-format
-#| msgid "Failed to install package '%s'"
-msgid "Conflicts with the installed package '{0}'"
-msgstr "'%s' প্যাকেজ ইনস্টল করতে ব্যর্থ"
-
-#: ../crates/gdebi-core/src/depcheck.rs:359
-#, rust-format
-msgid "Breaks existing package '{0}' dependency {1} ({2} {3})"
-msgstr ""
-
-#: ../crates/gdebi-core/src/depcheck.rs:381
-#, rust-format
-msgid "Breaks existing package '{0}' conflict: {1} ({2} {3})"
-msgstr ""
-
-#: ../crates/gdebi-core/src/depcheck.rs:388
-#, rust-format
-msgid ""
-"Breaks existing package '{0}' that conflict: '{1}'. But the '{2}' provides "
-"it via: '{3}'"
-msgstr ""
-
-#: ../crates/gdebi-core/src/error.rs:31
+#: ../crates/fdebm-core/src/error.rs:40
 #, rust-format
 msgid "cannot open {0}: {1}"
 msgstr ""
 
-#: ../crates/gdebi-core/src/error.rs:33
+#: ../crates/fdebm-core/src/error.rs:44
 #, rust-format
 msgid "{0} is not a Debian package"
 msgstr ""
 
-#: ../crates/gdebi-core/src/error.rs:34
+#: ../crates/fdebm-core/src/error.rs:47
 msgid "control file not found in package"
 msgstr ""
 
-#: ../crates/gdebi-core/src/error.rs:36
+#: ../crates/fdebm-core/src/error.rs:49
 #, rust-format
-msgid "{0} compressed control.tar is not supported yet (only gzip/plain)"
+msgid "cannot decompress control archive: {0}"
 msgstr ""
 
-#: ../crates/gdebi-core/src/error.rs:39
+#: ../crates/fdebm-core/src/error.rs:51
 #, rust-format
 msgid "missing control field: {0}"
 msgstr ""
 
-#: ../crates/gdebi-core/src/flow.rs:53
+#: ../crates/fdebm-core/src/error.rs:55
+#, rust-format
+msgid "subprocess {0} failed: {1}"
+msgstr ""
+
+#: ../crates/fdebm-core/src/error.rs:58
+#, rust-format
+msgid "cannot decompress repository index {0}: {1}"
+msgstr ""
+
+#: ../crates/fdebm-core/src/error.rs:61
+#, rust-format
+msgid "cannot download {0}: {1}"
+msgstr ""
+
+#: ../crates/fdebm-core/src/error.rs:62 ../crates/fdebm-gtk/src/gtk_app.rs:1161
+msgid "operation cancelled"
+msgstr ""
+
+#: ../crates/fdebm-core/src/flow.rs:53
 #, rust-format
 msgid "Binary file ({0}), {1} bytes"
 msgstr ""
 
-#: ../crates/gdebi-core/src/flow.rs:54
+#: ../crates/fdebm-core/src/flow.rs:54
 #, rust-format
 msgid "Binary file, {0} bytes"
 msgstr ""
 
-#: ../crates/gdebi-core/src/install.rs:47
-#, fuzzy
-#| msgid "Error during install: '%s'"
+#: ../crates/fdebm-core/src/install.rs:119
+#: ../crates/fdebm-core/src/install.rs:141
+#: ../crates/fdebm-core/src/install.rs:160
 msgid "Error during install"
-msgstr "ইনস্টল করার সময় ত্রুটি: '%s'"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:60
+#: ../crates/fdebm-core/src/solver.rs:326
+#, rust-format
+msgid "Wrong architecture '{0}'"
+msgstr "ভুল আর্কিটেকচার '{0}'"
+
+#: ../crates/fdebm-core/src/solver.rs:341
+msgid "A later version is already installed"
+msgstr "ইতিমধ্যেই একটি পরবর্তী সংস্করণ ইনস্টল করা আছে"
+
+#: ../crates/fdebm-core/src/solver.rs:567
+msgid ""
+"Failed to satisfy all dependencies (conflicting requests or missing packages)"
+msgstr ""
+
+#: ../crates/fdebm-daemon/src/txn.rs:371 ../crates/fdebm-daemon/src/txn.rs:428
+#, rust-format
+msgid "dpkg exited with status {0}"
+msgstr ""
+
+#: ../crates/fdebm-daemon/src/txn.rs:463
+#, rust-format
+msgid "Fetching file {0} of {1}"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:55
 msgid "simple tool to view and install deb files - GTK frontend"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:63
+#: ../crates/fdebm-gtk/src/gtk_app.rs:58
 msgid "Set an APT configuration option"
 msgstr "APT কনফিগারেশন অপশন নির্ধারণ"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:65
-#, fuzzy
-#| msgid "Open Software Package"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:60
 msgid "Debian package to open"
-msgstr "সফটওয়্যার প্যাকেজ খোলো"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:239
+#: ../crates/fdebm-gtk/src/gtk_app.rs:265
 msgid "Package Installer"
 msgstr "প্যাকেজ ইনস্টলার"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:278
-msgid "_Details"
-msgstr "বিস্তারিত(_D)"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:286
+#: ../crates/fdebm-gtk/src/gtk_app.rs:299
 msgid "Package:"
 msgstr "প্যাকেজ:"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:286
+#: ../crates/fdebm-gtk/src/gtk_app.rs:299
 msgid "Status:"
 msgstr "অবস্থা:"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:305
-#: ../crates/gdebi-gtk/src/gtk_app.rs:839
+#: ../crates/fdebm-gtk/src/gtk_app.rs:310
+#: ../crates/fdebm-gtk/src/gtk_app.rs:865
 msgid "_Install Package"
 msgstr "ইনস্টল প্যাকেজ(_I)"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:306
+#: ../crates/fdebm-gtk/src/gtk_app.rs:311
 msgid "_Remove Package"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:334
+#: ../crates/fdebm-gtk/src/gtk_app.rs:339
 msgid "Description"
 msgstr "বর্ণনা"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:350
-#, fuzzy
-#| msgid "<b>Version:</b>"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:355
 msgid "Version:"
-msgstr "<b>সংস্করণ:</b>"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:351
-#, fuzzy
-#| msgid "<b>Maintainer:</b>"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:356
 msgid "Maintainer:"
-msgstr "<b>মেইনটেইনার:</b>"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:352
-#, fuzzy
-#| msgid "<b>Priority:</b>"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:357
 msgid "Priority:"
-msgstr "<b>অগ্রাধিকার:</b>"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:353
-#, fuzzy
-#| msgid "Description:"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:358
 msgid "Section:"
-msgstr "বর্ণনা:"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:354
+#: ../crates/fdebm-gtk/src/gtk_app.rs:359
 msgid "Size:"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:365
+#: ../crates/fdebm-gtk/src/gtk_app.rs:370
 msgid "Details"
 msgstr "বিস্তারিত"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:393
+#: ../crates/fdebm-gtk/src/gtk_app.rs:398
 msgid "Included files"
 msgstr "ফাইলসহ"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:403
+#: ../crates/fdebm-gtk/src/gtk_app.rs:408
 msgid "Lintian output"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:505
+#: ../crates/fdebm-gtk/src/gtk_app.rs:504
 msgid "Selection is a directory"
 msgstr "ডিরেক্টরিতে নির্বাচন"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:522
+#: ../crates/fdebm-gtk/src/gtk_app.rs:527
 msgid "File content can not be extracted"
 msgstr "ফাইল কন্টেন্ট এক্সট্যাক্ট করা যায়না"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:523
-#, fuzzy, rust-format
-#| msgid "Error reading file content '%s'"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:528
+#, rust-format
 msgid "Error reading file content '{0}'"
-msgstr "ফাইল কন্টেন্ট পড়ার সময় ত্রুটি '%s'"
+msgstr "ফাইল কন্টেন্ট পড়ার সময় ত্রুটি '{0}'"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:534
+#: ../crates/fdebm-gtk/src/gtk_app.rs:539
 msgid "Package control data"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:540
+#: ../crates/fdebm-gtk/src/gtk_app.rs:545
 msgid "Upstream data"
 msgstr "আপস্ট্রিম ডাটা"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:552
+#: ../crates/fdebm-gtk/src/gtk_app.rs:556
 msgid "Error reading filelist"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:563
+#: ../crates/fdebm-gtk/src/gtk_app.rs:567
 msgid ""
 "No lintian available.\n"
 "Please install using sudo apt-get install lintian"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:567
+#: ../crates/fdebm-gtk/src/gtk_app.rs:571
 msgid "Running lintian..."
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:586
+#: ../crates/fdebm-gtk/src/gtk_app.rs:589
 #, rust-format
 msgid "Failed to run lintian: {0}"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:631
+#: ../crates/fdebm-gtk/src/gtk_app.rs:637
 #, rust-format
 msgid "Lintian finished with exit status {0}"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:643
+#: ../crates/fdebm-gtk/src/gtk_app.rs:652
 msgid "_Open…"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:644
+#: ../crates/fdebm-gtk/src/gtk_app.rs:653
 msgid "_Refresh"
 msgstr "রিফ্রেশ (_R)"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:645
+#: ../crates/fdebm-gtk/src/gtk_app.rs:654
 msgid "_Quit"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:647
+#: ../crates/fdebm-gtk/src/gtk_app.rs:656
 msgid "_About"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:649
+#: ../crates/fdebm-gtk/src/gtk_app.rs:658
 msgid "_File"
 msgstr "ফাইল (_ফ)"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:650
+#: ../crates/fdebm-gtk/src/gtk_app.rs:659
 msgid "_Help"
 msgstr "সহায়িকা (_স)"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:659
-#, fuzzy
-#| msgid "Open Software Package"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:668
 msgid "Open Debian package"
-msgstr "সফটওয়্যার প্যাকেজ খোলো"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:697
+#: ../crates/fdebm-gtk/src/gtk_app.rs:708
 msgid "simple tool to view and install deb files"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:718
+#: ../crates/fdebm-gtk/src/gtk_app.rs:731
 msgid "Loading..."
 msgstr "লোড হচ্ছে..."
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:731
+#: ../crates/fdebm-gtk/src/gtk_app.rs:745
 #, rust-format
-msgid "gdebi error, file not found: {0}"
+msgid "fdebm error, file not found: {0}"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:745
-#, fuzzy
-#| msgid "Do you want to install the software package? [y/N]:"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:760
 msgid "Could not open the software package"
-msgstr "আপনি কি সফটওয়্যার প্যাকেজটি ইনস্টল করতে চান? [y/N]:"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:768
-msgid "Error opening the cache"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:780
+#: ../crates/fdebm-gtk/src/gtk_app.rs:778
+msgid "Checking dependencies..."
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:803
 msgid "Dependency check failed"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:792
+#: ../crates/fdebm-gtk/src/gtk_app.rs:807
+#: ../crates/fdebm-gtk/src/gtk_app.rs:819
 #, rust-format
 msgid "<span foreground=\"red\" weight=\"bold\">Error: {0}</span>"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:806
-#, fuzzy, rust-format
-#| msgid "Requires the <b>removal</b> of %s packages\n"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:834
+#, rust-format
 msgid "Requires the <b>removal</b> of {0} package"
 msgid_plural "Requires the <b>removal</b> of {0} packages"
-msgstr[0] "%s প্যাকেজ <b>removal</b> আবশ্যক\n"
-msgstr[1] "%s প্যাকেজ <b>removal</b> আবশ্যক\n"
+msgstr[0] ""
+msgstr[1] ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:817
-#, fuzzy, rust-format
-#| msgid "Requires the installation of %s packages"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:845
+#, rust-format
 msgid "Requires the installation of {0} package"
 msgid_plural "Requires the installation of {0} packages"
-msgstr[0] "%s প্যাকেজ ইনস্টলেশন আবশ্যক"
-msgstr[1] "%s প্যাকেজ ইনস্টলেশন আবশ্যক"
+msgstr[0] ""
+msgstr[1] ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:832
+#: ../crates/fdebm-gtk/src/gtk_app.rs:860
 msgid "Same version is already installed"
 msgstr "একই সংস্করণ ইতিমধ্যেই ইনস্টল করা আছে"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:834
+#: ../crates/fdebm-gtk/src/gtk_app.rs:861
 msgid "_Reinstall Package"
 msgstr "প্যাকেজ পুনরায় ইনস্টল(_R)"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:846
+#: ../crates/fdebm-gtk/src/gtk_app.rs:871
 msgid "All dependencies are satisfied"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:896
+#: ../crates/fdebm-gtk/src/gtk_app.rs:935
 msgid "Applying changes"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:899
+#: ../crates/fdebm-gtk/src/gtk_app.rs:938
 msgid "Close"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:914
+#: ../crates/fdebm-gtk/src/gtk_app.rs:953
 msgid "Terminal"
 msgstr "টার্মিনাল"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:917
+#: ../crates/fdebm-gtk/src/gtk_app.rs:956
 msgid "Automatically close after the changes have been successfully applied"
 msgstr "পরিবর্তনসমূহ সফলভাবে প্রয়োগ করার পর স্বয়ংক্রিয়ভাবে বন্ধ"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1007
-#, fuzzy
-#| msgid "gdebi"
-msgid "gdebi error"
-msgstr "gdebi"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1049
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1135
+msgid "fdebm error"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1035
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1196
+msgid "Modified configuration files"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1198
+msgid ""
+"The following configuration files have been modified locally and the new "
+"package ships different versions:"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1202
+msgid "Keep _my version"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1203
+msgid "Use the package's _new version"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1204
+msgid "_Cancel"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1235
 msgid "Install unauthenticated software?"
 msgstr "প্রমানীকৃত নয় এমন সফ্টওয়ার ইনস্টল?"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1037
-#, fuzzy, rust-format
-#| msgid "The following packages are UNAUTHENTICATED: "
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1237
+#, rust-format
 msgid "The following packages are UNAUTHENTICATED: {0}"
-msgstr "নিম্নোক্ত প্যাকেজ অপ্রমানিত: "
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1047
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1050
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1259
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1263
 msgid "Installing package file..."
 msgstr "প্যাকেজ ফাইল ইনস্টল করা হচ্ছে..."
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1051
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1264
 msgid "Installation complete"
 msgstr "ইনস্টলেশন সম্পূর্ণ"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1052
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1265
 msgid "Failed to install package file"
 msgstr "প্যাকেজ ফাইল ইনস্টল করতে ব্যর্থ"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1074
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1079
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1282
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1286
 msgid "Removing package..."
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1080
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1287
 msgid "Removal complete"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1081
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1288
 msgid "Failed to remove package"
 msgstr ""
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1122
-msgid "You need to grant administrative rights to remove software"
-msgstr ""
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1123
-msgid "It is a possible risk to remove packages."
-msgstr ""
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1127
-msgid "You need to grant administrative rights to install software"
-msgstr ""
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1129
-#, fuzzy
-#| msgid ""
-#| "\n"
-#| "It is a possible security risk to install packages files manually.\n"
-#| "Install software from trustworthy software distributors only.\n"
-msgid ""
-"It is a possible security risk to install packages files manually.\n"
-"Install software from trustworthy software distributors only."
-msgstr ""
-"\n"
-"নিজ হাতে প্যাকেজ ইনস্টল করলে নিরাপত্তাজনিত ঝুঁকি থেকে যায়।\n"
-"কেবল বিশ্বস্ত সফ্টওয়ার ডিসট্রিবিউটর থেকে সফ্টওয়ার ইনস্টল করুন।\n"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1147
-msgid "Failed to locate the program executable"
-msgstr ""
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1171
-#, fuzzy
-#| msgid "Failed to install package file"
-msgid "Failed to start pkexec"
-msgstr "প্যাকেজ ফাইল ইনস্টল করতে ব্যর্থ"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1184
-#, fuzzy, rust-format
-#| msgid "<b>To be removed: %s</b>"
-msgid "<b>To be removed: {0}</b>"
-msgstr "<b>মুছে ফেলা হবে: %s</b>"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1188
-#, fuzzy, rust-format
-#| msgid "To be installed: %s"
-msgid "To be installed: {0}"
-msgstr "ইনস্টল করতে হবে: %s"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1196
-msgid "Changes"
-msgstr ""
-
-#, c-format
-#~ msgid ""
-#~ "usage: %prog [options] filename\n"
-#~ "For a graphical version run gdebi-gtk\n"
-#~ msgstr ""
-#~ "ব্যবহার: %prog [options] ফাইলনাম\n"
-#~ "গ্রাফিকাল সংস্করণের জন্য চালান gdebi-gtk\n"
-
-#~ msgid "Run non-interactive (dangerous!)"
-#~ msgstr "নন-ইন্টারেকটিভ চালান (বিপদজ্জক!)"
-
-#~ msgid "Do not show progress information"
-#~ msgstr "অগ্রগতি সম্পর্কিত তথ্য প্রদর্শন করা হবে না"
-
-#~ msgid "Simulate only and print a apt-get install compatible line to stderr"
-#~ msgstr "কেবল নকল হবে এবং stderr এ apt-get ইনস্টল সুসংসগতিপূর্ণ লাইন মুদ্রণ"
-
-#~ msgid "Use alternative root dir"
-#~ msgstr "বিকল্প রুট dir ব্যবহার"
-
-#~ msgid "Need to be root to install packages"
-#~ msgstr "প্যাকেজ ইনস্টলে রুট করা প্রয়োজন"
-
-#~ msgid "Software index is broken"
-#~ msgstr "সফ্টওয়ার ইনডেক্স ব্রোকেন"
-
-#~ msgid ""
-#~ "This is a major failure of your software management system. Please check "
-#~ "for broken packages with synaptic, check the file permissions and "
-#~ "correctness of the file '/etc/apt/sources.list' and reload the software "
-#~ "information with: 'sudo apt-get update' and 'sudo apt-get install -f'."
-#~ msgstr ""
-#~ "এটা আপনার সফ্টওয়ার ব্যবস্থাপনা সিস্টেমের বড় ধরণের ব্যর্থতা। অনুগ্রহ করে সিনাপটিকে "
-#~ "ব্রোকেন প্যাকেজ পরীক্ষা, ফাইল '/etc/apt/sources.list' এর অনুমোদন এবং নির্ভুলতা "
-#~ "পরীক্ষা এবং যা দিয়ে সফ্টওয়ার তথ্য রিলোড করা হবে: 'sudo apt-get update' and "
-#~ "'sudo apt-get install -f'।"
-
-#~ msgid "Install and view software packages"
-#~ msgstr "সফটওয়্যার প্যাকেজ ইনস্টল করুন এবং দেখুন"
-
-#~ msgid "GPL, see /usr/share/common-licenses/GPL"
-#~ msgstr "জিপিএল, /usr/share/common-licenses/GPL দেখুন"
-
-#~ msgid "<b><big>   </big></b>"
-#~ msgstr "<b><big> </big></b>"
-
-#~ msgid "<b>Section:</b>"
-#~ msgstr "<b>সেকশন:</b>"
-
-#~ msgid "<b>Size:</b>"
-#~ msgstr "<b>আকার:</b>"
-
-#~ msgid "  "
-#~ msgstr "  "
-
-#~ msgid "GDebi Package Installer"
-#~ msgstr "প্যাকেজ ইনস্টলার"
-
-#, python-format
-#~ msgid "%s is not available"
-#~ msgstr "%s পাওয়া যায় নি"
-
-#~ msgid "Can not download as root"
-#~ msgstr "রুট হিসাবে ডাউনলোড করা যায় না"
-
-#~ msgid ""
-#~ "Remote packages can not be downloaded when running as root. Please try "
-#~ "again as a normal user."
-#~ msgstr ""
-#~ "যখন রুট হিসাবে চলে তখন রিমোট প্যাকেজ ডাউনলোড করা যায় না। অনুগ্রহ করে সাধারণ "
-#~ "ব্যবহারকারী হিসাবে চেষ্টা করুন।"
-
-#~ msgid "Downloading package"
-#~ msgstr "প্যাকেজ ডাউনলোড"
-
-#~ msgid "Download failed"
-#~ msgstr "ডাউনলোড ব্যর্থ"
-
-#, python-format
-#~ msgid "Downloading the package failed: file '%s' '%s'"
-#~ msgstr "প্যাকেজ ডাউনলোড ব্যর্থ:ফাইল '%s' '%s'"
-
-#, python-format
-#~ msgid "Package Installer - %s"
-#~ msgstr "প্যাকেজ ইনস্টলার - %s"
-
-#~ msgid "Error: "
-#~ msgstr "ত্রুটি : "
-
-#~ msgid "Software packages"
-#~ msgstr "সফটওয়্যার প্যাকেজসমূহ"
-
-#~ msgid "File not found"
-#~ msgstr "ফাইল পাওয়া যায়না"
-
-#~ msgid "You tried to install a file that does not (or no longer) exist. "
-#~ msgstr "আপনি এমন একটি ফাইল ইনস্টল করতে চাচ্ছেন যা (অথবা আর) বিদ্যমান নেই। "
-
-#~ msgid ""
-#~ "Malicious software can damage your data and take control of your system.\n"
-#~ "\n"
-#~ "The packages below are not authenticated and could therefore be of "
-#~ "malicious nature."
-#~ msgstr ""
-#~ "ত্রুটিযুক্ত সফ্টওয়ার ডাটার ক্ষতি করতে পারে এবং আপনার সিস্টেমের নিয়ন্ত্রন নিয়ে নিতে "
-#~ "পারে।\n"
-#~ "\n"
-#~ "প্যাকেজ প্রমানীকৃত নয় এবং তাই ত্রুটিযুক্ত হতে পারে।"
-
-#~ msgid "Could not download all required files"
-#~ msgstr "সকল প্রয়োজনীয় ফাইল ডাউনলোড করতে পারে নি"
-
-#~ msgid "Please check your internet connection or installation medium."
-#~ msgstr "দয়াা করে আপনার ইন্টারনেট সংযুক্তি অথবা ইনস্টলেশন মিডিয়াম পরীক্ষা করুন।"
-
-#~ msgid "Could not install all dependencies"
-#~ msgstr "সকল নির্ভরতা ইনস্টল করতে পারে নি"
-
-#~ msgid ""
-#~ "Usually this is related to an error of the software distributor. See the "
-#~ "terminal window for more details."
-#~ msgstr ""
-#~ "সাধারণত এটা সফ্টওয়ার ডিসট্রিবিউটর সম্পর্কিত ত্রুটি। আরও বিস্তারিত তথ্যের জন্য "
-#~ "টার্মিনাল উইন্ডো দেখুন।"
-
-#, python-format
-#~ msgid "Package '%s' was installed"
-#~ msgstr "'%s' প্যাকেজ ইনস্টল হয়েছে"
-
-#~ msgid "Failed to completely install all dependencies"
-#~ msgstr "সম্পূর্ণভাবে সকল নির্ভরতা ইনস্টল করতে ব্যর্থ"
-
-#~ msgid "To fix this run 'sudo apt-get install -f' in a terminal window."
-#~ msgstr ""
-#~ "এই সমস্যা নির্দিষ্ট করতে একটি টার্মিনাল উইন্ডোতে 'sudo apt-get install -f' "
-#~ "কমান্ড চালান।"
-
-#, python-format
-#~ msgid "Installing '%s'..."
-#~ msgstr "'%s' ইনস্টল করা হচ্ছে..."
-
-#~ msgid "Installing dependencies..."
-#~ msgstr "নির্বরতা ইনস্টল করা হচ্ছে..."
-
-#~ msgid "Downloading additional package files..."
-#~ msgstr "অতিরিক্ত প্যাকেজ ফাইল ডাউনলোড করা হচ্ছে..."
-
-#, python-format
-#~ msgid "File %s of %s at %sB/s"
-#~ msgstr "%sB/s এ ফাইল %s এর %s"
-
-#, python-format
-#~ msgid "File %s of %s"
-#~ msgstr "ফাইল %s এর %s"
-
-#, python-format
-#~ msgid "Please insert '%s' into the drive '%s'"
-#~ msgstr "দয়া করে '%s' ড্রাইভে '%s' প্রবেশ করান"
-
-#~ msgid "Configuration items must be specified with a =<value>\n"
-#~ msgstr "কনফিগারেশন অবশ্যই যা দিয়ে নির্দিষ্ট করা হবে =<value>\n"
-
-#, python-format
-#~ msgid "Couldn't set APT option %s to %s\n"
-#~ msgstr "APT অপশন %s থেকে %s নির্ধারণ করা যায় না\n"
-
-#, python-format
-#~ msgid "Unknown package type '%s', exiting\n"
-#~ msgstr "অজানা ধরনের প্যাকেজ  '%s', বিদ্যমান\n"
-
-#~ msgid ""
-#~ "The package might be corrupted or you are not allowed to open the file. "
-#~ "Check the permissions of the file.\n"
-#~ msgstr ""
-#~ "প্যাকেজ ত্রুটিযুক্ত হতে পারে অথবা আপনি ফাইল খুলতে অনুমোদিত নন। ফাইলের অনুমোদন "
-#~ "পরীক্ষা।\n"
-
-#~ msgid "No description is available"
-#~ msgstr "কোন বর্ননা পাওয়া যায় নি"
-
-#~ msgid "Requires the REMOVAL of the following packages: "
-#~ msgstr "নিম্নোক্ত প্যাকেজের অপসারণ প্রয়োজন: "
-
-#~ msgid "Requires the installation of the following packages: "
-#~ msgstr "নিম্নোক্ত প্যাকেজের ইনস্টলেশন আবশ্যক: "
-
-#~ msgid "Included Files"
-#~ msgstr "সংযুক্ত ফাইলসমূহ"
-
-#~ msgid "&Install Package"
-#~ msgstr "&Install প্যাকেজ"
-
-#~ msgid "The package file does not exist"
-#~ msgstr "প্যাকেজ ফাইল বিদ্যমান নেই"
-
-#~ msgid ""
-#~ "A nonexistent file has been selected for installation. Please select an "
-#~ "existing .deb package file."
-#~ msgstr ""
-#~ "যে ফাইল নেই এমন ফাইল ইনস্টলেশনের জন্য নির্বাচিত। অনুগ্রহ করে existing .deb "
-#~ "প্যাকেজ ফাইল নির্বাচন।"
-
-#~ msgid "&Reinstall Package"
-#~ msgstr "&Reinstall প্যাকেজ"
-
-#~ msgid "Re&install Package"
-#~ msgstr "Re&install প্যাকেজ"
-
-#, python-format
-#~ msgid "To be removed: %s"
-#~ msgstr "যা অপসারন করা হবে: %s"
-
-#~ msgid "Broken dependencies"
-#~ msgstr "ব্রোকেন ডিপেন্ডেন্সী"
-
-#~ msgid ""
-#~ "Your system has broken dependencies. This application can not continue "
-#~ "until this is fixed. To fix it run 'gksudo synaptic' or 'sudo apt-get "
-#~ "install -f' in a terminal window."
-#~ msgstr ""
-#~ "সিস্টেমে ব্রোকেন ডিপেন্ডেন্সী রয়েছে। টিক না করা পর্যন্ত এ অ্যাপ্লিকেশন চালানো যায় "
-#~ "না। এটা ঠিক করতে টার্মিনাল উইন্ডোতে 'gksudo synaptic' or 'sudo apt-get "
-#~ "install -f' চালান।"
-
-#, python-format
-#~ msgid ""
-#~ "The MIME type of this file is '%s' and can not be installed on this "
-#~ "system."
-#~ msgstr "ফাইলের মাইম টাইপ '%s'  এবং সিস্টেমে ইনস্টল করা যায় না।"
-
-#, python-format
-#~ msgid "Could not open '%s'"
-#~ msgstr "'%s' খুলতে পারছে না"
-
-#~ msgid ""
-#~ "The package might be corrupted or you are not allowed to open the file. "
-#~ "Check the permissions of the file."
-#~ msgstr ""
-#~ "প্যাকেজ ত্রুটিযুক্ত হতে পারে অথবা আপনি ফাইল খুলতে অনুমোদিত নন। ফাইলের অনুমোদন "
-#~ "পরীক্ষা।"
-
-#~ msgid "Same version is available in a software channel"
-#~ msgstr "একই সংস্করণ সফটওয়্যার চ্যানেলে পাওয়া যাচ্ছে"
-
-#~ msgid ""
-#~ "You are recommended to install the software from the channel instead."
-#~ msgstr "এর পরিবর্তে চ্যানেল থেকে ফাইল ইনস্টল করার জন্য সুপারিশ করা হয়।"
-
-#~ msgid "An older version is available in a software channel"
-#~ msgstr "একটি পুরোনো সংস্করণ সফটওয়্যার চ্যানেলে পাওয়া যাচ্ছে"
-
-#~ msgid ""
-#~ "Generally you are recommended to install the version from the software "
-#~ "channel, since it is usually better supported."
-#~ msgstr ""
-#~ "সাধারনত সফ্টওয়ার চ্যানেল থেকে সংস্করণ ইনস্টল করার জন্য সুপারিশ করা হয়, কারণ এর "
-#~ "সমর্থন আরও ভাল।"
-
-#~ msgid "A later version is available in a software channel"
-#~ msgstr "একটি পরের সংস্করণ সফটওয়্যার চ্যানেলে পাওয়া যাচ্ছে"
-
-#~ msgid ""
-#~ "You are strongly advised to install the version from the software "
-#~ "channel, since it is usually better supported."
-#~ msgstr ""
-#~ "আপনাকে জোরালোভাবে  সফ্টওয়ার চ্যানেল থেকে সংস্করণ ইনস্টল করার জন্য সুপারিশ করা "
-#~ "হয়, কারণ এর সমর্থন আরও ভাল।"
-
-#~ msgid "Only one software management tool is allowed to run at the same time"
-#~ msgstr "শুধুমাত্র একটি সফটওয়্যার ম্যানেজমেন্ট টুল একসময়ে চালানো যাবে"
-
-#~ msgid ""
-#~ "Please close the other application e.g. 'Update Manager', 'aptitude' or "
-#~ "'Synaptic' first."
-#~ msgstr ""
-#~ "অনুগ্রহ করে অন্যান্য অ্যাপ্লিকেশন বন্ধ, যেমন, প্রথমে  'Update Manager', "
-#~ "'aptitude' or 'Synaptic'।"
-
-#~ msgid "Software package"
-#~ msgstr "সফটওয়্যার প্যাকেজ"
-
-#, python-format
-#~ msgid "Cannot install '%s'"
-#~ msgstr "'%s' ইনস্টল করতে পারে নি"
-
-#, python-format
-#~ msgid "Wrong architecture '%s'"
-#~ msgstr "ভুল আর্কিটেকচার '%s'"
-
-#~ msgid "translator-credits"
-#~ msgstr ""
-#~ "Launchpad Contributions:\n"
-#~ "  Israt Jahan https://launchpad.net/~isratjahan-ry\n"
-#~ "  Khandakar Mujahidul Islam https://launchpad.net/~suzan\n"
-#~ "  Md. Feroj Bepari https://launchpad.net/~feroj21\n"
-#~ "  Tushar Roy https://launchpad.net/~tushar\n"
-#~ "  nasir khan saikat https://launchpad.net/~nasir8891"
-
-#~ msgid "_Open..."
-#~ msgstr "খুলুন (_O)..."
-
-#~ msgid "<b>"
-#~ msgstr "<b>"

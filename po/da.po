@@ -1,13 +1,15 @@
+# Danish translation for fdebm.
+# Copyright (C) fdebm contributors
+# Distributed under the terms of the GNU General Public License v3.0 or later.
 # Danish translation of gdebi.
 # Copyright (C) 2005, 06
-# This file is distributed under the same license as the gdebi package.
 # Lasse Bang Mikkelsen <lbm@fatalerror.dk>, 2005, 06.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: gdebi\n"
+"Project-Id-Version: fdebm 0.1.1\n"
 "Report-Msgid-Bugs-To: sebastian.heinlein@web.de\n"
-"POT-Creation-Date: 2026-10-22 14:45+0800\n"
+"POT-Creation-Date: 2026-10-22 23:27+0800\n"
 "PO-Revision-Date: 2011-09-12 13:12+0000\n"
 "Last-Translator: Torben Gundtofte-Bruun <torben@g-b.dk>\n"
 "Language-Team: Danish <dansk@klid.dk>\n"
@@ -15,839 +17,364 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2014-03-12 19:04+0000\n"
-"X-Generator: Launchpad (build 16963)\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: ../crates/gdebi-core/src/depcheck.rs:170
-msgid "No Architecture field in the package"
-msgstr "Intet arkitekturfelt i pakken"
-
-#: ../crates/gdebi-core/src/depcheck.rs:180
-#, rust-format
-msgid ""
-"Wrong architecture '{0}' -- Run dpkg --add-architecture to add it and update "
-"afterwards"
-msgstr ""
-
-#: ../crates/gdebi-core/src/depcheck.rs:192
-msgid "A later version is already installed"
-msgstr "En senere version er allerede installeret"
-
-#: ../crates/gdebi-core/src/depcheck.rs:234
-#, fuzzy, rust-format
-#| msgid "Dependency is not satisfiable: %s\n"
-msgid "Dependency is not satisfiable: {0}\n"
-msgstr "Afhængighed er ikke opfyldt: %s\n"
-
-#: ../crates/gdebi-core/src/depcheck.rs:237
-msgid "Failed to satisfy all dependencies (broken cache)"
-msgstr "Kunne ikke opfylde alle afhængigheder (ødelagt mellemlager)"
-
-#: ../crates/gdebi-core/src/depcheck.rs:336
-#, fuzzy, rust-format
-#| msgid "Conflicts with the installed package '%s'\n"
-msgid "Conflicts with the installed package '{0}'"
-msgstr "Konflikter med den installerede pakke \"%s\"\n"
-
-#: ../crates/gdebi-core/src/depcheck.rs:359
-#, fuzzy, rust-format
-#| msgid "Breaks exisiting package '%s' dependency %s (%s %s)\n"
-msgid "Breaks existing package '{0}' dependency {1} ({2} {3})"
-msgstr "Beskadiger eksisterende pakke \"%s\" afhængighed %s (%s %s)\n"
-
-#: ../crates/gdebi-core/src/depcheck.rs:381
-#, fuzzy, rust-format
-#| msgid "Breaks exisiting package '%s' conflict: %s (%s %s)\n"
-msgid "Breaks existing package '{0}' conflict: {1} ({2} {3})"
-msgstr "Beskadiger eksisterende pakke \"%s\" konflikt: %s (%s %s)\n"
-
-#: ../crates/gdebi-core/src/depcheck.rs:388
-#, rust-format
-msgid ""
-"Breaks existing package '{0}' that conflict: '{1}'. But the '{2}' provides "
-"it via: '{3}'"
-msgstr ""
-
-#: ../crates/gdebi-core/src/error.rs:31
+#: ../crates/fdebm-core/src/error.rs:40
 #, rust-format
 msgid "cannot open {0}: {1}"
 msgstr ""
 
-#: ../crates/gdebi-core/src/error.rs:33
-#, fuzzy, rust-format
-#| msgid "'%s' is not a Debian package"
+#: ../crates/fdebm-core/src/error.rs:44
+#, rust-format
 msgid "{0} is not a Debian package"
-msgstr "\"%s\" er ikke en Debianpakke"
+msgstr ""
 
-#: ../crates/gdebi-core/src/error.rs:34
+#: ../crates/fdebm-core/src/error.rs:47
 msgid "control file not found in package"
 msgstr ""
 
-#: ../crates/gdebi-core/src/error.rs:36
+#: ../crates/fdebm-core/src/error.rs:49
 #, rust-format
-msgid "{0} compressed control.tar is not supported yet (only gzip/plain)"
+msgid "cannot decompress control archive: {0}"
 msgstr ""
 
-#: ../crates/gdebi-core/src/error.rs:39
+#: ../crates/fdebm-core/src/error.rs:51
 #, rust-format
 msgid "missing control field: {0}"
 msgstr ""
 
-#: ../crates/gdebi-core/src/flow.rs:53
+#: ../crates/fdebm-core/src/error.rs:55
+#, rust-format
+msgid "subprocess {0} failed: {1}"
+msgstr ""
+
+#: ../crates/fdebm-core/src/error.rs:58
+#, rust-format
+msgid "cannot decompress repository index {0}: {1}"
+msgstr ""
+
+#: ../crates/fdebm-core/src/error.rs:61
+#, rust-format
+msgid "cannot download {0}: {1}"
+msgstr ""
+
+#: ../crates/fdebm-core/src/error.rs:62 ../crates/fdebm-gtk/src/gtk_app.rs:1161
+msgid "operation cancelled"
+msgstr ""
+
+#: ../crates/fdebm-core/src/flow.rs:53
 #, rust-format
 msgid "Binary file ({0}), {1} bytes"
 msgstr ""
 
-#: ../crates/gdebi-core/src/flow.rs:54
+#: ../crates/fdebm-core/src/flow.rs:54
 #, rust-format
 msgid "Binary file, {0} bytes"
 msgstr ""
 
-#: ../crates/gdebi-core/src/install.rs:47
-#, fuzzy
-#| msgid "Error during install: '%s'"
+#: ../crates/fdebm-core/src/install.rs:119
+#: ../crates/fdebm-core/src/install.rs:141
+#: ../crates/fdebm-core/src/install.rs:160
 msgid "Error during install"
-msgstr "Fejl under installation: '%s'"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:60
+#: ../crates/fdebm-core/src/solver.rs:326
+#, rust-format
+msgid "Wrong architecture '{0}'"
+msgstr "Forkert arkitektur »{0}«"
+
+#: ../crates/fdebm-core/src/solver.rs:341
+msgid "A later version is already installed"
+msgstr "En senere version er allerede installeret"
+
+#: ../crates/fdebm-core/src/solver.rs:567
+msgid ""
+"Failed to satisfy all dependencies (conflicting requests or missing packages)"
+msgstr ""
+
+#: ../crates/fdebm-daemon/src/txn.rs:371 ../crates/fdebm-daemon/src/txn.rs:428
+#, rust-format
+msgid "dpkg exited with status {0}"
+msgstr ""
+
+#: ../crates/fdebm-daemon/src/txn.rs:463
+#, rust-format
+msgid "Fetching file {0} of {1}"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:55
 msgid "simple tool to view and install deb files - GTK frontend"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:63
+#: ../crates/fdebm-gtk/src/gtk_app.rs:58
 msgid "Set an APT configuration option"
 msgstr "Indstil et APT-konfigurationstilvalg"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:65
-#, fuzzy
-#| msgid "'%s' is not a Debian package"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:60
 msgid "Debian package to open"
-msgstr "\"%s\" er ikke en Debianpakke"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:239
+#: ../crates/fdebm-gtk/src/gtk_app.rs:265
 msgid "Package Installer"
 msgstr "Pakkeinstalleringsprogram"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:278
-msgid "_Details"
-msgstr "_Detaljer"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:286
+#: ../crates/fdebm-gtk/src/gtk_app.rs:299
 msgid "Package:"
 msgstr "Pakke:"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:286
+#: ../crates/fdebm-gtk/src/gtk_app.rs:299
 msgid "Status:"
 msgstr "Status:"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:305
-#: ../crates/gdebi-gtk/src/gtk_app.rs:839
+#: ../crates/fdebm-gtk/src/gtk_app.rs:310
+#: ../crates/fdebm-gtk/src/gtk_app.rs:865
 msgid "_Install Package"
 msgstr "_Installer pakke"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:306
+#: ../crates/fdebm-gtk/src/gtk_app.rs:311
 msgid "_Remove Package"
 msgstr "_Fjern pakke"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:334
+#: ../crates/fdebm-gtk/src/gtk_app.rs:339
 msgid "Description"
 msgstr "Beskrivelse"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:350
-#, fuzzy
-#| msgid "<b>Version:</b>"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:355
 msgid "Version:"
-msgstr "<b>Version:</b>"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:351
-#, fuzzy
-#| msgid "<b>Maintainer:</b>"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:356
 msgid "Maintainer:"
-msgstr "<b>Vedligeholder:</b>"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:352
-#, fuzzy
-#| msgid "<b>Priority:</b>"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:357
 msgid "Priority:"
-msgstr "<b>Prioritet:</b>"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:353
-#, fuzzy
-#| msgid "Description:"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:358
 msgid "Section:"
-msgstr "Beskrivelse:"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:354
+#: ../crates/fdebm-gtk/src/gtk_app.rs:359
 msgid "Size:"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:365
+#: ../crates/fdebm-gtk/src/gtk_app.rs:370
 msgid "Details"
 msgstr "Detaljer"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:393
+#: ../crates/fdebm-gtk/src/gtk_app.rs:398
 msgid "Included files"
 msgstr "Inkluderede filer"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:403
+#: ../crates/fdebm-gtk/src/gtk_app.rs:408
 msgid "Lintian output"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:505
+#: ../crates/fdebm-gtk/src/gtk_app.rs:504
 msgid "Selection is a directory"
 msgstr "Markeringen er en mappe"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:522
+#: ../crates/fdebm-gtk/src/gtk_app.rs:527
 msgid "File content can not be extracted"
 msgstr "Filindhold kan ikke udpakkes"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:523
-#, fuzzy, rust-format
-#| msgid "Error reading file content '%s'"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:528
+#, rust-format
 msgid "Error reading file content '{0}'"
-msgstr "Fejl ved læsning af filindhold '%s'"
+msgstr "Fejl ved læsning af filindhold '{0}'"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:534
+#: ../crates/fdebm-gtk/src/gtk_app.rs:539
 msgid "Package control data"
 msgstr "Pakkekontroldata"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:540
+#: ../crates/fdebm-gtk/src/gtk_app.rs:545
 msgid "Upstream data"
 msgstr "Opstrøms-data"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:552
+#: ../crates/fdebm-gtk/src/gtk_app.rs:556
 msgid "Error reading filelist"
 msgstr "Fejl ved læsning af filliste"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:563
+#: ../crates/fdebm-gtk/src/gtk_app.rs:567
 msgid ""
 "No lintian available.\n"
 "Please install using sudo apt-get install lintian"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:567
+#: ../crates/fdebm-gtk/src/gtk_app.rs:571
 msgid "Running lintian..."
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:586
+#: ../crates/fdebm-gtk/src/gtk_app.rs:589
 #, rust-format
 msgid "Failed to run lintian: {0}"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:631
+#: ../crates/fdebm-gtk/src/gtk_app.rs:637
 #, rust-format
 msgid "Lintian finished with exit status {0}"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:643
+#: ../crates/fdebm-gtk/src/gtk_app.rs:652
 msgid "_Open…"
 msgstr "_Åbn…"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:644
+#: ../crates/fdebm-gtk/src/gtk_app.rs:653
 msgid "_Refresh"
 msgstr "_Opdater"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:645
+#: ../crates/fdebm-gtk/src/gtk_app.rs:654
 msgid "_Quit"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:647
+#: ../crates/fdebm-gtk/src/gtk_app.rs:656
 msgid "_About"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:649
+#: ../crates/fdebm-gtk/src/gtk_app.rs:658
 msgid "_File"
 msgstr "_Fil"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:650
+#: ../crates/fdebm-gtk/src/gtk_app.rs:659
 msgid "_Help"
 msgstr "_Hjælp"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:659
-#, fuzzy
-#| msgid "'%s' is not a Debian package"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:668
 msgid "Open Debian package"
-msgstr "\"%s\" er ikke en Debianpakke"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:697
+#: ../crates/fdebm-gtk/src/gtk_app.rs:708
 msgid "simple tool to view and install deb files"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:718
+#: ../crates/fdebm-gtk/src/gtk_app.rs:731
 msgid "Loading..."
 msgstr "Indlæser..."
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:731
-#, fuzzy, rust-format
-#| msgid "gdebi error, file not found: %s\n"
-msgid "gdebi error, file not found: {0}"
-msgstr "gdebi fejl, fil ikke fundet: %s\n"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:745
+#, rust-format
+msgid "fdebm error, file not found: {0}"
+msgstr "fdebm fejl, fil ikke fundet: {0}"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:745
-#, fuzzy
-#| msgid "Failed to open the software package\n"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:760
 msgid "Could not open the software package"
-msgstr "Kunne ikke åbne softwarepakken\n"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:768
-msgid "Error opening the cache"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:780
+#: ../crates/fdebm-gtk/src/gtk_app.rs:778
+msgid "Checking dependencies..."
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:803
 msgid "Dependency check failed"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:792
+#: ../crates/fdebm-gtk/src/gtk_app.rs:807
+#: ../crates/fdebm-gtk/src/gtk_app.rs:819
 #, rust-format
 msgid "<span foreground=\"red\" weight=\"bold\">Error: {0}</span>"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:806
-#, fuzzy, rust-format
-#| msgid "Requires the <b>removal</b> of %s packages\n"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:834
+#, rust-format
 msgid "Requires the <b>removal</b> of {0} package"
 msgid_plural "Requires the <b>removal</b> of {0} packages"
-msgstr[0] "Kræver <b>fjernelse</b> af %s pakker\n"
-msgstr[1] "Kræver <b>fjernelse</b> af %s pakker\n"
+msgstr[0] ""
+msgstr[1] ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:817
-#, fuzzy, rust-format
-#| msgid "Requires the installation of %s packages"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:845
+#, rust-format
 msgid "Requires the installation of {0} package"
 msgid_plural "Requires the installation of {0} packages"
-msgstr[0] "Kræver installation af %s pakker"
-msgstr[1] "Kræver installation af %s pakker"
+msgstr[0] ""
+msgstr[1] ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:832
+#: ../crates/fdebm-gtk/src/gtk_app.rs:860
 msgid "Same version is already installed"
 msgstr "Denne version er allerede installeret"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:834
+#: ../crates/fdebm-gtk/src/gtk_app.rs:861
 msgid "_Reinstall Package"
 msgstr "_Geninstaller pakke"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:846
+#: ../crates/fdebm-gtk/src/gtk_app.rs:871
 msgid "All dependencies are satisfied"
 msgstr "Alle afhængigheder er opfyldt"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:896
+#: ../crates/fdebm-gtk/src/gtk_app.rs:935
 msgid "Applying changes"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:899
+#: ../crates/fdebm-gtk/src/gtk_app.rs:938
 msgid "Close"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:914
+#: ../crates/fdebm-gtk/src/gtk_app.rs:953
 msgid "Terminal"
 msgstr "Terminal"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:917
+#: ../crates/fdebm-gtk/src/gtk_app.rs:956
 msgid "Automatically close after the changes have been successfully applied"
 msgstr "Luk dette vindue efter ændringerne er blevet gennemført"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1007
-#, fuzzy
-#| msgid "gdebi"
-msgid "gdebi error"
-msgstr "gdebi"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1049
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1135
+msgid "fdebm error"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1035
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1196
+msgid "Modified configuration files"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1198
+msgid ""
+"The following configuration files have been modified locally and the new "
+"package ships different versions:"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1202
+msgid "Keep _my version"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1203
+msgid "Use the package's _new version"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1204
+msgid "_Cancel"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1235
 msgid "Install unauthenticated software?"
 msgstr "Installer ikke-godkendt software?"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1037
-#, fuzzy, rust-format
-#| msgid "The following packages are UNAUTHENTICATED: "
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1237
+#, rust-format
 msgid "The following packages are UNAUTHENTICATED: {0}"
-msgstr "De følgende pakker er IKKE GODKENDT: "
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1047
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1050
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1259
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1263
 msgid "Installing package file..."
 msgstr "Installerer pakkefil..."
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1051
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1264
 msgid "Installation complete"
 msgstr "Installation fuldført"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1052
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1265
 msgid "Failed to install package file"
 msgstr "Kunne ikke installere pakkefil"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1074
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1079
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1282
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1286
 msgid "Removing package..."
 msgstr "Fjerner pakke..."
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1080
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1287
 msgid "Removal complete"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1081
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1288
 msgid "Failed to remove package"
 msgstr "Kunne ikke fjerne pakke"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1122
-msgid "You need to grant administrative rights to remove software"
-msgstr ""
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1123
-msgid "It is a possible risk to remove packages."
-msgstr ""
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1127
-msgid "You need to grant administrative rights to install software"
-msgstr "Du skal tildele administrative rettigheder for at installere software"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1129
-#, fuzzy
-#| msgid ""
-#| "\n"
-#| "It is a possible security risk to install packages files manually.\n"
-#| "Install software from trustworthy software distributors only.\n"
-msgid ""
-"It is a possible security risk to install packages files manually.\n"
-"Install software from trustworthy software distributors only."
-msgstr ""
-"\n"
-"Det er en mulig sikkerhedsrisiko at installere pakkefiler manuelt.\n"
-"Installer kun software fra troværdige softwaredistributører.\n"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1147
-#, fuzzy
-#| msgid "Failed to open the software package\n"
-msgid "Failed to locate the program executable"
-msgstr "Kunne ikke åbne softwarepakken\n"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1171
-#, fuzzy
-#| msgid "Failed to install package file"
-msgid "Failed to start pkexec"
-msgstr "Kunne ikke installere pakkefil"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1184
-#, fuzzy, rust-format
-#| msgid "<b>To be removed: %s</b>"
-msgid "<b>To be removed: {0}</b>"
-msgstr "<b>Vil blive fjernet: %s</b>"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1188
-#, fuzzy, rust-format
-#| msgid "To be installed: %s"
-msgid "To be installed: {0}"
-msgstr "Vil blive installeret: %s"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1196
-#, fuzzy
-#| msgid "Media Change"
-msgid "Changes"
-msgstr "Medieændring"
-
-#, c-format
-#~ msgid ""
-#~ "usage: %prog [options] filename\n"
-#~ "For a graphical version run gdebi-gtk\n"
-#~ msgstr ""
-#~ "brug: %prog [tilvalg] filnavn\n"
-#~ "For grafisk version kør gdebi-gtk\n"
-
-#~ msgid "Run non-interactive (dangerous!)"
-#~ msgstr "Kør ikke-interaktivt (farligt!)"
-
-#~ msgid "Do not show progress information"
-#~ msgstr "Vis ikke hvor langt installationen er nået"
-
-#~ msgid "Simulate only and print a apt-get install compatible line to stderr"
-#~ msgstr ""
-#~ "Simuler kun og udskriv en apt-get install kompatibel linje til stderr"
-
-#~ msgid "Use alternative root dir"
-#~ msgstr "Brug alternativ rootmappe"
-
-#~ msgid "Need to be root to install packages"
-#~ msgstr "Skal være root for at installere pakker"
-
-#~ msgid "Do you want to install the software package? [y/N]:"
-#~ msgstr "Ønsker du at installere softwarepakken? [j/N]:"
-
-#~ msgid "Auto close when the install is finished"
-#~ msgstr "Luk automatisk, når installationen er færdig"
-
-#~ msgid "Use alternative datadir"
-#~ msgstr "Brug alternativ datadir"
-
-#~ msgid "Remove package"
-#~ msgstr "Fjern pakke"
-
-#~ msgid "Software index is broken"
-#~ msgstr "Softwareindekset er ødelagt"
-
-#~ msgid ""
-#~ "This is a major failure of your software management system. Please check "
-#~ "for broken packages with synaptic, check the file permissions and "
-#~ "correctness of the file '/etc/apt/sources.list' and reload the software "
-#~ "information with: 'sudo apt-get update' and 'sudo apt-get install -f'."
-#~ msgstr ""
-#~ "Dette er en alvorlig fejl i dit softwarehåndteringssystem. Undersøg "
-#~ "venligst for ødelagte pakker med synaptic, undersøg filrettighederne og "
-#~ "at filen »/etc/apt/sources.list« er korrekt og genindlæs "
-#~ "softwareinformationen med: »sudo apt-get update« og »sudo apt-get install "
-#~ "-f«."
-
-#~ msgid "Install and view software packages"
-#~ msgstr "Installer og vis softwarepakker"
-
-#~ msgid "GPL, see /usr/share/common-licenses/GPL"
-#~ msgstr "GPL, se /usr/share/common-licenses/GPL"
-
-#~ msgid "<b>To install the following changes are required:</b>"
-#~ msgstr "<b>For at installere er de følgende ændringer påkrævet:</b>"
-
-#~ msgid "_Edit"
-#~ msgstr "_Redigér"
-
-#~ msgid "<b><big>   </big></b>"
-#~ msgstr "<b><big> </big></b>"
-
-#~ msgid "_Download Package"
-#~ msgstr "_Download pakke"
-
-#~ msgid "<b>Section:</b>"
-#~ msgstr "<b>Sektion:</b>"
-
-#~ msgid "<b>Size:</b>"
-#~ msgstr "<b>Størrelse:</b>"
-
-#~ msgid "  "
-#~ msgstr "  "
-
-#~ msgid "GDebi Package Installer"
-#~ msgstr "GDebi pakkeinstalleringsprogram"
-
-#, python-format
-#~ msgid "%s is not available"
-#~ msgstr "%s er ikke tilgængelig"
-
-#~ msgid "Copy selected text"
-#~ msgstr "Kopiér markeret tekst"
-
-#~ msgid "Can not download as root"
-#~ msgstr "Kan ikke hente som root"
-
-#~ msgid ""
-#~ "Remote packages can not be downloaded when running as root. Please try "
-#~ "again as a normal user."
-#~ msgstr ""
-#~ "Fjernpakker kan ikke hentes  ved kørsel som root. Prøv venligst igen som "
-#~ "almindelig bruger."
-
-#~ msgid "Downloading package"
-#~ msgstr "Henter pakke"
-
-#~ msgid "Download failed"
-#~ msgstr "Download mislykkedes"
-
-#, python-format
-#~ msgid "Downloading the package failed: file '%s' '%s'"
-#~ msgstr "Hentning af pakken fejlede: fil \"%s\" \"%s\""
-
-#, python-format
-#~ msgid "Package Installer - %s"
-#~ msgstr "Pakkeinstalleringsprogram - %s"
-
-#~ msgid "Error: "
-#~ msgstr "Fejl: "
-
-#~ msgid "Open Software Package"
-#~ msgstr "Åbn softwarepakke"
-
-#~ msgid "Software packages"
-#~ msgstr "Softwarepakker"
-
-#, python-format
-#~ msgid "One or more packages are required by %s, it cannot be removed."
-#~ msgstr "%s kræver en eller flere pakker og kan ikke fjernes."
-
-#~ msgid "File not found"
-#~ msgstr "Fil ikke fundet"
-
-#~ msgid "You tried to install a file that does not (or no longer) exist. "
-#~ msgstr ""
-#~ "Du forsøgte at installere en fil, som ikke (eller ikke længere) "
-#~ "eksisterer. "
-
-#~ msgid ""
-#~ "Malicious software can damage your data and take control of your system.\n"
-#~ "\n"
-#~ "The packages below are not authenticated and could therefore be of "
-#~ "malicious nature."
-#~ msgstr ""
-#~ "Ondartet software kan skade dine data og opnå kontrol over dit system.\n"
-#~ "\n"
-#~ "Pakkerne nedenfor er ikke bekræftet, og kan derfor være af ondsindet "
-#~ "karakter."
-
-#~ msgid "Could not download all required files"
-#~ msgstr "Kunne ikke hente alle de krævede filer"
-
-#~ msgid "Please check your internet connection or installation medium."
-#~ msgstr "Undersøg venligst din internetforbindelse eller installationsmedie."
-
-#~ msgid "Could not install all dependencies"
-#~ msgstr "Kunne ikke installere alle afhængigheder"
-
-#~ msgid ""
-#~ "Usually this is related to an error of the software distributor. See the "
-#~ "terminal window for more details."
-#~ msgstr ""
-#~ "Normalt skyldes dette en fejl hos softwaredistributøren. Se "
-#~ "terminalvinduet for yderligere detaljer."
-
-#, python-format
-#~ msgid "Installing %s"
-#~ msgstr "Installerer %s"
-
-#, python-format
-#~ msgid "Removing %s"
-#~ msgstr "Fjerner %s"
-
-#~ msgid "Installation finished"
-#~ msgstr "Installationen er færdig"
-
-#, python-format
-#~ msgid "Package '%s' was installed"
-#~ msgstr "Pakke »%s« er installeret"
-
-#, python-format
-#~ msgid "Package '%s' was removed"
-#~ msgstr "Pakken '%s' blev fjernet"
-
-#, python-format
-#~ msgid "Failed to install package '%s'"
-#~ msgstr "Kunne ikke installere pakke »%s«"
-
-#, python-format
-#~ msgid "Failed to remove package '%s'"
-#~ msgstr "Kunne ikke fjerne pakke '%s'"
-
-#~ msgid "Failed to completely install all dependencies"
-#~ msgstr "Kunne ikke installere alle afhængigheder"
-
-#~ msgid "To fix this run 'sudo apt-get install -f' in a terminal window."
-#~ msgstr ""
-#~ "For at rette dette så kør »sudo apt-get install -f« i et terminalvindue."
-
-#, python-format
-#~ msgid "Installing '%s'..."
-#~ msgstr "Installerer »%s«"
-
-#, python-format
-#~ msgid "Removing '%s'..."
-#~ msgstr "Fjerner '%s'..."
-
-#~ msgid "Installing dependencies..."
-#~ msgstr "Installerer afhængigheder..."
-
-#~ msgid "Downloading additional package files..."
-#~ msgstr "Henter yderligere pakkefiler..."
-
-#, python-format
-#~ msgid "File %s of %s at %sB/s"
-#~ msgstr "Fil %s af %s med %sB/s"
-
-#, python-format
-#~ msgid "File %s of %s"
-#~ msgstr "Fil %s af %s"
-
-#, python-format
-#~ msgid "Please insert '%s' into the drive '%s'"
-#~ msgstr "Indsæt venligst »%s« i drevet »%s«"
-
-#~ msgid "Configuration items must be specified with a =<value>\n"
-#~ msgstr "Konfigurationspunkter skal være specificeret med et =<værdi>\n"
-
-#, python-format
-#~ msgid "Couldn't set APT option %s to %s\n"
-#~ msgstr "Kunne ikke indstille APT-tilvalg %s til %s\n"
-
-#, python-format
-#~ msgid "Unknown package type '%s', exiting\n"
-#~ msgstr "Ukendt pakketype »%s«, afslutter\n"
-
-#~ msgid ""
-#~ "The package might be corrupted or you are not allowed to open the file. "
-#~ "Check the permissions of the file.\n"
-#~ msgstr ""
-#~ "Pakken er måske korrupt, eller du har ikke tilladelse til at åbne filen. "
-#~ "Undersøg rettighederne på filen.\n"
-
-#~ msgid "This package is uninstallable\n"
-#~ msgstr "Denne pakke kan ikke installeres\n"
-
-#~ msgid "No description is available"
-#~ msgstr "Ingen beskrivelse er tilgængelig"
-
-#~ msgid "Requires the REMOVAL of the following packages: "
-#~ msgstr "Kræver FJERNELSE af de følgende pakker: "
-
-#~ msgid "Requires the installation of the following packages: "
-#~ msgstr "Kræver installation af de følgende pakker: "
-
-#~ msgid "Included Files"
-#~ msgstr "Inkluderede filer"
-
-#~ msgid "&Install Package"
-#~ msgstr "&Installer pakke"
-
-#~ msgid "&Download Package"
-#~ msgstr "&Hent pakke"
-
-#~ msgid "The package file does not exist"
-#~ msgstr "Pakkefilen eksisterer ikke"
-
-#~ msgid ""
-#~ "A nonexistent file has been selected for installation. Please select an "
-#~ "existing .deb package file."
-#~ msgstr ""
-#~ "En ikke-eksisterende fil er blevet valgt til installation. Vælg venligst "
-#~ "en eksisterende .deb pakkefil."
-
-#~ msgid "&Reinstall Package"
-#~ msgstr "&Geninstaller pakke"
-
-#~ msgid "Re&install Package"
-#~ msgstr "Gen%installer pakke"
-
-#, python-format
-#~ msgid "To be removed: %s"
-#~ msgstr "Til fjernelse: %s"
-
-#~ msgid "Broken dependencies"
-#~ msgstr "Ødelagte afhængigheder"
-
-#~ msgid ""
-#~ "Your system has broken dependencies. This application can not continue "
-#~ "until this is fixed. To fix it run 'gksudo synaptic' or 'sudo apt-get "
-#~ "install -f' in a terminal window."
-#~ msgstr ""
-#~ "Dit system har ødelagte afhængigheder. Dette program kan ikke fortsætte, "
-#~ "indtil disse er ordnet. Kør \"gksudo synaptic\" eller \"sudo apt-get "
-#~ "install -f\" i et terminalvindue, for at ordne det."
-
-#, python-format
-#~ msgid ""
-#~ "The MIME type of this file is '%s' and can not be installed on this "
-#~ "system."
-#~ msgstr ""
-#~ "MIME-typen for denne fil er \"%s\" og kan ikke installeres på dette "
-#~ "system."
-
-#, python-format
-#~ msgid "Could not open '%s'"
-#~ msgstr "Kunne ikke åbne »%s«"
-
-#~ msgid ""
-#~ "The package might be corrupted or you are not allowed to open the file. "
-#~ "Check the permissions of the file."
-#~ msgstr ""
-#~ "Denne pakke er måske korrupt, eller du har ikke tilladelse til at åbne "
-#~ "filen. Undersøg rettighederne på filen."
-
-#~ msgid "Same version is available in a software channel"
-#~ msgstr "Tilsvarende version er tilgængelig i en softwarekanal"
-
-#~ msgid ""
-#~ "You are recommended to install the software from the channel instead."
-#~ msgstr "Du anbefales at installere softwaren fra kanalen i steden for."
-
-#~ msgid "An older version is available in a software channel"
-#~ msgstr "En ældre version er tilgængelig i en softwarekanal"
-
-#~ msgid ""
-#~ "Generally you are recommended to install the version from the software "
-#~ "channel, since it is usually better supported."
-#~ msgstr ""
-#~ "Generelt anbefales du at installere versionen fra softwarekanalen, da den "
-#~ "normalt er bedre understøttet."
-
-#~ msgid "A later version is available in a software channel"
-#~ msgstr "En senere version er tilgængelig i en softwarekanal"
-
-#~ msgid ""
-#~ "You are strongly advised to install the version from the software "
-#~ "channel, since it is usually better supported."
-#~ msgstr ""
-#~ "Du anbefales stærkt at installere versionen fra softwarekanalen, da den "
-#~ "normalt er bedre understøttet."
-
-#~ msgid "Only one software management tool is allowed to run at the same time"
-#~ msgstr ""
-#~ "Det er kun tilladt at have et softwarestyringsværktøj kørende ad gangen."
-
-#~ msgid ""
-#~ "Please close the other application e.g. 'Update Manager', 'aptitude' or "
-#~ "'Synaptic' first."
-#~ msgstr ""
-#~ "Luk venligst det andet program først, for eksempel "
-#~ "»Opdateringshåndtering«, »aptitude« eller »Synaptic«."
-
-#~ msgid "translator-credits"
-#~ msgstr ""
-#~ "Lasse Bang Mikkelsen\n"
-#~ "\n"
-#~ "Dansk-gruppen <dansk@dansk-gruppen.dk>\n"
-#~ "Mere info: http://www.dansk-gruppen.dk\n"
-#~ "\n"
-#~ "Launchpad Contributions:\n"
-#~ "  AJenbo https://launchpad.net/~ajenbo\n"
-#~ "  Joe Hansen https://launchpad.net/~joedalton2\n"
-#~ "  Lasse Bang Mikkelsen https://launchpad.net/~lbm\n"
-#~ "  Mads Konradsen https://launchpad.net/~mads-hk\n"
-#~ "  Pillum https://launchpad.net/~pillum\n"
-#~ "  TLE https://launchpad.net/~k-nielsen81\n"
-#~ "  Torben Gundtofte-Bruun https://launchpad.net/~torbengb\n"
-#~ "  misteryman https://launchpad.net/~download-rullendemassage"
-
-#~ msgid "Y"
-#~ msgstr "J"
-
-#~ msgid "Software package"
-#~ msgstr "Softwarepakke"
-
-#, python-format
-#~ msgid "Cannot install '%s'"
-#~ msgstr "Kan ikke installere »%s«"
-
-#, python-format
-#~ msgid "IOError during filelist read: %s"
-#~ msgstr "IO-fejl under læsning af filliste: %s"
-
-#~ msgid "List of files could not be read, please report this as a bug"
-#~ msgstr "Filliste kunne ikke læses, anmeld venligst det her som en fejl"
-
-#~ msgid "<b>"
-#~ msgstr "<b>"
-
-#~ msgid ""
-#~ "Malicous software can damage your data and take control of your system.\n"
-#~ "\n"
-#~ "The packages below are not authenticated and could therefor be of "
-#~ "malicous nature."
-#~ msgstr ""
-#~ "Software med ond hensigt kan skade dine data og overtage kontrollen med "
-#~ "dit system.\n"
-#~ "\n"
-#~ "Pakkerne nedenfor er ikke godkendt og kan derfor være skadelige."
-
-#, python-format
-#~ msgid "Wrong architecture '%s'"
-#~ msgstr "Forkert arkitektur »%s«"
-
-#~ msgid "Open..."
-#~ msgstr "Åben"
-
-#~ msgid "Analysing dependencies"
-#~ msgstr "Analyserer afhængigheder"
-
-#~ msgid "_Open..."
-#~ msgstr "_Åbn..."

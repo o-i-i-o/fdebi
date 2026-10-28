@@ -1,403 +1,377 @@
-# Armenian translation for gdebi
-# Copyright (c) 2011 Rosetta Contributors and Canonical Ltd 2011
-# This file is distributed under the same license as the gdebi package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2011.
+# Armenian translation for fdebm.
+# Copyright (C) fdebm contributors
+# Distributed under the terms of the GNU General Public License v3.0 or later.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: gdebi\n"
+"Project-Id-Version: fdebm 0.1.1\n"
 "Report-Msgid-Bugs-To: sebastian.heinlein@web.de\n"
-"POT-Creation-Date: 2026-10-22 14:45+0800\n"
+"POT-Creation-Date: 2026-10-22 23:27+0800\n"
 "PO-Revision-Date: 2011-03-11 22:46+0000\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Last-Translator: fdebm translators\n"
 "Language-Team: Armenian <hy@li.org>\n"
 "Language: hy\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2014-03-12 19:04+0000\n"
-"X-Generator: Launchpad (build 16963)\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: ../crates/gdebi-core/src/depcheck.rs:170
-msgid "No Architecture field in the package"
-msgstr ""
-
-#: ../crates/gdebi-core/src/depcheck.rs:180
-#, rust-format
-msgid ""
-"Wrong architecture '{0}' -- Run dpkg --add-architecture to add it and update "
-"afterwards"
-msgstr ""
-
-#: ../crates/gdebi-core/src/depcheck.rs:192
-msgid "A later version is already installed"
-msgstr ""
-
-#: ../crates/gdebi-core/src/depcheck.rs:234
-#, rust-format
-msgid "Dependency is not satisfiable: {0}\n"
-msgstr ""
-
-#: ../crates/gdebi-core/src/depcheck.rs:237
-msgid "Failed to satisfy all dependencies (broken cache)"
-msgstr ""
-
-#: ../crates/gdebi-core/src/depcheck.rs:336
-#, rust-format
-msgid "Conflicts with the installed package '{0}'"
-msgstr ""
-
-#: ../crates/gdebi-core/src/depcheck.rs:359
-#, rust-format
-msgid "Breaks existing package '{0}' dependency {1} ({2} {3})"
-msgstr ""
-
-#: ../crates/gdebi-core/src/depcheck.rs:381
-#, rust-format
-msgid "Breaks existing package '{0}' conflict: {1} ({2} {3})"
-msgstr ""
-
-#: ../crates/gdebi-core/src/depcheck.rs:388
-#, rust-format
-msgid ""
-"Breaks existing package '{0}' that conflict: '{1}'. But the '{2}' provides "
-"it via: '{3}'"
-msgstr ""
-
-#: ../crates/gdebi-core/src/error.rs:31
+#: ../crates/fdebm-core/src/error.rs:40
 #, rust-format
 msgid "cannot open {0}: {1}"
 msgstr ""
 
-#: ../crates/gdebi-core/src/error.rs:33
+#: ../crates/fdebm-core/src/error.rs:44
 #, rust-format
 msgid "{0} is not a Debian package"
 msgstr ""
 
-#: ../crates/gdebi-core/src/error.rs:34
+#: ../crates/fdebm-core/src/error.rs:47
 msgid "control file not found in package"
 msgstr ""
 
-#: ../crates/gdebi-core/src/error.rs:36
+#: ../crates/fdebm-core/src/error.rs:49
 #, rust-format
-msgid "{0} compressed control.tar is not supported yet (only gzip/plain)"
+msgid "cannot decompress control archive: {0}"
 msgstr ""
 
-#: ../crates/gdebi-core/src/error.rs:39
+#: ../crates/fdebm-core/src/error.rs:51
 #, rust-format
 msgid "missing control field: {0}"
 msgstr ""
 
-#: ../crates/gdebi-core/src/flow.rs:53
+#: ../crates/fdebm-core/src/error.rs:55
+#, rust-format
+msgid "subprocess {0} failed: {1}"
+msgstr ""
+
+#: ../crates/fdebm-core/src/error.rs:58
+#, rust-format
+msgid "cannot decompress repository index {0}: {1}"
+msgstr ""
+
+#: ../crates/fdebm-core/src/error.rs:61
+#, rust-format
+msgid "cannot download {0}: {1}"
+msgstr ""
+
+#: ../crates/fdebm-core/src/error.rs:62 ../crates/fdebm-gtk/src/gtk_app.rs:1161
+msgid "operation cancelled"
+msgstr ""
+
+#: ../crates/fdebm-core/src/flow.rs:53
 #, rust-format
 msgid "Binary file ({0}), {1} bytes"
 msgstr ""
 
-#: ../crates/gdebi-core/src/flow.rs:54
+#: ../crates/fdebm-core/src/flow.rs:54
 #, rust-format
 msgid "Binary file, {0} bytes"
 msgstr ""
 
-#: ../crates/gdebi-core/src/install.rs:47
+#: ../crates/fdebm-core/src/install.rs:119
+#: ../crates/fdebm-core/src/install.rs:141
+#: ../crates/fdebm-core/src/install.rs:160
 msgid "Error during install"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:60
+#: ../crates/fdebm-core/src/solver.rs:326
+#, rust-format
+msgid "Wrong architecture '{0}'"
+msgstr ""
+
+#: ../crates/fdebm-core/src/solver.rs:341
+msgid "A later version is already installed"
+msgstr ""
+
+#: ../crates/fdebm-core/src/solver.rs:567
+msgid ""
+"Failed to satisfy all dependencies (conflicting requests or missing packages)"
+msgstr ""
+
+#: ../crates/fdebm-daemon/src/txn.rs:371 ../crates/fdebm-daemon/src/txn.rs:428
+#, rust-format
+msgid "dpkg exited with status {0}"
+msgstr ""
+
+#: ../crates/fdebm-daemon/src/txn.rs:463
+#, rust-format
+msgid "Fetching file {0} of {1}"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:55
 msgid "simple tool to view and install deb files - GTK frontend"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:63
+#: ../crates/fdebm-gtk/src/gtk_app.rs:58
 msgid "Set an APT configuration option"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:65
+#: ../crates/fdebm-gtk/src/gtk_app.rs:60
 msgid "Debian package to open"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:239
+#: ../crates/fdebm-gtk/src/gtk_app.rs:265
 msgid "Package Installer"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:278
-msgid "_Details"
-msgstr ""
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:286
+#: ../crates/fdebm-gtk/src/gtk_app.rs:299
 msgid "Package:"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:286
+#: ../crates/fdebm-gtk/src/gtk_app.rs:299
 msgid "Status:"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:305
-#: ../crates/gdebi-gtk/src/gtk_app.rs:839
+#: ../crates/fdebm-gtk/src/gtk_app.rs:310
+#: ../crates/fdebm-gtk/src/gtk_app.rs:865
 msgid "_Install Package"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:306
+#: ../crates/fdebm-gtk/src/gtk_app.rs:311
 msgid "_Remove Package"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:334
+#: ../crates/fdebm-gtk/src/gtk_app.rs:339
 msgid "Description"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:350
+#: ../crates/fdebm-gtk/src/gtk_app.rs:355
 msgid "Version:"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:351
+#: ../crates/fdebm-gtk/src/gtk_app.rs:356
 msgid "Maintainer:"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:352
+#: ../crates/fdebm-gtk/src/gtk_app.rs:357
 msgid "Priority:"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:353
+#: ../crates/fdebm-gtk/src/gtk_app.rs:358
 msgid "Section:"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:354
+#: ../crates/fdebm-gtk/src/gtk_app.rs:359
 msgid "Size:"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:365
+#: ../crates/fdebm-gtk/src/gtk_app.rs:370
 msgid "Details"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:393
+#: ../crates/fdebm-gtk/src/gtk_app.rs:398
 msgid "Included files"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:403
+#: ../crates/fdebm-gtk/src/gtk_app.rs:408
 msgid "Lintian output"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:505
+#: ../crates/fdebm-gtk/src/gtk_app.rs:504
 msgid "Selection is a directory"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:522
+#: ../crates/fdebm-gtk/src/gtk_app.rs:527
 msgid "File content can not be extracted"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:523
+#: ../crates/fdebm-gtk/src/gtk_app.rs:528
 #, rust-format
 msgid "Error reading file content '{0}'"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:534
+#: ../crates/fdebm-gtk/src/gtk_app.rs:539
 msgid "Package control data"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:540
+#: ../crates/fdebm-gtk/src/gtk_app.rs:545
 msgid "Upstream data"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:552
+#: ../crates/fdebm-gtk/src/gtk_app.rs:556
 msgid "Error reading filelist"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:563
+#: ../crates/fdebm-gtk/src/gtk_app.rs:567
 msgid ""
 "No lintian available.\n"
 "Please install using sudo apt-get install lintian"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:567
+#: ../crates/fdebm-gtk/src/gtk_app.rs:571
 msgid "Running lintian..."
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:586
+#: ../crates/fdebm-gtk/src/gtk_app.rs:589
 #, rust-format
 msgid "Failed to run lintian: {0}"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:631
+#: ../crates/fdebm-gtk/src/gtk_app.rs:637
 #, rust-format
 msgid "Lintian finished with exit status {0}"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:643
+#: ../crates/fdebm-gtk/src/gtk_app.rs:652
 msgid "_Open…"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:644
+#: ../crates/fdebm-gtk/src/gtk_app.rs:653
 msgid "_Refresh"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:645
+#: ../crates/fdebm-gtk/src/gtk_app.rs:654
 msgid "_Quit"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:647
+#: ../crates/fdebm-gtk/src/gtk_app.rs:656
 msgid "_About"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:649
+#: ../crates/fdebm-gtk/src/gtk_app.rs:658
 msgid "_File"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:650
+#: ../crates/fdebm-gtk/src/gtk_app.rs:659
 msgid "_Help"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:659
+#: ../crates/fdebm-gtk/src/gtk_app.rs:668
 msgid "Open Debian package"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:697
+#: ../crates/fdebm-gtk/src/gtk_app.rs:708
 msgid "simple tool to view and install deb files"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:718
+#: ../crates/fdebm-gtk/src/gtk_app.rs:731
 msgid "Loading..."
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:731
+#: ../crates/fdebm-gtk/src/gtk_app.rs:745
 #, rust-format
-msgid "gdebi error, file not found: {0}"
+msgid "fdebm error, file not found: {0}"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:745
+#: ../crates/fdebm-gtk/src/gtk_app.rs:760
 msgid "Could not open the software package"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:768
-msgid "Error opening the cache"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:778
+msgid "Checking dependencies..."
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:780
+#: ../crates/fdebm-gtk/src/gtk_app.rs:803
 msgid "Dependency check failed"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:792
+#: ../crates/fdebm-gtk/src/gtk_app.rs:807
+#: ../crates/fdebm-gtk/src/gtk_app.rs:819
 #, rust-format
 msgid "<span foreground=\"red\" weight=\"bold\">Error: {0}</span>"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:806
+#: ../crates/fdebm-gtk/src/gtk_app.rs:834
 #, rust-format
 msgid "Requires the <b>removal</b> of {0} package"
 msgid_plural "Requires the <b>removal</b> of {0} packages"
 msgstr[0] ""
 msgstr[1] ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:817
+#: ../crates/fdebm-gtk/src/gtk_app.rs:845
 #, rust-format
 msgid "Requires the installation of {0} package"
 msgid_plural "Requires the installation of {0} packages"
 msgstr[0] ""
 msgstr[1] ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:832
+#: ../crates/fdebm-gtk/src/gtk_app.rs:860
 msgid "Same version is already installed"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:834
+#: ../crates/fdebm-gtk/src/gtk_app.rs:861
 msgid "_Reinstall Package"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:846
+#: ../crates/fdebm-gtk/src/gtk_app.rs:871
 msgid "All dependencies are satisfied"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:896
+#: ../crates/fdebm-gtk/src/gtk_app.rs:935
 msgid "Applying changes"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:899
+#: ../crates/fdebm-gtk/src/gtk_app.rs:938
 msgid "Close"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:914
+#: ../crates/fdebm-gtk/src/gtk_app.rs:953
 msgid "Terminal"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:917
+#: ../crates/fdebm-gtk/src/gtk_app.rs:956
 msgid "Automatically close after the changes have been successfully applied"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1007
-msgid "gdebi error"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1049
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1135
+msgid "fdebm error"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1035
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1196
+msgid "Modified configuration files"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1198
+msgid ""
+"The following configuration files have been modified locally and the new "
+"package ships different versions:"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1202
+msgid "Keep _my version"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1203
+msgid "Use the package's _new version"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1204
+msgid "_Cancel"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1235
 msgid "Install unauthenticated software?"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1037
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1237
 #, rust-format
 msgid "The following packages are UNAUTHENTICATED: {0}"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1047
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1050
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1259
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1263
 msgid "Installing package file..."
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1051
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1264
 msgid "Installation complete"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1052
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1265
 msgid "Failed to install package file"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1074
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1079
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1282
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1286
 msgid "Removing package..."
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1080
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1287
 msgid "Removal complete"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1081
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1288
 msgid "Failed to remove package"
 msgstr ""
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1122
-msgid "You need to grant administrative rights to remove software"
-msgstr ""
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1123
-msgid "It is a possible risk to remove packages."
-msgstr ""
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1127
-msgid "You need to grant administrative rights to install software"
-msgstr ""
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1129
-msgid ""
-"It is a possible security risk to install packages files manually.\n"
-"Install software from trustworthy software distributors only."
-msgstr ""
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1147
-msgid "Failed to locate the program executable"
-msgstr ""
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1171
-msgid "Failed to start pkexec"
-msgstr ""
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1184
-#, rust-format
-msgid "<b>To be removed: {0}</b>"
-msgstr ""
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1188
-#, rust-format
-msgid "To be installed: {0}"
-msgstr ""
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1196
-msgid "Changes"
-msgstr ""
-
-#~ msgid "Auto close when the install is finished"
-#~ msgstr "Ինքնաբար փակել տեղադրման ավարտից հետո"

@@ -1,799 +1,378 @@
-# Occitan (post 1500) translation for gdebi
-# Copyright (c) 2007 Rosetta Contributors and Canonical Ltd 2007
-# This file is distributed under the same license as the gdebi package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2007.
+# Occitan translation for fdebm.
+# Copyright (C) fdebm contributors
+# Distributed under the terms of the GNU General Public License v3.0 or later.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: gdebi\n"
+"Project-Id-Version: fdebm 0.1.1\n"
 "Report-Msgid-Bugs-To: sebastian.heinlein@web.de\n"
-"POT-Creation-Date: 2026-10-22 14:45+0800\n"
+"POT-Creation-Date: 2026-10-22 23:27+0800\n"
 "PO-Revision-Date: 2011-09-10 09:51+0000\n"
 "Last-Translator: Cédric VALMARY (Tot en òc) <cvalmary@yahoo.fr>\n"
 "Language-Team: Occitan (post 1500) <oc@li.org>\n"
-"Language: \n"
+"Language: oc\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2014-03-12 19:04+0000\n"
-"X-Generator: Launchpad (build 16963)\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: ../crates/gdebi-core/src/depcheck.rs:170
-msgid "No Architecture field in the package"
-msgstr ""
-
-#: ../crates/gdebi-core/src/depcheck.rs:180
-#, rust-format
-msgid ""
-"Wrong architecture '{0}' -- Run dpkg --add-architecture to add it and update "
-"afterwards"
-msgstr ""
-
-#: ../crates/gdebi-core/src/depcheck.rs:192
-#, fuzzy
-#| msgid "Same version is already installed"
-msgid "A later version is already installed"
-msgstr "La meteissa version es ja installada"
-
-#: ../crates/gdebi-core/src/depcheck.rs:234
-#, fuzzy, rust-format
-#| msgid "All dependencies are satisfied"
-msgid "Dependency is not satisfiable: {0}\n"
-msgstr "Totas las dependéncias son satisfachas"
-
-#: ../crates/gdebi-core/src/depcheck.rs:237
-#, fuzzy
-#| msgid "Failed to completely install all dependencies"
-msgid "Failed to satisfy all dependencies (broken cache)"
-msgstr "Fracàs de l'installacion completa de totas las dependéncias"
-
-#: ../crates/gdebi-core/src/depcheck.rs:336
-#, fuzzy, rust-format
-#| msgid "Failed to install package '%s'"
-msgid "Conflicts with the installed package '{0}'"
-msgstr "Fracàs de l'installacion del paquet « %s »"
-
-#: ../crates/gdebi-core/src/depcheck.rs:359
-#, rust-format
-msgid "Breaks existing package '{0}' dependency {1} ({2} {3})"
-msgstr ""
-
-#: ../crates/gdebi-core/src/depcheck.rs:381
-#, rust-format
-msgid "Breaks existing package '{0}' conflict: {1} ({2} {3})"
-msgstr ""
-
-#: ../crates/gdebi-core/src/depcheck.rs:388
-#, rust-format
-msgid ""
-"Breaks existing package '{0}' that conflict: '{1}'. But the '{2}' provides "
-"it via: '{3}'"
-msgstr ""
-
-#: ../crates/gdebi-core/src/error.rs:31
+#: ../crates/fdebm-core/src/error.rs:40
 #, rust-format
 msgid "cannot open {0}: {1}"
 msgstr ""
 
-#: ../crates/gdebi-core/src/error.rs:33
-#, fuzzy, rust-format
-#| msgid "'%s' is not a Debian package"
+#: ../crates/fdebm-core/src/error.rs:44
+#, rust-format
 msgid "{0} is not a Debian package"
-msgstr "« %s » es pas un paquet Debian"
+msgstr ""
 
-#: ../crates/gdebi-core/src/error.rs:34
+#: ../crates/fdebm-core/src/error.rs:47
 msgid "control file not found in package"
 msgstr ""
 
-#: ../crates/gdebi-core/src/error.rs:36
+#: ../crates/fdebm-core/src/error.rs:49
 #, rust-format
-msgid "{0} compressed control.tar is not supported yet (only gzip/plain)"
+msgid "cannot decompress control archive: {0}"
 msgstr ""
 
-#: ../crates/gdebi-core/src/error.rs:39
+#: ../crates/fdebm-core/src/error.rs:51
 #, rust-format
 msgid "missing control field: {0}"
 msgstr ""
 
-#: ../crates/gdebi-core/src/flow.rs:53
+#: ../crates/fdebm-core/src/error.rs:55
+#, rust-format
+msgid "subprocess {0} failed: {1}"
+msgstr ""
+
+#: ../crates/fdebm-core/src/error.rs:58
+#, rust-format
+msgid "cannot decompress repository index {0}: {1}"
+msgstr ""
+
+#: ../crates/fdebm-core/src/error.rs:61
+#, rust-format
+msgid "cannot download {0}: {1}"
+msgstr ""
+
+#: ../crates/fdebm-core/src/error.rs:62 ../crates/fdebm-gtk/src/gtk_app.rs:1161
+msgid "operation cancelled"
+msgstr ""
+
+#: ../crates/fdebm-core/src/flow.rs:53
 #, rust-format
 msgid "Binary file ({0}), {1} bytes"
 msgstr ""
 
-#: ../crates/gdebi-core/src/flow.rs:54
+#: ../crates/fdebm-core/src/flow.rs:54
 #, rust-format
 msgid "Binary file, {0} bytes"
 msgstr ""
 
-#: ../crates/gdebi-core/src/install.rs:47
-#, fuzzy
-#| msgid "Error during install: '%s'"
+#: ../crates/fdebm-core/src/install.rs:119
+#: ../crates/fdebm-core/src/install.rs:141
+#: ../crates/fdebm-core/src/install.rs:160
 msgid "Error during install"
-msgstr "Error al moment de l'installacion : « %s »"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:60
+#: ../crates/fdebm-core/src/solver.rs:326
+#, rust-format
+msgid "Wrong architecture '{0}'"
+msgstr ""
+
+#: ../crates/fdebm-core/src/solver.rs:341
+msgid "A later version is already installed"
+msgstr ""
+
+#: ../crates/fdebm-core/src/solver.rs:567
+msgid ""
+"Failed to satisfy all dependencies (conflicting requests or missing packages)"
+msgstr ""
+
+#: ../crates/fdebm-daemon/src/txn.rs:371 ../crates/fdebm-daemon/src/txn.rs:428
+#, rust-format
+msgid "dpkg exited with status {0}"
+msgstr ""
+
+#: ../crates/fdebm-daemon/src/txn.rs:463
+#, rust-format
+msgid "Fetching file {0} of {1}"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:55
 msgid "simple tool to view and install deb files - GTK frontend"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:63
+#: ../crates/fdebm-gtk/src/gtk_app.rs:58
 msgid "Set an APT configuration option"
 msgstr "Definir una opcion de configuracion d'APT"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:65
-#, fuzzy
-#| msgid "'%s' is not a Debian package"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:60
 msgid "Debian package to open"
-msgstr "« %s » es pas un paquet Debian"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:239
+#: ../crates/fdebm-gtk/src/gtk_app.rs:265
 msgid "Package Installer"
 msgstr "Installador de paquets"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:278
-msgid "_Details"
-msgstr "_Detalhs"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:286
+#: ../crates/fdebm-gtk/src/gtk_app.rs:299
 msgid "Package:"
 msgstr "Paquet :"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:286
+#: ../crates/fdebm-gtk/src/gtk_app.rs:299
 msgid "Status:"
 msgstr "Estat :"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:305
-#: ../crates/gdebi-gtk/src/gtk_app.rs:839
+#: ../crates/fdebm-gtk/src/gtk_app.rs:310
+#: ../crates/fdebm-gtk/src/gtk_app.rs:865
 msgid "_Install Package"
 msgstr "_Installar lo paquet"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:306
+#: ../crates/fdebm-gtk/src/gtk_app.rs:311
 msgid "_Remove Package"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:334
+#: ../crates/fdebm-gtk/src/gtk_app.rs:339
 msgid "Description"
 msgstr "Descripcion"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:350
-#, fuzzy
-#| msgid "<b>Version:</b>"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:355
 msgid "Version:"
-msgstr "<b>Version :</b>"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:351
-#, fuzzy
-#| msgid "<b>Maintainer:</b>"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:356
 msgid "Maintainer:"
-msgstr "<b>Responsable :</b>"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:352
-#, fuzzy
-#| msgid "<b>Priority:</b>"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:357
 msgid "Priority:"
-msgstr "<b>Prioritat :</b>"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:353
-#, fuzzy
-#| msgid "Description:"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:358
 msgid "Section:"
-msgstr "Descripcion :"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:354
+#: ../crates/fdebm-gtk/src/gtk_app.rs:359
 msgid "Size:"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:365
+#: ../crates/fdebm-gtk/src/gtk_app.rs:370
 msgid "Details"
 msgstr "Detalhs"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:393
+#: ../crates/fdebm-gtk/src/gtk_app.rs:398
 msgid "Included files"
 msgstr "Fichièrs incluses"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:403
+#: ../crates/fdebm-gtk/src/gtk_app.rs:408
 msgid "Lintian output"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:505
+#: ../crates/fdebm-gtk/src/gtk_app.rs:504
 msgid "Selection is a directory"
 msgstr "La seleccion es un repertòri"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:522
+#: ../crates/fdebm-gtk/src/gtk_app.rs:527
 msgid "File content can not be extracted"
 msgstr "Lo contengut del fichièr pòt pas èsser extrach"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:523
-#, fuzzy, rust-format
-#| msgid "Error reading file content '%s'"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:528
+#, rust-format
 msgid "Error reading file content '{0}'"
-msgstr "Error al moment de la lectura del contengut del fichièr « %s »"
+msgstr "Error al moment de la lectura del contengut del fichièr « {0} »"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:534
+#: ../crates/fdebm-gtk/src/gtk_app.rs:539
 msgid "Package control data"
 msgstr "Donadas de contraròtle del paquet"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:540
+#: ../crates/fdebm-gtk/src/gtk_app.rs:545
 msgid "Upstream data"
 msgstr "Donadas amont"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:552
+#: ../crates/fdebm-gtk/src/gtk_app.rs:556
 msgid "Error reading filelist"
 msgstr "Error al moment de la lectura de la lista de fichièrs"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:563
+#: ../crates/fdebm-gtk/src/gtk_app.rs:567
 msgid ""
 "No lintian available.\n"
 "Please install using sudo apt-get install lintian"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:567
+#: ../crates/fdebm-gtk/src/gtk_app.rs:571
 msgid "Running lintian..."
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:586
+#: ../crates/fdebm-gtk/src/gtk_app.rs:589
 #, rust-format
 msgid "Failed to run lintian: {0}"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:631
+#: ../crates/fdebm-gtk/src/gtk_app.rs:637
 #, rust-format
 msgid "Lintian finished with exit status {0}"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:643
+#: ../crates/fdebm-gtk/src/gtk_app.rs:652
 msgid "_Open…"
 msgstr "_Dobrir..."
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:644
+#: ../crates/fdebm-gtk/src/gtk_app.rs:653
 msgid "_Refresh"
 msgstr "_Actualizar"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:645
+#: ../crates/fdebm-gtk/src/gtk_app.rs:654
 msgid "_Quit"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:647
+#: ../crates/fdebm-gtk/src/gtk_app.rs:656
 msgid "_About"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:649
+#: ../crates/fdebm-gtk/src/gtk_app.rs:658
 msgid "_File"
 msgstr "_Fichièr"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:650
+#: ../crates/fdebm-gtk/src/gtk_app.rs:659
 msgid "_Help"
 msgstr "_Ajuda"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:659
-#, fuzzy
-#| msgid "'%s' is not a Debian package"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:668
 msgid "Open Debian package"
-msgstr "« %s » es pas un paquet Debian"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:697
+#: ../crates/fdebm-gtk/src/gtk_app.rs:708
 msgid "simple tool to view and install deb files"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:718
+#: ../crates/fdebm-gtk/src/gtk_app.rs:731
 msgid "Loading..."
 msgstr "Cargament en cors..."
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:731
-#, fuzzy, rust-format
-#| msgid "gdebi error, file not found: %s\n"
-msgid "gdebi error, file not found: {0}"
-msgstr "error gdebi, fichièr introbable : %s\n"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:745
+#, rust-format
+msgid "fdebm error, file not found: {0}"
+msgstr "error fdebm, fichièr introbable : {0}"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:745
-#, fuzzy
-#| msgid "Failed to open the software package\n"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:760
 msgid "Could not open the software package"
-msgstr "Fracàs de la dobertura del paquet logicial\n"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:768
-msgid "Error opening the cache"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:780
-#, fuzzy
-#| msgid "Dependency problems"
-msgid "Dependency check failed"
-msgstr "Problèmas de dependéncias"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:778
+msgid "Checking dependencies..."
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:792
+#: ../crates/fdebm-gtk/src/gtk_app.rs:803
+msgid "Dependency check failed"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:807
+#: ../crates/fdebm-gtk/src/gtk_app.rs:819
 #, rust-format
 msgid "<span foreground=\"red\" weight=\"bold\">Error: {0}</span>"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:806
-#, fuzzy, rust-format
-#| msgid "Requires the <b>removal</b> of %s packages\n"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:834
+#, rust-format
 msgid "Requires the <b>removal</b> of {0} package"
 msgid_plural "Requires the <b>removal</b> of {0} packages"
-msgstr[0] "Necessita la <b>supression</b> de %s paquets\n"
-msgstr[1] "Necessita la <b>supression</b> de %s paquets\n"
+msgstr[0] ""
+msgstr[1] ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:817
-#, fuzzy, rust-format
-#| msgid "Requires the installation of %s packages"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:845
+#, rust-format
 msgid "Requires the installation of {0} package"
 msgid_plural "Requires the installation of {0} packages"
-msgstr[0] "Necessita l'installacion de %s paquets"
-msgstr[1] "Necessita l'installacion de %s paquets"
+msgstr[0] ""
+msgstr[1] ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:832
+#: ../crates/fdebm-gtk/src/gtk_app.rs:860
 msgid "Same version is already installed"
 msgstr "La meteissa version es ja installada"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:834
+#: ../crates/fdebm-gtk/src/gtk_app.rs:861
 msgid "_Reinstall Package"
 msgstr "_Reïnstallar lo paquet"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:846
+#: ../crates/fdebm-gtk/src/gtk_app.rs:871
 msgid "All dependencies are satisfied"
 msgstr "Totas las dependéncias son satisfachas"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:896
+#: ../crates/fdebm-gtk/src/gtk_app.rs:935
 msgid "Applying changes"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:899
+#: ../crates/fdebm-gtk/src/gtk_app.rs:938
 msgid "Close"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:914
+#: ../crates/fdebm-gtk/src/gtk_app.rs:953
 msgid "Terminal"
 msgstr "Terminal"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:917
+#: ../crates/fdebm-gtk/src/gtk_app.rs:956
 msgid "Automatically close after the changes have been successfully applied"
 msgstr ""
 "Tampar automaticament quand las modificacions seràn aplicadas amb succès"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1007
-#, fuzzy
-#| msgid "gdebi"
-msgid "gdebi error"
-msgstr "gdebi"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1049
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1135
+msgid "fdebm error"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1035
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1196
+msgid "Modified configuration files"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1198
+msgid ""
+"The following configuration files have been modified locally and the new "
+"package ships different versions:"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1202
+msgid "Keep _my version"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1203
+msgid "Use the package's _new version"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1204
+msgid "_Cancel"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1235
 msgid "Install unauthenticated software?"
 msgstr "Installar los logicials pas autentificats ?"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1037
-#, fuzzy, rust-format
-#| msgid "The following packages are UNAUTHENTICATED: "
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1237
+#, rust-format
 msgid "The following packages are UNAUTHENTICATED: {0}"
-msgstr "Los paquets seguents SON PAS AUTENTIFICATS : "
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1047
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1050
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1259
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1263
 msgid "Installing package file..."
 msgstr "Installacion del paquet…"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1051
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1264
 msgid "Installation complete"
 msgstr "Installacion acabada"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1052
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1265
 msgid "Failed to install package file"
 msgstr "Fracàs de l'installacion del paquet"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1074
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1079
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1282
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1286
 msgid "Removing package..."
 msgstr "Supression del paquet en cors..."
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1080
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1287
 msgid "Removal complete"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1081
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1288
 msgid "Failed to remove package"
 msgstr "Impossible de suprimir lo paquet"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1122
-msgid "You need to grant administrative rights to remove software"
-msgstr ""
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1123
-msgid "It is a possible risk to remove packages."
-msgstr ""
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1127
-msgid "You need to grant administrative rights to install software"
-msgstr ""
-"Vos cal dispausar de dreches d'administrator per installar de logicials"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1129
-#, fuzzy
-#| msgid ""
-#| "\n"
-#| "It is a possible security risk to install packages files manually.\n"
-#| "Install software from trustworthy software distributors only.\n"
-msgid ""
-"It is a possible security risk to install packages files manually.\n"
-"Install software from trustworthy software distributors only."
-msgstr ""
-"\n"
-"Installar de paquets manualament presenta un risc d'un punt de vista de la "
-"seguretat.\n"
-"Installetz pas que de logicials que provenon de distributors dignes de "
-"fisança.\n"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1147
-#, fuzzy
-#| msgid "Failed to open the software package\n"
-msgid "Failed to locate the program executable"
-msgstr "Fracàs de la dobertura del paquet logicial\n"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1171
-#, fuzzy
-#| msgid "Failed to install package file"
-msgid "Failed to start pkexec"
-msgstr "Fracàs de l'installacion del paquet"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1184
-#, fuzzy, rust-format
-#| msgid "<b>To be removed: %s</b>"
-msgid "<b>To be removed: {0}</b>"
-msgstr "<b>De desinstallar : %s</b>"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1188
-#, fuzzy, rust-format
-#| msgid "To be installed: %s"
-msgid "To be installed: {0}"
-msgstr "D'installar : %s"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1196
-#, fuzzy
-#| msgid "Media Change"
-msgid "Changes"
-msgstr "Cambiament de mèdia"
-
-#, c-format
-#~ msgid ""
-#~ "usage: %prog [options] filename\n"
-#~ "For a graphical version run gdebi-gtk\n"
-#~ msgstr ""
-#~ "utilizacion : %prog [opcions] nom-del-fichièr\n"
-#~ "Per una version grafica, utilizar gdebi-gtk\n"
-
-#~ msgid "Run non-interactive (dangerous!)"
-#~ msgstr "Aviar d'un biais pas interactiu (dangierós !)"
-
-#~ msgid "Do not show progress information"
-#~ msgstr "Afichar pas l'estat d'avançament"
-
-#~ msgid "Simulate only and print a apt-get install compatible line to stderr"
-#~ msgstr ""
-#~ "Simular unicament e afichar la sortida coma o fariá una comanda « apt-get "
-#~ "install » dins stderr"
-
-#~ msgid "Use alternative root dir"
-#~ msgstr "Utilizar un repertòri raiç alternatiu"
-
-#~ msgid "Need to be root to install packages"
-#~ msgstr "Vos cal èsser superutilizaire (root) per poder installar de paquets"
-
-#~ msgid "Do you want to install the software package? [y/N]:"
-#~ msgstr "Volètz installar lo paquet logicial ? [O/N] :"
-
-#~ msgid "Auto close when the install is finished"
-#~ msgstr "Tampadura automatica en fin d'installacion"
-
-#~ msgid "Use alternative datadir"
-#~ msgstr "Utilizar un dorsièr de donadas alternatiu"
-
-#~ msgid "Remove package"
-#~ msgstr "Suprimir un paquet"
-
-#~ msgid "Software index is broken"
-#~ msgstr "La lista dels logicials es corrompuda"
-
-#~ msgid ""
-#~ "This is a major failure of your software management system. Please check "
-#~ "for broken packages with synaptic, check the file permissions and "
-#~ "correctness of the file '/etc/apt/sources.list' and reload the software "
-#~ "information with: 'sudo apt-get update' and 'sudo apt-get install -f'."
-#~ msgstr ""
-#~ "S'agís d'una error màger de vòstre sistèma de gestion de logicials. "
-#~ "Verificat los paquets copats amb Synaptic, verificatz los dreches d'accès "
-#~ "e l'exactitud del fichièr « /etc/apt/sources.list », puèi recargatz la "
-#~ "lista dels paquets disponibles o installats en executant las comandas : "
-#~ "« sudo apt-get update » e « sudo apt-get install -f »."
-
-#~ msgid "Install and view software packages"
-#~ msgstr "Installar e far la lista dels paquets logicials"
-
-#~ msgid "GPL, see /usr/share/common-licenses/GPL"
-#~ msgstr "GPL, vejatz /usr/share/common-licences/GPL"
-
-#~ msgid "<b>To install the following changes are required:</b>"
-#~ msgstr "<b>Per installar, las modificacions seguentas son necessàrias :</b>"
-
-#~ msgid "_Edit"
-#~ msgstr "_Editar"
-
-#~ msgid "<b><big>   </big></b>"
-#~ msgstr "<b><big>   </big></b>"
-
-#~ msgid "_Download Package"
-#~ msgstr "_Telecargar un paquet"
-
-#~ msgid "<b>Section:</b>"
-#~ msgstr "<b>Seccion :</b>"
-
-#~ msgid "<b>Size:</b>"
-#~ msgstr "<b>Talha :</b>"
-
-#~ msgid "  "
-#~ msgstr "  "
-
-#~ msgid "GDebi Package Installer"
-#~ msgstr "Installador de paquets GDebi"
-
-#, python-format
-#~ msgid "%s is not available"
-#~ msgstr "%s es pas disponible"
-
-#~ msgid "Copy selected text"
-#~ msgstr "Copiar lo tèxte seleccionat"
-
-#~ msgid "Can not download as root"
-#~ msgstr "Impossible de telecargar en tant que superutilizaire"
-
-#~ msgid ""
-#~ "Remote packages can not be downloaded when running as root. Please try "
-#~ "again as a normal user."
-#~ msgstr ""
-#~ "Los paquets distants pòdon pas èsser telecargats al moment d'una "
-#~ "execucion en tant que superutilizaire. Recomençatz en tant qu'utilizaire "
-#~ "normal."
-
-#~ msgid "Downloading package"
-#~ msgstr "Telecargament de paquet"
-
-#~ msgid "Download failed"
-#~ msgstr "Fracàs del telecargament"
-
-#, python-format
-#~ msgid "Downloading the package failed: file '%s' '%s'"
-#~ msgstr "Fracàs de telecargament del paquet : fichièr « %s » « %s »"
-
-#, python-format
-#~ msgid "Package Installer - %s"
-#~ msgstr "Installador de paquets - %s"
-
-#~ msgid "Error: "
-#~ msgstr "Error : "
-
-#~ msgid "Error: no longer provides "
-#~ msgstr "Error : es pas mai provesit "
-
-#~ msgid "Open Software Package"
-#~ msgstr "Dobrir lo paquet logicial"
-
-#~ msgid "Software packages"
-#~ msgstr "Paquets logicials"
-
-#~ msgid "File not found"
-#~ msgstr "Impossible de trobar lo fichièr"
-
-#~ msgid "You tried to install a file that does not (or no longer) exist. "
-#~ msgstr "Avètz ensajat d'installar un fichièr qu'existís pas (o pas pus). "
-
-#~ msgid ""
-#~ "Malicious software can damage your data and take control of your system.\n"
-#~ "\n"
-#~ "The packages below are not authenticated and could therefore be of "
-#~ "malicious nature."
-#~ msgstr ""
-#~ "De logicials malvolents pòdon corrompre vòstras donadas e prene lo "
-#~ "contraròtle de vòstre ordenador.\n"
-#~ "\n"
-#~ "Los paquets çaijós son pas autentificats e poirián conténer d'aplicacions "
-#~ "malvolentas."
-
-#~ msgid "Could not download all required files"
-#~ msgstr "L'ensemble dels fichièrs requesit a pas pogut èsser telecargat"
-
-#~ msgid "Please check your internet connection or installation medium."
-#~ msgstr ""
-#~ "Verificatz l'estat de vòstra connexion Internet o de vòtre mèdia "
-#~ "d'installacion."
-
-#~ msgid "Could not install all dependencies"
-#~ msgstr "L'ensemble de las dependéncias a pas pogut èsser installat"
-
-#~ msgid ""
-#~ "Usually this is related to an error of the software distributor. See the "
-#~ "terminal window for more details."
-#~ msgstr ""
-#~ "Generalament, aquò's ligat a una error de la part del distributor del "
-#~ "logicial. Consultatz la fenèstra del terminal per mai d'entresenhas."
-
-#, python-format
-#~ msgid "Installing %s"
-#~ msgstr "Installacion de %s"
-
-#, python-format
-#~ msgid "Removing %s"
-#~ msgstr "Supression de %s"
-
-#~ msgid "Installation finished"
-#~ msgstr "Installacion acabada"
-
-#, python-format
-#~ msgid "Package '%s' was installed"
-#~ msgstr "Lo paquet « %s » es estat installat"
-
-#~ msgid "To fix this run 'sudo apt-get install -f' in a terminal window."
-#~ msgstr ""
-#~ "Per resòlvre aqueste problèma, executatz « sudo apt-get install -f » dins "
-#~ "un terminal."
-
-#, python-format
-#~ msgid "Installing '%s'..."
-#~ msgstr "Installation de « %s »..."
-
-#~ msgid "Installing dependencies..."
-#~ msgstr "Installacion de las dependéncias..."
-
-#~ msgid "Downloading additional package files..."
-#~ msgstr "Telecargament dels paquets suplementaris..."
-
-#, python-format
-#~ msgid "File %s of %s at %sB/s"
-#~ msgstr "Fichièr %s sus %s a %s octets/s"
-
-#, python-format
-#~ msgid "File %s of %s"
-#~ msgstr "Fichièr %s sus %s"
-
-#, python-format
-#~ msgid "Please insert '%s' into the drive '%s'"
-#~ msgstr "Inserissètz « %s » dins lo lector « %s »"
-
-#~ msgid "Configuration items must be specified with a =<value>\n"
-#~ msgstr ""
-#~ "Los elements de configuracion devon èsser especificats amb un =<valeur>\n"
-
-#, python-format
-#~ msgid "Couldn't set APT option %s to %s\n"
-#~ msgstr "Impossible de definir l'opcion APT %s a %s\n"
-
-#, python-format
-#~ msgid "Unknown package type '%s', exiting\n"
-#~ msgstr "Tipe de paquet « %s » desconegut, arrèst\n"
-
-#~ msgid ""
-#~ "The package might be corrupted or you are not allowed to open the file. "
-#~ "Check the permissions of the file.\n"
-#~ msgstr ""
-#~ "Benlèu qu'aqueste paquet es corromput, o qu'avètz pas las permissions per "
-#~ "i accedir. Verificatz las permissions del fichièr.\n"
-
-#~ msgid "This package is uninstallable\n"
-#~ msgstr "Aqueste paquet pòt pas èsser installat\n"
-
-#~ msgid "No description is available"
-#~ msgstr "Cap de descripcion es pas disponibla"
-
-#~ msgid "Requires the REMOVAL of the following packages: "
-#~ msgstr "Necessita la DESINSTALLACION dels paquets seguents : "
-
-#~ msgid "Requires the installation of the following packages: "
-#~ msgstr "Necessita l'installacion dels paquets seguents : "
-
-#~ msgid "Included Files"
-#~ msgstr "Fichièrs incluses"
-
-#~ msgid "&Install Package"
-#~ msgstr "&Installar lo paquet"
-
-#~ msgid "&Download Package"
-#~ msgstr "&Telecargar un paquet"
-
-#~ msgid "The package file does not exist"
-#~ msgstr "Aqueste paquet existís pas"
-
-#~ msgid ""
-#~ "A nonexistent file has been selected for installation. Please select an "
-#~ "existing .deb package file."
-#~ msgstr ""
-#~ "L'installacion d'un fichièr inexistent es estada demandada. Seleccionatz "
-#~ "un paquet .deb qu'existís."
-
-#~ msgid "&Reinstall Package"
-#~ msgstr "&Reïnstallar lo paquet"
-
-#~ msgid "Re&install Package"
-#~ msgstr "Re&ïnstallar lo paquet"
-
-#, python-format
-#~ msgid "To be removed: %s"
-#~ msgstr "De desinstallar : %s"
-
-#~ msgid "Broken dependencies"
-#~ msgstr "Dependéncias copadas"
-
-#~ msgid ""
-#~ "Your system has broken dependencies. This application can not continue "
-#~ "until this is fixed. To fix it run 'gksudo synaptic' or 'sudo apt-get "
-#~ "install -f' in a terminal window."
-#~ msgstr ""
-#~ "Vòstre sistèma a de dependéncias copadas. Aquesta aplicacion pòt pas "
-#~ "contunhar tant qu'aqueste problèma es pas resolgut. Per o remediar, "
-#~ "aviatz « gksudo synaptic » o « sudo apt-get install -f » dins un terminal."
-
-#, python-format
-#~ msgid ""
-#~ "The MIME type of this file is '%s' and can not be installed on this "
-#~ "system."
-#~ msgstr ""
-#~ "Lo tipe MIME d'aqueste fichièr es « %s » e pòt pas èsser installat sus "
-#~ "aqueste sistèma."
-
-#, python-format
-#~ msgid "Could not open '%s'"
-#~ msgstr "Impossible de dobrir « %s »"
-
-#~ msgid ""
-#~ "The package might be corrupted or you are not allowed to open the file. "
-#~ "Check the permissions of the file."
-#~ msgstr ""
-#~ "Benlèu qu'aqueste paquet es corromput, o qu'avètz pas las permissions per "
-#~ "i accedir. Verificatz las permissions del fichièr."
-
-#~ msgid "Same version is available in a software channel"
-#~ msgstr "La meteissa version es disponibla dins un depaus"
-
-#~ msgid ""
-#~ "You are recommended to install the software from the channel instead."
-#~ msgstr ""
-#~ "Vos es conselhat d'installar lo logicial a partir del depaus puslèu que "
-#~ "manualament."
-
-#~ msgid "An older version is available in a software channel"
-#~ msgstr "Una version mai anciana es disponibla dins un depaus"
-
-#~ msgid ""
-#~ "Generally you are recommended to install the version from the software "
-#~ "channel, since it is usually better supported."
-#~ msgstr ""
-#~ "D'un biais general, vos es conselhat d'installar la version del logicial "
-#~ "disponible dins lo depaus, de costuma, aquela es melhor presa en carga."
-
-#~ msgid "A later version is available in a software channel"
-#~ msgstr "Una version mai recenta es disponibla dins un depaus"
-
-#~ msgid ""
-#~ "You are strongly advised to install the version from the software "
-#~ "channel, since it is usually better supported."
-#~ msgstr ""
-#~ "Vos es fòrtament recomandat d'installar la version del logicial "
-#~ "disponibla dins lo depaus, de costuma, aquela es melhor presa en carga."
-
-#~ msgid "Only one software management tool is allowed to run at the same time"
-#~ msgstr "Podètz pas utilizar qu'un sol gestionari de logicials a l'encòp"
-
-#~ msgid ""
-#~ "Please close the other application e.g. 'Update Manager', 'aptitude' or "
-#~ "'Synaptic' first."
-#~ msgstr ""
-#~ "D'en primièr, tampatz las autras aplicacions talas coma lo « Gestionari "
-#~ "de mesas a jorn », « Gestionari de paquets Aptitude » o « Gestionari de "
-#~ "paquets Synaptic »."
-
-#~ msgid "translator-credits"
-#~ msgstr ""
-#~ "Launchpad Contributions:\n"
-#~ "  Cédric VALMARY (Tot en òc) https://launchpad.net/~cvalmary\n"
-#~ "  Yannig MARCHEGAY (Kokoyaya) https://launchpad.net/~yannick-marchegay"
-
-#~ msgid "Software package"
-#~ msgstr "Paquet logicial"
-
-#~ msgid "<b>"
-#~ msgstr "<b>"

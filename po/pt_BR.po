@@ -1,887 +1,377 @@
-# Portuguese (Brazil) translation for gdebi
-# Copyright (c) (c) 2006 Canonical Ltd, and Rosetta Contributors 2006
-# This file is distributed under the same license as the gdebi package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2006.
+# Portuguese (Brazil) translation for fdebm.
+# Copyright (C) fdebm contributors
+# Distributed under the terms of the GNU General Public License v3.0 or later.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: gdebi\n"
+"Project-Id-Version: fdebm 0.1.1\n"
 "Report-Msgid-Bugs-To: sebastian.heinlein@web.de\n"
-"POT-Creation-Date: 2026-10-22 14:45+0800\n"
+"POT-Creation-Date: 2026-10-22 23:27+0800\n"
 "PO-Revision-Date: 2013-10-30 17:04+0000\n"
 "Last-Translator: Rodrigo Zimmermann <bilufe@yahoo.com.br>\n"
 "Language-Team: Portuguese (Brazil) <pt_BR@li.org>\n"
-"Language: \n"
+"Language: pt_BR\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2014-03-12 19:04+0000\n"
-"X-Generator: Launchpad (build 16963)\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: ../crates/gdebi-core/src/depcheck.rs:170
-msgid "No Architecture field in the package"
-msgstr "Sem arquitetura no campo do pacote"
-
-#: ../crates/gdebi-core/src/depcheck.rs:180
-#, rust-format
-msgid ""
-"Wrong architecture '{0}' -- Run dpkg --add-architecture to add it and update "
-"afterwards"
-msgstr ""
-
-#: ../crates/gdebi-core/src/depcheck.rs:192
-msgid "A later version is already installed"
-msgstr "Uma versão mais nova já está instalada"
-
-#: ../crates/gdebi-core/src/depcheck.rs:234
-#, fuzzy, rust-format
-#| msgid "Dependency is not satisfiable: %s\n"
-msgid "Dependency is not satisfiable: {0}\n"
-msgstr "Dependência não satisfeita: %s\n"
-
-#: ../crates/gdebi-core/src/depcheck.rs:237
-msgid "Failed to satisfy all dependencies (broken cache)"
-msgstr "Falhou ao instalar as dependências (cache quebrado)"
-
-#: ../crates/gdebi-core/src/depcheck.rs:336
-#, fuzzy, rust-format
-#| msgid "Conflicts with the installed package '%s'\n"
-msgid "Conflicts with the installed package '{0}'"
-msgstr "Conflitos com pacotes instalados '%s'\n"
-
-#: ../crates/gdebi-core/src/depcheck.rs:359
-#, fuzzy, rust-format
-#| msgid "Breaks exisiting package '%s' dependency %s (%s %s)\n"
-msgid "Breaks existing package '{0}' dependency {1} ({2} {3})"
-msgstr "Pacote existente quebrado '%s' que depende de %s (%s %s)\n"
-
-#: ../crates/gdebi-core/src/depcheck.rs:381
-#, fuzzy, rust-format
-#| msgid "Breaks exisiting package '%s' conflict: %s (%s %s)\n"
-msgid "Breaks existing package '{0}' conflict: {1} ({2} {3})"
-msgstr "Pacote existente quebra '%s' que conflita com %s (%s %s)\n"
-
-#: ../crates/gdebi-core/src/depcheck.rs:388
-#, rust-format
-msgid ""
-"Breaks existing package '{0}' that conflict: '{1}'. But the '{2}' provides "
-"it via: '{3}'"
-msgstr ""
-
-#: ../crates/gdebi-core/src/error.rs:31
+#: ../crates/fdebm-core/src/error.rs:40
 #, rust-format
 msgid "cannot open {0}: {1}"
 msgstr ""
 
-#: ../crates/gdebi-core/src/error.rs:33
-#, fuzzy, rust-format
-#| msgid "'%s' is not a Debian package"
+#: ../crates/fdebm-core/src/error.rs:44
+#, rust-format
 msgid "{0} is not a Debian package"
-msgstr "'%s' não é um pacote Debian"
+msgstr ""
 
-#: ../crates/gdebi-core/src/error.rs:34
+#: ../crates/fdebm-core/src/error.rs:47
 msgid "control file not found in package"
 msgstr ""
 
-#: ../crates/gdebi-core/src/error.rs:36
+#: ../crates/fdebm-core/src/error.rs:49
 #, rust-format
-msgid "{0} compressed control.tar is not supported yet (only gzip/plain)"
+msgid "cannot decompress control archive: {0}"
 msgstr ""
 
-#: ../crates/gdebi-core/src/error.rs:39
+#: ../crates/fdebm-core/src/error.rs:51
 #, rust-format
 msgid "missing control field: {0}"
 msgstr ""
 
-#: ../crates/gdebi-core/src/flow.rs:53
+#: ../crates/fdebm-core/src/error.rs:55
+#, rust-format
+msgid "subprocess {0} failed: {1}"
+msgstr ""
+
+#: ../crates/fdebm-core/src/error.rs:58
+#, rust-format
+msgid "cannot decompress repository index {0}: {1}"
+msgstr ""
+
+#: ../crates/fdebm-core/src/error.rs:61
+#, rust-format
+msgid "cannot download {0}: {1}"
+msgstr ""
+
+#: ../crates/fdebm-core/src/error.rs:62 ../crates/fdebm-gtk/src/gtk_app.rs:1161
+msgid "operation cancelled"
+msgstr ""
+
+#: ../crates/fdebm-core/src/flow.rs:53
 #, rust-format
 msgid "Binary file ({0}), {1} bytes"
 msgstr ""
 
-#: ../crates/gdebi-core/src/flow.rs:54
+#: ../crates/fdebm-core/src/flow.rs:54
 #, rust-format
 msgid "Binary file, {0} bytes"
 msgstr ""
 
-#: ../crates/gdebi-core/src/install.rs:47
-#, fuzzy
-#| msgid "Error during install: '%s'"
+#: ../crates/fdebm-core/src/install.rs:119
+#: ../crates/fdebm-core/src/install.rs:141
+#: ../crates/fdebm-core/src/install.rs:160
 msgid "Error during install"
-msgstr "Erro durante a instalação: '%s'"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:60
+#: ../crates/fdebm-core/src/solver.rs:326
+#, rust-format
+msgid "Wrong architecture '{0}'"
+msgstr "Arquitetura errada '{0}'"
+
+#: ../crates/fdebm-core/src/solver.rs:341
+msgid "A later version is already installed"
+msgstr "Uma versão mais nova já está instalada"
+
+#: ../crates/fdebm-core/src/solver.rs:567
+msgid ""
+"Failed to satisfy all dependencies (conflicting requests or missing packages)"
+msgstr ""
+
+#: ../crates/fdebm-daemon/src/txn.rs:371 ../crates/fdebm-daemon/src/txn.rs:428
+#, rust-format
+msgid "dpkg exited with status {0}"
+msgstr ""
+
+#: ../crates/fdebm-daemon/src/txn.rs:463
+#, rust-format
+msgid "Fetching file {0} of {1}"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:55
 msgid "simple tool to view and install deb files - GTK frontend"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:63
+#: ../crates/fdebm-gtk/src/gtk_app.rs:58
 msgid "Set an APT configuration option"
 msgstr "Definir uma opção de configuração APT"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:65
-#, fuzzy
-#| msgid "'%s' is not a Debian package"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:60
 msgid "Debian package to open"
-msgstr "'%s' não é um pacote Debian"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:239
+#: ../crates/fdebm-gtk/src/gtk_app.rs:265
 msgid "Package Installer"
 msgstr "Instalador de Pacotes"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:278
-msgid "_Details"
-msgstr "_Detalhes"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:286
+#: ../crates/fdebm-gtk/src/gtk_app.rs:299
 msgid "Package:"
 msgstr "Pacote:"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:286
+#: ../crates/fdebm-gtk/src/gtk_app.rs:299
 msgid "Status:"
 msgstr "Status:"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:305
-#: ../crates/gdebi-gtk/src/gtk_app.rs:839
+#: ../crates/fdebm-gtk/src/gtk_app.rs:310
+#: ../crates/fdebm-gtk/src/gtk_app.rs:865
 msgid "_Install Package"
 msgstr "_Instalar Pacote"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:306
+#: ../crates/fdebm-gtk/src/gtk_app.rs:311
 msgid "_Remove Package"
 msgstr "_Remover Pacote"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:334
+#: ../crates/fdebm-gtk/src/gtk_app.rs:339
 msgid "Description"
 msgstr "Descrição"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:350
-#, fuzzy
-#| msgid "<b>Version:</b>"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:355
 msgid "Version:"
-msgstr "<b>Versão:</b>"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:351
-#, fuzzy
-#| msgid "<b>Maintainer:</b>"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:356
 msgid "Maintainer:"
-msgstr "<b>Mantenedor:</b>"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:352
-#, fuzzy
-#| msgid "<b>Priority:</b>"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:357
 msgid "Priority:"
-msgstr "<b>Prioridade:</b>"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:353
-#, fuzzy
-#| msgid "Description:"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:358
 msgid "Section:"
-msgstr "Descrição:"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:354
+#: ../crates/fdebm-gtk/src/gtk_app.rs:359
 msgid "Size:"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:365
+#: ../crates/fdebm-gtk/src/gtk_app.rs:370
 msgid "Details"
 msgstr "Detalhes"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:393
+#: ../crates/fdebm-gtk/src/gtk_app.rs:398
 msgid "Included files"
 msgstr "Arquivos incluídos"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:403
+#: ../crates/fdebm-gtk/src/gtk_app.rs:408
 msgid "Lintian output"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:505
+#: ../crates/fdebm-gtk/src/gtk_app.rs:504
 msgid "Selection is a directory"
 msgstr "A seleção é um diretório"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:522
+#: ../crates/fdebm-gtk/src/gtk_app.rs:527
 msgid "File content can not be extracted"
 msgstr "Conteúdo do arquivo não pode ser extraído"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:523
-#, fuzzy, rust-format
-#| msgid "Error reading file content '%s'"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:528
+#, rust-format
 msgid "Error reading file content '{0}'"
-msgstr "Erro ao ler conteúdo do arquivo '%s'"
+msgstr "Erro ao ler conteúdo do arquivo '{0}'"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:534
+#: ../crates/fdebm-gtk/src/gtk_app.rs:539
 msgid "Package control data"
 msgstr "Dados do controle de pacotes"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:540
+#: ../crates/fdebm-gtk/src/gtk_app.rs:545
 msgid "Upstream data"
 msgstr "Dados de upstream"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:552
+#: ../crates/fdebm-gtk/src/gtk_app.rs:556
 msgid "Error reading filelist"
 msgstr "Erro ao ler lista de arquivo"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:563
+#: ../crates/fdebm-gtk/src/gtk_app.rs:567
 msgid ""
 "No lintian available.\n"
 "Please install using sudo apt-get install lintian"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:567
+#: ../crates/fdebm-gtk/src/gtk_app.rs:571
 msgid "Running lintian..."
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:586
+#: ../crates/fdebm-gtk/src/gtk_app.rs:589
 #, rust-format
 msgid "Failed to run lintian: {0}"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:631
+#: ../crates/fdebm-gtk/src/gtk_app.rs:637
 #, rust-format
 msgid "Lintian finished with exit status {0}"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:643
+#: ../crates/fdebm-gtk/src/gtk_app.rs:652
 msgid "_Open…"
 msgstr "_Abrir…"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:644
+#: ../crates/fdebm-gtk/src/gtk_app.rs:653
 msgid "_Refresh"
 msgstr "Atualiza_r"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:645
+#: ../crates/fdebm-gtk/src/gtk_app.rs:654
 msgid "_Quit"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:647
+#: ../crates/fdebm-gtk/src/gtk_app.rs:656
 msgid "_About"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:649
+#: ../crates/fdebm-gtk/src/gtk_app.rs:658
 msgid "_File"
 msgstr "_Arquivo"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:650
+#: ../crates/fdebm-gtk/src/gtk_app.rs:659
 msgid "_Help"
 msgstr "A_juda"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:659
-#, fuzzy
-#| msgid "'%s' is not a Debian package"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:668
 msgid "Open Debian package"
-msgstr "'%s' não é um pacote Debian"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:697
+#: ../crates/fdebm-gtk/src/gtk_app.rs:708
 msgid "simple tool to view and install deb files"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:718
+#: ../crates/fdebm-gtk/src/gtk_app.rs:731
 msgid "Loading..."
 msgstr "Carregando..."
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:731
-#, fuzzy, rust-format
-#| msgid "gdebi error, file not found: %s\n"
-msgid "gdebi error, file not found: {0}"
-msgstr "gdebi erro, arquivo não encontrado: %s\n"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:745
+#, rust-format
+msgid "fdebm error, file not found: {0}"
+msgstr "fdebm erro, arquivo não encontrado: {0}"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:745
-#, fuzzy
-#| msgid "Failed to open the software package\n"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:760
 msgid "Could not open the software package"
-msgstr "Falha ao abrir o pacote do software\n"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:768
-msgid "Error opening the cache"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:780
-#, fuzzy
-#| msgid "Dependency problems"
-msgid "Dependency check failed"
-msgstr "Problemas de dependências"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:778
+msgid "Checking dependencies..."
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:792
+#: ../crates/fdebm-gtk/src/gtk_app.rs:803
+msgid "Dependency check failed"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:807
+#: ../crates/fdebm-gtk/src/gtk_app.rs:819
 #, rust-format
 msgid "<span foreground=\"red\" weight=\"bold\">Error: {0}</span>"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:806
-#, fuzzy, rust-format
-#| msgid "Requires the <b>removal</b> of %s packages\n"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:834
+#, rust-format
 msgid "Requires the <b>removal</b> of {0} package"
 msgid_plural "Requires the <b>removal</b> of {0} packages"
-msgstr[0] "Requer a <b>remoção</b> de %s pacotes\n"
-msgstr[1] "Requer a <b>remoção</b> de %s pacotes\n"
+msgstr[0] ""
+msgstr[1] ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:817
-#, fuzzy, rust-format
-#| msgid "Requires the installation of %s packages"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:845
+#, rust-format
 msgid "Requires the installation of {0} package"
 msgid_plural "Requires the installation of {0} packages"
-msgstr[0] "Requer a instalação de %s pacotes"
-msgstr[1] "Requer a instalação de %s pacotes"
+msgstr[0] ""
+msgstr[1] ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:832
+#: ../crates/fdebm-gtk/src/gtk_app.rs:860
 msgid "Same version is already installed"
 msgstr "A mesma versão já está instalada"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:834
+#: ../crates/fdebm-gtk/src/gtk_app.rs:861
 msgid "_Reinstall Package"
 msgstr "_Reinstalar Pacote"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:846
+#: ../crates/fdebm-gtk/src/gtk_app.rs:871
 msgid "All dependencies are satisfied"
 msgstr "Todas as dependências estão satisfeitas"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:896
+#: ../crates/fdebm-gtk/src/gtk_app.rs:935
 msgid "Applying changes"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:899
+#: ../crates/fdebm-gtk/src/gtk_app.rs:938
 msgid "Close"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:914
+#: ../crates/fdebm-gtk/src/gtk_app.rs:953
 msgid "Terminal"
 msgstr "Terminal"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:917
+#: ../crates/fdebm-gtk/src/gtk_app.rs:956
 msgid "Automatically close after the changes have been successfully applied"
 msgstr "Fechar automaticamente após as alterações terem sido aplicadas"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1007
-#, fuzzy
-#| msgid "gdebi"
-msgid "gdebi error"
-msgstr "gdebi"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1049
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1135
+msgid "fdebm error"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1035
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1196
+msgid "Modified configuration files"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1198
+msgid ""
+"The following configuration files have been modified locally and the new "
+"package ships different versions:"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1202
+msgid "Keep _my version"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1203
+msgid "Use the package's _new version"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1204
+msgid "_Cancel"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1235
 msgid "Install unauthenticated software?"
 msgstr "Instalar Software não antenticado?ã"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1037
-#, fuzzy, rust-format
-#| msgid "The following packages are UNAUTHENTICATED: "
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1237
+#, rust-format
 msgid "The following packages are UNAUTHENTICATED: {0}"
-msgstr "Os seguintes pacotes NÃO SÃO AUTENTICADOS: "
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1047
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1050
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1259
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1263
 msgid "Installing package file..."
 msgstr "Instalando pacote..."
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1051
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1264
 msgid "Installation complete"
 msgstr "Instalação Completa"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1052
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1265
 msgid "Failed to install package file"
 msgstr "Falha ao instalar pacote"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1074
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1079
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1282
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1286
 msgid "Removing package..."
 msgstr "Removendo pacote..."
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1080
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1287
 msgid "Removal complete"
 msgstr "Remoção completa"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1081
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1288
 msgid "Failed to remove package"
 msgstr "Falha ao remover o pacote"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1122
-msgid "You need to grant administrative rights to remove software"
-msgstr "Você precisa"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1123
-msgid "It is a possible risk to remove packages."
-msgstr "É um possível risco remover pacotes."
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1127
-msgid "You need to grant administrative rights to install software"
-msgstr "Vou precisa ter permissões de administrador para instalar softwares."
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1129
-#, fuzzy
-#| msgid ""
-#| "\n"
-#| "It is a possible security risk to install packages files manually.\n"
-#| "Install software from trustworthy software distributors only.\n"
-msgid ""
-"It is a possible security risk to install packages files manually.\n"
-"Install software from trustworthy software distributors only."
-msgstr ""
-"\n"
-"Pode ser inseguro instalar pacotes manualmente.\n"
-"Instale apenas programas de origem confiável.\n"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1147
-#, fuzzy
-#| msgid "Failed to open the software package\n"
-msgid "Failed to locate the program executable"
-msgstr "Falha ao abrir o pacote do software\n"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1171
-#, fuzzy
-#| msgid "Failed to install package file"
-msgid "Failed to start pkexec"
-msgstr "Falha ao instalar pacote"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1184
-#, fuzzy, rust-format
-#| msgid "<b>To be removed: %s</b>"
-msgid "<b>To be removed: {0}</b>"
-msgstr "<b>A ser removido: %s</b>"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1188
-#, fuzzy, rust-format
-#| msgid "To be installed: %s"
-msgid "To be installed: {0}"
-msgstr "A ser instalado: %s"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1196
-#, fuzzy
-#| msgid "Media Change"
-msgid "Changes"
-msgstr "Trocar Mídia"
-
-#, c-format
-#~ msgid ""
-#~ "usage: %prog [options] filename\n"
-#~ "For a graphical version run gdebi-gtk\n"
-#~ msgstr ""
-#~ "uso: %prog [opções] arquivo\n"
-#~ "Para uma versão gráfica, execute gdebi-gtk\n"
-
-#~ msgid "Run non-interactive (dangerous!)"
-#~ msgstr "Executar em modo não-interativo (perigoso!)"
-
-#~ msgid "Do not show progress information"
-#~ msgstr "Não mostrar informação de progresso"
-
-#~ msgid "Simulate only and print a apt-get install compatible line to stderr"
-#~ msgstr ""
-#~ "Apenas simular e exibir uma linha compatível com apt-get install na saída "
-#~ "de erro"
-
-#~ msgid "Use alternative root dir"
-#~ msgstr "Usar um diretório-raiz alternativo"
-
-#~ msgid "Need to be root to install packages"
-#~ msgstr "Nescessário ser superusuário para instalar pacotes"
-
-#~ msgid "Do you want to install the software package? [y/N]:"
-#~ msgstr "Você quer instalar o pacote? [s/N]"
-
-#~ msgid "Auto close when the install is finished"
-#~ msgstr "Fechar automaticamente quando a instalação estiver concluída"
-
-#~ msgid "Use alternative datadir"
-#~ msgstr "Usar diretório de dados alternativo"
-
-#~ msgid "Remove package"
-#~ msgstr "Remover pacote"
-
-#~ msgid "Software index is broken"
-#~ msgstr "O índice de software está danificado"
-
-#~ msgid ""
-#~ "This is a major failure of your software management system. Please check "
-#~ "for broken packages with synaptic, check the file permissions and "
-#~ "correctness of the file '/etc/apt/sources.list' and reload the software "
-#~ "information with: 'sudo apt-get update' and 'sudo apt-get install -f'."
-#~ msgstr ""
-#~ "Esta é uma falha grave do seu sistema gerenciador de programas. Por favor "
-#~ "verifique se há pacotes danificados com a ferramenta synaptic,  verifique "
-#~ "as permissões e a exactidão do arquivo '/etc/apt/sources.list' e "
-#~ "recarregye a informação do programa com o comando: 'sudo apt-get update' "
-#~ "and 'sudo apt-get install -f'."
-
-#~ msgid "Install and view software packages"
-#~ msgstr "Instalar e visualizar pacotes de programa"
-
-#~ msgid "GPL, see /usr/share/common-licenses/GPL"
-#~ msgstr "GPL, leia /usr/share/common-licenses/GPL"
-
-#~ msgid "<b>To install the following changes are required:</b>"
-#~ msgstr "<b>Para instalar, as seguintes mudanças são necessárias:</b>"
-
-#~ msgid "_Edit"
-#~ msgstr "_Editar"
-
-#~ msgid "<b><big>   </big></b>"
-#~ msgstr "<b><big> </big></b>"
-
-#~ msgid "_Download Package"
-#~ msgstr "_Baixar pacote"
-
-#~ msgid "<b>Section:</b>"
-#~ msgstr "<b>Seção:</b>"
-
-#~ msgid "<b>Size:</b>"
-#~ msgstr "<b>Tamanho:</b>"
-
-#~ msgid "  "
-#~ msgstr "  "
-
-#~ msgid "GDebi Package Installer"
-#~ msgstr "Instalador de pacotes GDebi"
-
-#, python-format
-#~ msgid "%s is not available"
-#~ msgstr "%s não disponível"
-
-#~ msgid "Copy selected text"
-#~ msgstr "Copiar texto selecionado"
-
-#~ msgid "Can not download as root"
-#~ msgstr "Não pode ser baixado como root"
-
-#~ msgid ""
-#~ "Remote packages can not be downloaded when running as root. Please try "
-#~ "again as a normal user."
-#~ msgstr ""
-#~ "Pacotes remotos não podem ser baixados quando operando como root. Por "
-#~ "favor tente novamente como usuário normal."
-
-#~ msgid "Downloading package"
-#~ msgstr "Baixando pacote"
-
-#~ msgid "Download failed"
-#~ msgstr "Falha ao baixar"
-
-#, python-format
-#~ msgid "Downloading the package failed: file '%s' '%s'"
-#~ msgstr "Falha ao baixar o pacote: arquivo '%s' '%s'"
-
-#, python-format
-#~ msgid "Package Installer - %s"
-#~ msgstr "Instalador de Pacotes - %s"
-
-#~ msgid "Error: "
-#~ msgstr "Erro: "
-
-#~ msgid "Error: no longer provides "
-#~ msgstr "Erro: não fornece mais "
-
-#~ msgid "Open Software Package"
-#~ msgstr "Abrir Pacote de Software"
-
-#~ msgid "Software packages"
-#~ msgstr "Pacotes de Software"
-
-#, python-format
-#~ msgid "One or more packages are required by %s, it cannot be removed."
-#~ msgstr "Um ou mais pacotes demandam %s, que não podê ser removido."
-
-#~ msgid "File not found"
-#~ msgstr "Arquivo não Encontrado"
-
-#~ msgid "You tried to install a file that does not (or no longer) exist. "
-#~ msgstr "Você tentou instalar um arquivo que não tem (ou já não) existe. "
-
-#~ msgid ""
-#~ "Malicious software can damage your data and take control of your system.\n"
-#~ "\n"
-#~ "The packages below are not authenticated and could therefore be of "
-#~ "malicious nature."
-#~ msgstr ""
-#~ "Softwares maliciosos podem danificar seus dados e tomar o controle do seu "
-#~ "sistema.\n"
-#~ "\n"
-#~ "Os pacotes abaixo não são autenticados e, portanto, podem ser de natureza "
-#~ "maliciosa."
-
-#~ msgid "Could not download all required files"
-#~ msgstr "Não foi possível baixar todos arquivos necessários"
-
-#~ msgid "Please check your internet connection or installation medium."
-#~ msgstr "Por favor, cheque sua conexão ou mídia de instalação."
-
-#~ msgid "Could not install all dependencies"
-#~ msgstr "Não foi possível instalar todas as dependências"
-
-#~ msgid ""
-#~ "Usually this is related to an error of the software distributor. See the "
-#~ "terminal window for more details."
-#~ msgstr ""
-#~ "Normalmente isto se deve a um erro do distribuidor do software. Veja a "
-#~ "janela do terminal para mais detalhes."
-
-#, python-format
-#~ msgid "Installing %s"
-#~ msgstr "Instalando %s"
-
-#, python-format
-#~ msgid "Removing %s"
-#~ msgstr "Removendo %s"
-
-#~ msgid "Installation finished"
-#~ msgstr "Instalação concluída"
-
-#~ msgid "Removal finished"
-#~ msgstr "Remoção terminada"
-
-#, python-format
-#~ msgid "Package '%s' was installed"
-#~ msgstr "Pacote '%s' foi instalado"
-
-#, python-format
-#~ msgid "Package '%s' was removed"
-#~ msgstr "Pacote '%s' foi removido"
-
-#, python-format
-#~ msgid "Failed to install package '%s'"
-#~ msgstr "Falha ao instalar o pacote '%s'"
-
-#, python-format
-#~ msgid "Failed to remove package '%s'"
-#~ msgstr "Falha ao tentar remover o pacote '%s'"
-
-#~ msgid "Failed to completely install all dependencies"
-#~ msgstr "Falha ao instalar todas as dependências"
-
-#~ msgid "Failed to completely remove package"
-#~ msgstr "Falha ao tentar remover completamente o pacote"
-
-#~ msgid "To fix this run 'sudo apt-get install -f' in a terminal window."
-#~ msgstr "Para arrumar isso execute 'sudo apt-get install -f' em um terminal."
-
-#, python-format
-#~ msgid "Installing '%s'..."
-#~ msgstr "Instalando '%s'..."
-
-#, python-format
-#~ msgid "Removing '%s'..."
-#~ msgstr "Removendo '%s'..."
-
-#~ msgid "Installing dependencies..."
-#~ msgstr "Instalando dependências"
-
-#~ msgid "Downloading additional package files..."
-#~ msgstr "Baixando pacotes adicionais..."
-
-#, python-format
-#~ msgid "File %s of %s at %sB/s"
-#~ msgstr "Arquivo %s de %s a %sB/s"
-
-#, python-format
-#~ msgid "File %s of %s"
-#~ msgstr "Arquivo %s de %s"
-
-#, python-format
-#~ msgid "Please insert '%s' into the drive '%s'"
-#~ msgstr "Por favor insira '%s' no drive '%s'"
-
-#~ msgid "Configuration items must be specified with a =<value>\n"
-#~ msgstr "Itens de configuração devem ser especificados com um =<valor>\n"
-
-#, python-format
-#~ msgid "Couldn't set APT option %s to %s\n"
-#~ msgstr "Não foi possível definir opção %s do APT para %s\n"
-
-#, python-format
-#~ msgid "Unknown package type '%s', exiting\n"
-#~ msgstr "Tipo de pacote desconhecido \"%s\", saindo\n"
-
-#~ msgid ""
-#~ "The package might be corrupted or you are not allowed to open the file. "
-#~ "Check the permissions of the file.\n"
-#~ msgstr ""
-#~ "O pacote pode estar corrompido ou você não tem permissão para abri-lo. "
-#~ "Verifique as permissões do arquivo.\n"
-
-#~ msgid "This package is uninstallable\n"
-#~ msgstr "Este pacote não pode ser desinstalado\n"
-
-#~ msgid "No description is available"
-#~ msgstr "Nenhuma descrição disponível"
-
-#~ msgid "Requires the REMOVAL of the following packages: "
-#~ msgstr "Necessita a REMOÇÃO dos seguintes pacotes: "
-
-#~ msgid "Requires the installation of the following packages: "
-#~ msgstr "Necessita a instalação dos seguintes pacotes: "
-
-#~ msgid "Included Files"
-#~ msgstr "Arquivos Incluídos"
-
-#~ msgid "&Install Package"
-#~ msgstr "&Instalar Pacote"
-
-#~ msgid "&Download Package"
-#~ msgstr "&Baixar pacote"
-
-#~ msgid "The package file does not exist"
-#~ msgstr "O pacote não existe"
-
-#~ msgid ""
-#~ "A nonexistent file has been selected for installation. Please select an "
-#~ "existing .deb package file."
-#~ msgstr ""
-#~ "Um arquivo não-existente foi selecionado para instalação. Por favor, "
-#~ "selecione um arquivo de pacote .deb existente."
-
-#~ msgid "&Reinstall Package"
-#~ msgstr "&Reinstalar Pacote"
-
-#~ msgid "Re&install Package"
-#~ msgstr "Re&instalar Pacote"
-
-#, python-format
-#~ msgid "To be removed: %s"
-#~ msgstr "A ser removido: %s"
-
-#, python-format
-#~ msgid "<b>Package '%s' was installed</b>"
-#~ msgstr "<b>Pacote '%s' foi instalado</b>"
-
-#~ msgid "Installing"
-#~ msgstr "Instalando"
-
-#~ msgid "Broken dependencies"
-#~ msgstr "Dependências quebradas"
-
-#~ msgid ""
-#~ "Your system has broken dependencies. This application can not continue "
-#~ "until this is fixed. To fix it run 'gksudo synaptic' or 'sudo apt-get "
-#~ "install -f' in a terminal window."
-#~ msgstr ""
-#~ "Seu sistema tem dependências quebradas. Esta aplicação não pode continuar "
-#~ "até que isto seja corrigido. Para consertar este problema, execute "
-#~ "'gksudo synaptic' ou 'sudo apt-get install -f' em uma janela de terminal"
-
-#, python-format
-#~ msgid ""
-#~ "The MIME type of this file is '%s' and can not be installed on this "
-#~ "system."
-#~ msgstr ""
-#~ "O tipo MIME deste arquivo é '%s' e não pode ser instalado neste sistema."
-
-#, python-format
-#~ msgid "Could not open '%s'"
-#~ msgstr "Impossível abrir '%s'"
-
-#~ msgid ""
-#~ "The package might be corrupted or you are not allowed to open the file. "
-#~ "Check the permissions of the file."
-#~ msgstr ""
-#~ "O pacote pode estar corrompido ou você não tem permissão para abrir o "
-#~ "arquivo. Verifique as permissões do arquivo."
-
-#~ msgid "Same version is available in a software channel"
-#~ msgstr "A mesma versão está disponível nos repositórios"
-
-#~ msgid ""
-#~ "You are recommended to install the software from the channel instead."
-#~ msgstr "É recomendado que você instale o software do repositório."
-
-#~ msgid "An older version is available in a software channel"
-#~ msgstr "Uma versão mais antiga está disponível nos repositórios"
-
-#~ msgid ""
-#~ "Generally you are recommended to install the version from the software "
-#~ "channel, since it is usually better supported."
-#~ msgstr ""
-#~ "É recomendado instalar a versão do repositório, pois geralmente ela é "
-#~ "melhor suportada."
-
-#~ msgid "A later version is available in a software channel"
-#~ msgstr "Uma nova versão está disponível nos repositórios"
-
-#~ msgid ""
-#~ "You are strongly advised to install the version from the software "
-#~ "channel, since it is usually better supported."
-#~ msgstr ""
-#~ "É altamente recomendado que você instale a versão do repositório, pois "
-#~ "geralmente ela é melhor suportada."
-
-#~ msgid "Only one software management tool is allowed to run at the same time"
-#~ msgstr "Somente um gerenciador de pacotes pode ser executado por vez"
-
-#~ msgid ""
-#~ "Please close the other application e.g. 'Update Manager', 'aptitude' or "
-#~ "'Synaptic' first."
-#~ msgstr ""
-#~ "Feche o outro aplicativo primeiro (ex. 'Gerenciador de Atualizações', "
-#~ "'Gerenciador de Pacotes Synaptic', 'aptitude')."
-
-#, python-format
-#~ msgid "Wrong architecture '%s'"
-#~ msgstr "Arquitetura errada '%s'"
-
-#~ msgid "Y"
-#~ msgstr "S"
-
-#~ msgid "Open..."
-#~ msgstr "Abrir..."
-
-#~ msgid ""
-#~ "Malicous software can damage your data and take control of your system.\n"
-#~ "\n"
-#~ "The packages below are not authenticated and could therefor be of "
-#~ "malicous nature."
-#~ msgstr ""
-#~ "Softwares maliciosos podem prejudicar o funcionamento de seu sistema.\n"
-#~ "\n"
-#~ "Os pacotes abaixo não são autenticados e podem ter uma origem não "
-#~ "confiável."
-
-#~ msgid "Analysing dependencies"
-#~ msgstr "Analisando dependências"
-
-#~ msgid "<b>"
-#~ msgstr "<b>"
-
-#~ msgid "translator-credits"
-#~ msgstr ""
-#~ "Launchpad Contributions:\n"
-#~ "  Alexandre Sapata Carbonell https://launchpad.net/~alexandre-sapata-"
-#~ "carbonell\n"
-#~ "  Aluísio Augusto Silva Gonçalves https://launchpad.net/~aluisio.asg\n"
-#~ "  Andre Noel https://launchpad.net/~andrenoel\n"
-#~ "  André Gondim https://launchpad.net/~andregondim\n"
-#~ "  Blabos https://launchpad.net/~blabos\n"
-#~ "  Brunno Gomes https://launchpad.net/~brunnogomes\n"
-#~ "  Carlos Araujo https://launchpad.net/~carlosaraujo\n"
-#~ "  Celio Alves https://launchpad.net/~celio.alves\n"
-#~ "  Eugênio F https://launchpad.net/~eugf\n"
-#~ "  Felipe Vieira Borges https://launchpad.net/~felipeborges\n"
-#~ "  Fábio Nogueira https://launchpad.net/~fnogueira\n"
-#~ "  Gerson \"fserve\" Barreiros https://launchpad.net/~fserve\n"
-#~ "  Gustavo Franco https://launchpad.net/~stratus\n"
-#~ "  Henrique P. Machado https://launchpad.net/~zehrique\n"
-#~ "  Higor Bigotto https://launchpad.net/~higor-bigotto\n"
-#~ "  Igor Santos https://launchpad.net/~igorsantos07\n"
-#~ "  José Geraldo Gouvêa https://launchpad.net/~jggouvea\n"
-#~ "  LC всадник cbet https://launchpad.net/~lc1884\n"
-#~ "  LKRaider https://launchpad.net/~paul-eipper\n"
-#~ "  Leonardo Gregianin https://launchpad.net/~leogregianin\n"
-#~ "  Marcelo Pires https://launchpad.net/~marcelo-pires-silva\n"
-#~ "  Mário Meyer https://launchpad.net/~mariomeyer\n"
-#~ "  Otto Robba https://launchpad.net/~otto-ottorobba\n"
-#~ "  Rodrigo Zimmermann https://launchpad.net/~bilufe\n"
-#~ "  Rogênio Belém https://launchpad.net/~rogeniobelem\n"
-#~ "  Teylo Laundos Aguiar https://launchpad.net/~teylo.aguiar\n"
-#~ "  Tiago Hillebrandt https://launchpad.net/~tiagohillebrandt\n"
-#~ "  raphaelsfreitas https://launchpad.net/~raphaelsouzafreitas\n"
-#~ "  sshelena https://launchpad.net/~sshelena\n"
-#~ "  woiski https://launchpad.net/~woiski"
-
-#, python-format
-#~ msgid "Cannot install '%s'"
-#~ msgstr "Não foi possível instalar '%s'"
-
-#, python-format
-#~ msgid "IOError during filelist read: %s"
-#~ msgstr "Erro de E/S ao ler a lista de arquivos: %s"
-
-#~ msgid "List of files could not be read, please report this as a bug"
-#~ msgstr ""
-#~ "A lista de arquivos não pôde ser lida, por favor relate isto como um erro"
-
-#~ msgid "Software package"
-#~ msgstr "Pacote de software"
-
-#~ msgid "_Open..."
-#~ msgstr "_Abrir"

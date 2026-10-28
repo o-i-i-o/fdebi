@@ -1,13 +1,12 @@
-# Romanian translation for gdebi
-# Copyright (c) 2009 Rosetta Contributors and Canonical Ltd 2009
-# This file is distributed under the same license as the gdebi package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2009.
+# Romanian translation for fdebm.
+# Copyright (C) fdebm contributors
+# Distributed under the terms of the GNU General Public License v3.0 or later.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: gdebi\n"
+"Project-Id-Version: fdebm 0.1.1\n"
 "Report-Msgid-Bugs-To: sebastian.heinlein@web.de\n"
-"POT-Creation-Date: 2026-10-22 14:45+0800\n"
+"POT-Creation-Date: 2026-10-22 23:27+0800\n"
 "PO-Revision-Date: 2009-12-02 12:50+0000\n"
 "Last-Translator: petre <Unknown>\n"
 "Language-Team: Romanian <ro@li.org>\n"
@@ -15,715 +14,367 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2014-03-12 19:04+0000\n"
-"X-Generator: Launchpad (build 16963)\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : (n==0 || (n%100 > 0 && n%100 < "
+"20)) ? 1 : 2);\n"
 
-#: ../crates/gdebi-core/src/depcheck.rs:170
-msgid "No Architecture field in the package"
-msgstr ""
-
-#: ../crates/gdebi-core/src/depcheck.rs:180
-#, rust-format
-msgid ""
-"Wrong architecture '{0}' -- Run dpkg --add-architecture to add it and update "
-"afterwards"
-msgstr ""
-
-#: ../crates/gdebi-core/src/depcheck.rs:192
-msgid "A later version is already installed"
-msgstr "O versiune mai nouă este deja instalată"
-
-#: ../crates/gdebi-core/src/depcheck.rs:234
-#, fuzzy, rust-format
-#| msgid "Dependency is not satisfiable: %s\n"
-msgid "Dependency is not satisfiable: {0}\n"
-msgstr "Dependenţa nu poate fi satisfăcuta: %s\n"
-
-#: ../crates/gdebi-core/src/depcheck.rs:237
-msgid "Failed to satisfy all dependencies (broken cache)"
-msgstr "Satisfacerea tuturor dependenţelor a eşuat (cache corupt)"
-
-#: ../crates/gdebi-core/src/depcheck.rs:336
-#, fuzzy, rust-format
-#| msgid "Failed to install package '%s'"
-msgid "Conflicts with the installed package '{0}'"
-msgstr "Instalarea pachetului '%s' a eşuat"
-
-#: ../crates/gdebi-core/src/depcheck.rs:359
-#, rust-format
-msgid "Breaks existing package '{0}' dependency {1} ({2} {3})"
-msgstr ""
-
-#: ../crates/gdebi-core/src/depcheck.rs:381
-#, rust-format
-msgid "Breaks existing package '{0}' conflict: {1} ({2} {3})"
-msgstr ""
-
-#: ../crates/gdebi-core/src/depcheck.rs:388
-#, rust-format
-msgid ""
-"Breaks existing package '{0}' that conflict: '{1}'. But the '{2}' provides "
-"it via: '{3}'"
-msgstr ""
-
-#: ../crates/gdebi-core/src/error.rs:31
+#: ../crates/fdebm-core/src/error.rs:40
 #, rust-format
 msgid "cannot open {0}: {1}"
 msgstr ""
 
-#: ../crates/gdebi-core/src/error.rs:33
+#: ../crates/fdebm-core/src/error.rs:44
 #, rust-format
 msgid "{0} is not a Debian package"
 msgstr ""
 
-#: ../crates/gdebi-core/src/error.rs:34
+#: ../crates/fdebm-core/src/error.rs:47
 msgid "control file not found in package"
 msgstr ""
 
-#: ../crates/gdebi-core/src/error.rs:36
+#: ../crates/fdebm-core/src/error.rs:49
 #, rust-format
-msgid "{0} compressed control.tar is not supported yet (only gzip/plain)"
+msgid "cannot decompress control archive: {0}"
 msgstr ""
 
-#: ../crates/gdebi-core/src/error.rs:39
+#: ../crates/fdebm-core/src/error.rs:51
 #, rust-format
 msgid "missing control field: {0}"
 msgstr ""
 
-#: ../crates/gdebi-core/src/flow.rs:53
+#: ../crates/fdebm-core/src/error.rs:55
+#, rust-format
+msgid "subprocess {0} failed: {1}"
+msgstr ""
+
+#: ../crates/fdebm-core/src/error.rs:58
+#, rust-format
+msgid "cannot decompress repository index {0}: {1}"
+msgstr ""
+
+#: ../crates/fdebm-core/src/error.rs:61
+#, rust-format
+msgid "cannot download {0}: {1}"
+msgstr ""
+
+#: ../crates/fdebm-core/src/error.rs:62 ../crates/fdebm-gtk/src/gtk_app.rs:1161
+msgid "operation cancelled"
+msgstr ""
+
+#: ../crates/fdebm-core/src/flow.rs:53
 #, rust-format
 msgid "Binary file ({0}), {1} bytes"
 msgstr ""
 
-#: ../crates/gdebi-core/src/flow.rs:54
+#: ../crates/fdebm-core/src/flow.rs:54
 #, rust-format
 msgid "Binary file, {0} bytes"
 msgstr ""
 
-#: ../crates/gdebi-core/src/install.rs:47
-#, fuzzy
-#| msgid "IOError during filelist read: %s"
+#: ../crates/fdebm-core/src/install.rs:119
+#: ../crates/fdebm-core/src/install.rs:141
+#: ../crates/fdebm-core/src/install.rs:160
 msgid "Error during install"
-msgstr "Eroare I/O în timpul citirii listei de fişiere: %s"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:60
+#: ../crates/fdebm-core/src/solver.rs:326
+#, rust-format
+msgid "Wrong architecture '{0}'"
+msgstr "Arhitectură greşită '{0}'"
+
+#: ../crates/fdebm-core/src/solver.rs:341
+msgid "A later version is already installed"
+msgstr "O versiune mai nouă este deja instalată"
+
+#: ../crates/fdebm-core/src/solver.rs:567
+msgid ""
+"Failed to satisfy all dependencies (conflicting requests or missing packages)"
+msgstr ""
+
+#: ../crates/fdebm-daemon/src/txn.rs:371 ../crates/fdebm-daemon/src/txn.rs:428
+#, rust-format
+msgid "dpkg exited with status {0}"
+msgstr ""
+
+#: ../crates/fdebm-daemon/src/txn.rs:463
+#, rust-format
+msgid "Fetching file {0} of {1}"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:55
 msgid "simple tool to view and install deb files - GTK frontend"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:63
+#: ../crates/fdebm-gtk/src/gtk_app.rs:58
 msgid "Set an APT configuration option"
 msgstr "Definește o opțiune de configurare APT"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:65
-#, fuzzy
-#| msgid "Open Software Package"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:60
 msgid "Debian package to open"
-msgstr "Deschide pachet software"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:239
+#: ../crates/fdebm-gtk/src/gtk_app.rs:265
 msgid "Package Installer"
 msgstr "Instalator pachete"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:278
-msgid "_Details"
-msgstr "_Detalii"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:286
+#: ../crates/fdebm-gtk/src/gtk_app.rs:299
 msgid "Package:"
 msgstr "Pachet:"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:286
+#: ../crates/fdebm-gtk/src/gtk_app.rs:299
 msgid "Status:"
 msgstr "Status:"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:305
-#: ../crates/gdebi-gtk/src/gtk_app.rs:839
+#: ../crates/fdebm-gtk/src/gtk_app.rs:310
+#: ../crates/fdebm-gtk/src/gtk_app.rs:865
 msgid "_Install Package"
 msgstr "_Instalare pachet"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:306
+#: ../crates/fdebm-gtk/src/gtk_app.rs:311
 msgid "_Remove Package"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:334
+#: ../crates/fdebm-gtk/src/gtk_app.rs:339
 msgid "Description"
 msgstr "Descriere:"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:350
-#, fuzzy
-#| msgid "<b>Version:</b>"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:355
 msgid "Version:"
-msgstr "<b>Versiune:</b>"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:351
-#, fuzzy
-#| msgid "<b>Maintainer:</b>"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:356
 msgid "Maintainer:"
-msgstr "<b>Responsabil:</b>"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:352
-#, fuzzy
-#| msgid "<b>Priority:</b>"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:357
 msgid "Priority:"
-msgstr "<b>Prioritate:</b>"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:353
-#, fuzzy
-#| msgid "Description:"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:358
 msgid "Section:"
-msgstr "Descriere:"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:354
+#: ../crates/fdebm-gtk/src/gtk_app.rs:359
 msgid "Size:"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:365
+#: ../crates/fdebm-gtk/src/gtk_app.rs:370
 msgid "Details"
 msgstr "Detalii"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:393
+#: ../crates/fdebm-gtk/src/gtk_app.rs:398
 msgid "Included files"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:403
+#: ../crates/fdebm-gtk/src/gtk_app.rs:408
 msgid "Lintian output"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:505
+#: ../crates/fdebm-gtk/src/gtk_app.rs:504
 msgid "Selection is a directory"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:522
+#: ../crates/fdebm-gtk/src/gtk_app.rs:527
 msgid "File content can not be extracted"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:523
+#: ../crates/fdebm-gtk/src/gtk_app.rs:528
 #, rust-format
 msgid "Error reading file content '{0}'"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:534
+#: ../crates/fdebm-gtk/src/gtk_app.rs:539
 msgid "Package control data"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:540
+#: ../crates/fdebm-gtk/src/gtk_app.rs:545
 msgid "Upstream data"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:552
+#: ../crates/fdebm-gtk/src/gtk_app.rs:556
 msgid "Error reading filelist"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:563
+#: ../crates/fdebm-gtk/src/gtk_app.rs:567
 msgid ""
 "No lintian available.\n"
 "Please install using sudo apt-get install lintian"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:567
+#: ../crates/fdebm-gtk/src/gtk_app.rs:571
 msgid "Running lintian..."
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:586
+#: ../crates/fdebm-gtk/src/gtk_app.rs:589
 #, rust-format
 msgid "Failed to run lintian: {0}"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:631
+#: ../crates/fdebm-gtk/src/gtk_app.rs:637
 #, rust-format
 msgid "Lintian finished with exit status {0}"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:643
+#: ../crates/fdebm-gtk/src/gtk_app.rs:652
 msgid "_Open…"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:644
+#: ../crates/fdebm-gtk/src/gtk_app.rs:653
 msgid "_Refresh"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:645
+#: ../crates/fdebm-gtk/src/gtk_app.rs:654
 msgid "_Quit"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:647
+#: ../crates/fdebm-gtk/src/gtk_app.rs:656
 msgid "_About"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:649
+#: ../crates/fdebm-gtk/src/gtk_app.rs:658
 msgid "_File"
 msgstr "_Fişier"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:650
+#: ../crates/fdebm-gtk/src/gtk_app.rs:659
 msgid "_Help"
 msgstr "_Ajutor"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:659
-#, fuzzy
-#| msgid "Open Software Package"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:668
 msgid "Open Debian package"
-msgstr "Deschide pachet software"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:697
+#: ../crates/fdebm-gtk/src/gtk_app.rs:708
 msgid "simple tool to view and install deb files"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:718
+#: ../crates/fdebm-gtk/src/gtk_app.rs:731
 msgid "Loading..."
 msgstr "Se încarcă..."
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:731
-#, fuzzy, rust-format
-#| msgid "gdebi error, file not found: %s\n"
-msgid "gdebi error, file not found: {0}"
-msgstr "eroare gdebi, fişierul nu a fost găsit: %s\n"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:745
+#, rust-format
+msgid "fdebm error, file not found: {0}"
+msgstr "eroare fdebm, fişierul nu a fost găsit: {0}"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:745
-#, fuzzy
-#| msgid "Failed to open the software package\n"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:760
 msgid "Could not open the software package"
-msgstr "Nu s-a putut deschide pachetul software\n"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:768
-msgid "Error opening the cache"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:780
+#: ../crates/fdebm-gtk/src/gtk_app.rs:778
+msgid "Checking dependencies..."
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:803
 msgid "Dependency check failed"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:792
+#: ../crates/fdebm-gtk/src/gtk_app.rs:807
+#: ../crates/fdebm-gtk/src/gtk_app.rs:819
 #, rust-format
 msgid "<span foreground=\"red\" weight=\"bold\">Error: {0}</span>"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:806
-#, fuzzy, rust-format
-#| msgid "Requires the <b>removal</b> of %s packages\n"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:834
+#, rust-format
 msgid "Requires the <b>removal</b> of {0} package"
 msgid_plural "Requires the <b>removal</b> of {0} packages"
-msgstr[0] "Necesită <b>ştergerea</b> a %s pachete\n"
-msgstr[1] "Necesită <b>ştergerea</b> a %s pachete\n"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:817
-#, fuzzy, rust-format
-#| msgid "Requires the installation of %s packages"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:845
+#, rust-format
 msgid "Requires the installation of {0} package"
 msgid_plural "Requires the installation of {0} packages"
-msgstr[0] "Necesită instalarea a %s pachete"
-msgstr[1] "Necesită instalarea a %s pachete"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:832
+#: ../crates/fdebm-gtk/src/gtk_app.rs:860
 msgid "Same version is already installed"
 msgstr "Aceeaşi versiune este deja instalată"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:834
+#: ../crates/fdebm-gtk/src/gtk_app.rs:861
 msgid "_Reinstall Package"
 msgstr "_Reinstalare pachet"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:846
+#: ../crates/fdebm-gtk/src/gtk_app.rs:871
 msgid "All dependencies are satisfied"
 msgstr "Toate dependenţele sunt satisfăcute"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:896
+#: ../crates/fdebm-gtk/src/gtk_app.rs:935
 msgid "Applying changes"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:899
+#: ../crates/fdebm-gtk/src/gtk_app.rs:938
 msgid "Close"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:914
+#: ../crates/fdebm-gtk/src/gtk_app.rs:953
 msgid "Terminal"
 msgstr "Terminal"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:917
+#: ../crates/fdebm-gtk/src/gtk_app.rs:956
 msgid "Automatically close after the changes have been successfully applied"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1007
-#, fuzzy
-#| msgid "gdebi"
-msgid "gdebi error"
-msgstr "gdebi"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1049
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1135
+msgid "fdebm error"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1035
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1196
+msgid "Modified configuration files"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1198
+msgid ""
+"The following configuration files have been modified locally and the new "
+"package ships different versions:"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1202
+msgid "Keep _my version"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1203
+msgid "Use the package's _new version"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1204
+msgid "_Cancel"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1235
 msgid "Install unauthenticated software?"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1037
-#, fuzzy, rust-format
-#| msgid "The following packages are UNAUTHENTICATED: "
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1237
+#, rust-format
 msgid "The following packages are UNAUTHENTICATED: {0}"
-msgstr "Următoarele pachete sunt NEAUTENTIFICATE: "
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1047
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1050
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1259
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1263
 msgid "Installing package file..."
 msgstr "Se instalează pachet..."
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1051
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1264
 msgid "Installation complete"
 msgstr "Instalare completă"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1052
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1265
 msgid "Failed to install package file"
 msgstr "Instalarea pachetului a eşuat"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1074
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1079
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1282
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1286
 msgid "Removing package..."
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1080
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1287
 msgid "Removal complete"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1081
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1288
 msgid "Failed to remove package"
 msgstr ""
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1122
-msgid "You need to grant administrative rights to remove software"
-msgstr ""
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1123
-msgid "It is a possible risk to remove packages."
-msgstr ""
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1127
-msgid "You need to grant administrative rights to install software"
-msgstr ""
-"Pentru instalarea de programe trebuie să obțineți drepturi de administrare"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1129
-#, fuzzy
-#| msgid ""
-#| "\n"
-#| "It is a possible security risk to install packages files manually.\n"
-#| "Install software from trustworthy software distributors only.\n"
-msgid ""
-"It is a possible security risk to install packages files manually.\n"
-"Install software from trustworthy software distributors only."
-msgstr ""
-"\n"
-"Instalarea manuală de pachete constituie un posibil risc de securitate.\n"
-"Instalaţi pachete doar de la distribuitori în care aveţi încredere.\n"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1147
-#, fuzzy
-#| msgid "Failed to open the software package\n"
-msgid "Failed to locate the program executable"
-msgstr "Nu s-a putut deschide pachetul software\n"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1171
-#, fuzzy
-#| msgid "Failed to install package file"
-msgid "Failed to start pkexec"
-msgstr "Instalarea pachetului a eşuat"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1184
-#, fuzzy, rust-format
-#| msgid "<b>To be removed: %s</b>"
-msgid "<b>To be removed: {0}</b>"
-msgstr "<b>De șters: %s</b>"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1188
-#, fuzzy, rust-format
-#| msgid "To be installed: %s"
-msgid "To be installed: {0}"
-msgstr "Urmează să fie instalat: %s"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1196
-msgid "Changes"
-msgstr ""
-
-#, c-format
-#~ msgid ""
-#~ "usage: %prog [options] filename\n"
-#~ "For a graphical version run gdebi-gtk\n"
-#~ msgstr ""
-#~ "utilizare: %prog [opţiuni] numefişier\n"
-#~ "Pentru versiunea grafică rulați gdebi-gtk\n"
-
-#~ msgid "Run non-interactive (dangerous!)"
-#~ msgstr "Rulează neinteractiv (periculos!)"
-
-#~ msgid "Do not show progress information"
-#~ msgstr "Nu afişa informaţii despre progres"
-
-#~ msgid "Simulate only and print a apt-get install compatible line to stderr"
-#~ msgstr ""
-#~ "Doar simulare şi afişează o linie compatibilă apt-get install în stderr"
-
-#~ msgid "Use alternative root dir"
-#~ msgstr "Foloseşte alt director rădăcină"
-
-#~ msgid "Need to be root to install packages"
-#~ msgstr "Pentru a instala pachete trebuie să fiți root (administrator)"
-
-#~ msgid "Do you want to install the software package? [y/N]:"
-#~ msgstr "Doriţi să instalaţi acest pachet software? [d/N]:"
-
-#~ msgid "Software index is broken"
-#~ msgstr "Indexul pachetelor software este deteriorat"
-
-#~ msgid ""
-#~ "This is a major failure of your software management system. Please check "
-#~ "for broken packages with synaptic, check the file permissions and "
-#~ "correctness of the file '/etc/apt/sources.list' and reload the software "
-#~ "information with: 'sudo apt-get update' and 'sudo apt-get install -f'."
-#~ msgstr ""
-#~ "Aceasta este o eroare majoră a sistemului de administrare a softwareului. "
-#~ "Verificați pachetele deterioarate folosind synaptic, verificați "
-#~ "permisiunile fișierelor și corectitudinea fișierului '/etc/apt/"
-#~ "sources.list' și reîncărcați informațiile software folosind 'sudo apt-get "
-#~ "update' și 'sudo apt-get install -f'."
-
-#~ msgid "Install and view software packages"
-#~ msgstr "Instalare şi vizualizare pachete software"
-
-#~ msgid "GPL, see /usr/share/common-licenses/GPL"
-#~ msgstr "GPL, consultați /usr/share/common-licenses/GPL"
-
-#~ msgid "<b>To install the following changes are required:</b>"
-#~ msgstr "<b>Următoarele modificări sunt necesare pentru a instala:</b>"
-
-#~ msgid "<b><big>   </big></b>"
-#~ msgstr "<b><big>   </big></b>"
-
-#~ msgid "<b>Section:</b>"
-#~ msgstr "<b>Secțiune:</b>"
-
-#~ msgid "<b>Size:</b>"
-#~ msgstr "<b>Mărime:</b>"
-
-#~ msgid "  "
-#~ msgstr "  "
-
-#~ msgid "GDebi Package Installer"
-#~ msgstr "GDebi instalator de pachete"
-
-#, python-format
-#~ msgid "%s is not available"
-#~ msgstr "%s nu este disponibil"
-
-#~ msgid "Can not download as root"
-#~ msgstr "Nu se pot realiza descărcări cât timp sunteți conectat ca root"
-
-#~ msgid ""
-#~ "Remote packages can not be downloaded when running as root. Please try "
-#~ "again as a normal user."
-#~ msgstr ""
-#~ "Nu se pot realiza descărcări cât timp sunteți conectat ca root. "
-#~ "Autentificați-vă ca utilizator normal și reîncercați."
-
-#~ msgid "Downloading package"
-#~ msgstr "Se descarcă pachetul"
-
-#~ msgid "Download failed"
-#~ msgstr "Descărcare eșuată"
-
-#, python-format
-#~ msgid "Downloading the package failed: file '%s' '%s'"
-#~ msgstr "Descărcarea pachetului a eșuat: fișierul „%s” „%s”"
-
-#, python-format
-#~ msgid "Package Installer - %s"
-#~ msgstr "Instalator pachete - %s"
-
-#~ msgid "Software packages"
-#~ msgstr "Pachete software"
-
-#~ msgid "File not found"
-#~ msgstr "Fișierul nu a fost găsit"
-
-#~ msgid "You tried to install a file that does not (or no longer) exist. "
-#~ msgstr "Ați încercat să instalați un fișier ce nu (mai) există. "
-
-#~ msgid "Could not download all required files"
-#~ msgstr "Nu s-au putut descărca toate fișierele necesare"
-
-#~ msgid "Please check your internet connection or installation medium."
-#~ msgstr ""
-#~ "Vă rugăm să verificaţi conexiunea la Internet sau sursa de instalare."
-
-#~ msgid "Could not install all dependencies"
-#~ msgstr "Nu s-au putut instala toate dependențele"
-
-#~ msgid ""
-#~ "Usually this is related to an error of the software distributor. See the "
-#~ "terminal window for more details."
-#~ msgstr ""
-#~ "În general aceasta este legată de o eroare a distribuitorului de "
-#~ "software. Pentru detalii suplimentare, consultați fereastra terminal."
-
-#~ msgid "Installation finished"
-#~ msgstr "Instalare finalizată"
-
-#, python-format
-#~ msgid "Package '%s' was installed"
-#~ msgstr "Pachetul '%s' a fost instalat"
-
-#~ msgid "Failed to completely install all dependencies"
-#~ msgstr "Instalarea completă a tuturor dependenţelor a eşuat"
-
-#~ msgid "To fix this run 'sudo apt-get install -f' in a terminal window."
-#~ msgstr ""
-#~ "Pentru a remedia rulaţi 'sudo apt-get install -f' într-o fereastră "
-#~ "terminal."
-
-#, python-format
-#~ msgid "Installing '%s'..."
-#~ msgstr "Se instalează '%s'..."
-
-#~ msgid "Installing dependencies..."
-#~ msgstr "Se instalează dependențele..."
-
-#~ msgid "Downloading additional package files..."
-#~ msgstr "Se descarcă pachete adiționale..."
-
-#, python-format
-#~ msgid "File %s of %s at %sB/s"
-#~ msgstr "Fişier %s din %s la %sB/s"
-
-#, python-format
-#~ msgid "File %s of %s"
-#~ msgstr "Fişierul %s din %s"
-
-#, python-format
-#~ msgid "Please insert '%s' into the drive '%s'"
-#~ msgstr "Vă rugăm introduceţi '%s' în unitatea '%s'"
-
-#~ msgid ""
-#~ "The package might be corrupted or you are not allowed to open the file. "
-#~ "Check the permissions of the file.\n"
-#~ msgstr ""
-#~ "Pachetul ar putea fi corupt sau nu aveţi dreptul de a deschide fişierul. "
-#~ "Verificaţi drepturile de acces ale fişierului.\n"
-
-#~ msgid "This package is uninstallable\n"
-#~ msgstr "Acest pachet nu este instalabil\n"
-
-#~ msgid "No description is available"
-#~ msgstr "Descriere indisponibilă"
-
-#~ msgid "Requires the REMOVAL of the following packages: "
-#~ msgstr "Necesită ŞTERGEREA următoarelor pachete: "
-
-#~ msgid "Requires the installation of the following packages: "
-#~ msgstr "Necesită instalarea următoarelor pachete: "
-
-#~ msgid "Included Files"
-#~ msgstr "Fişiere incluse"
-
-#~ msgid "&Install Package"
-#~ msgstr "&Instalare pachet"
-
-#~ msgid "The package file does not exist"
-#~ msgstr "Nu există fişierul pentru pachet"
-
-#~ msgid ""
-#~ "A nonexistent file has been selected for installation. Please select an "
-#~ "existing .deb package file."
-#~ msgstr ""
-#~ "Pentru instalare a fost ales un fisier inexistent. Vă rugăm să alegeți un "
-#~ "fisier .deb existent."
-
-#~ msgid "&Reinstall Package"
-#~ msgstr "&Reinstalare pachet"
-
-#~ msgid "Re&install Package"
-#~ msgstr "Re&instare pachet"
-
-#, python-format
-#~ msgid "To be removed: %s"
-#~ msgstr "Urmează să fie şters: %s"
-
-#~ msgid "Broken dependencies"
-#~ msgstr "Dependențe nesatisfăcute"
-
-#, python-format
-#~ msgid "Could not open '%s'"
-#~ msgstr "Nu s-a putut deschide '%s'"
-
-#~ msgid ""
-#~ "The package might be corrupted or you are not allowed to open the file. "
-#~ "Check the permissions of the file."
-#~ msgstr ""
-#~ "Pachetul ar putea fi corupt sau nu aveţi dreptul să deschideţi fişierul. "
-#~ "Verificaţi drepturile de acces ale fişierului."
-
-#~ msgid "Same version is available in a software channel"
-#~ msgstr ""
-#~ "Aceeaşi versiune este disponibilă într-un canal de difuzare software"
-
-#~ msgid ""
-#~ "You are recommended to install the software from the channel instead."
-#~ msgstr ""
-#~ "Este recomandat să instalaţi pachetul software dintr-un canal de difuzare."
-
-#~ msgid "An older version is available in a software channel"
-#~ msgstr ""
-#~ "O versiune mai veche este disponibilă într-un canal de difuzare software"
-
-#~ msgid ""
-#~ "Generally you are recommended to install the version from the software "
-#~ "channel, since it is usually better supported."
-#~ msgstr ""
-#~ "În general este recomandat să instalaţi versiunea dintr-un canal de "
-#~ "difuzare software, deoarece  este mai bine suportată de obicei."
-
-#~ msgid "A later version is available in a software channel"
-#~ msgstr ""
-#~ "O versiune mai nouă este disponibilă într-un canal de difuzare software"
-
-#~ msgid ""
-#~ "You are strongly advised to install the version from the software "
-#~ "channel, since it is usually better supported."
-#~ msgstr ""
-#~ "Este foarte recomandat să instalaţi versiunea din canalul de difuzare "
-#~ "software, pentru că este mai bine suportată de obicei."
-
-#~ msgid "Only one software management tool is allowed to run at the same time"
-#~ msgstr ""
-#~ "O singură unealtă de gestionare software poate fi rulată la un moment dat"
-
-#~ msgid ""
-#~ "Please close the other application e.g. 'Update Manager', 'aptitude' or "
-#~ "'Synaptic' first."
-#~ msgstr ""
-#~ "Vă rugăm închideţi mai întâi alte aplicaţii gen 'Manager actualizări', "
-#~ "'aptitude', sau 'Synaptic'."
-
-#~ msgid "Y"
-#~ msgstr "D"
-
-#~ msgid "Software package"
-#~ msgstr "Pachet software"
-
-#, python-format
-#~ msgid "Cannot install '%s'"
-#~ msgstr "Nu s-a putut instala '%s'"
-
-#, python-format
-#~ msgid "Wrong architecture '%s'"
-#~ msgstr "Arhitectură greşită '%s'"
-
-#~ msgid "List of files could not be read, please report this as a bug"
-#~ msgstr ""
-#~ "Lista fişierelor nu a putut fi citită, vă rugăm raportaţi acest lucru "
-#~ "drept o disfunţionalitate (bug)"
-
-#~ msgid "<b>"
-#~ msgstr "<b>"
-
-#~ msgid "translator-credits"
-#~ msgstr ""
-#~ "Launchpad Contributions:\n"
-#~ "  Adi Roiban https://launchpad.net/~adiroiban\n"
-#~ "  George Dumitrescu https://launchpad.net/~geod\n"
-#~ "  Ionuț Jula https://launchpad.net/~ionutjula\n"
-#~ "  Lucian Adrian Grijincu https://launchpad.net/~lucian.grijincu\n"
-#~ "  Valentin Bora https://launchpad.net/~bvali\n"
-#~ "  petre https://launchpad.net/~petrem."

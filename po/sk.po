@@ -1,13 +1,12 @@
-# Slovak translation for gdebi
-# Copyright (c) 2007 Rosetta Contributors and Canonical Ltd 2007
-# This file is distributed under the same license as the gdebi package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2007.
+# Slovak translation for fdebm.
+# Copyright (C) fdebm contributors
+# Distributed under the terms of the GNU General Public License v3.0 or later.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: gdebi\n"
+"Project-Id-Version: fdebm 0.1.1\n"
 "Report-Msgid-Bugs-To: sebastian.heinlein@web.de\n"
-"POT-Creation-Date: 2026-10-22 14:45+0800\n"
+"POT-Creation-Date: 2026-10-22 23:27+0800\n"
 "PO-Revision-Date: 2012-01-18 08:37+0000\n"
 "Last-Translator: helix84 <Unknown>\n"
 "Language-Team: Slovak <sk@li.org>\n"
@@ -15,840 +14,366 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2014-03-12 19:04+0000\n"
-"X-Generator: Launchpad (build 16963)\n"
+"Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
 
-#: ../crates/gdebi-core/src/depcheck.rs:170
-msgid "No Architecture field in the package"
-msgstr "Balík neobsahuje pole Architektúra"
-
-#: ../crates/gdebi-core/src/depcheck.rs:180
-#, rust-format
-msgid ""
-"Wrong architecture '{0}' -- Run dpkg --add-architecture to add it and update "
-"afterwards"
-msgstr ""
-
-#: ../crates/gdebi-core/src/depcheck.rs:192
-msgid "A later version is already installed"
-msgstr "Novšia verzia je už nainštalovaná"
-
-#: ../crates/gdebi-core/src/depcheck.rs:234
-#, fuzzy, rust-format
-#| msgid "Dependency is not satisfiable: %s\n"
-msgid "Dependency is not satisfiable: {0}\n"
-msgstr "Závislosť nemožno uspokojiť: %s\n"
-
-#: ../crates/gdebi-core/src/depcheck.rs:237
-msgid "Failed to satisfy all dependencies (broken cache)"
-msgstr ""
-"Nepodarilo sa uspokojiť všetky závislosti (poškodená vyrovnávacia pamäť)"
-
-#: ../crates/gdebi-core/src/depcheck.rs:336
-#, fuzzy, rust-format
-#| msgid "Conflicts with the installed package '%s'\n"
-msgid "Conflicts with the installed package '{0}'"
-msgstr "Je v konflikte s nainštalovaným  balíkom „%s“\n"
-
-#: ../crates/gdebi-core/src/depcheck.rs:359
-#, fuzzy, rust-format
-#| msgid "Breaks exisiting package '%s' dependency %s (%s %s)\n"
-msgid "Breaks existing package '{0}' dependency {1} ({2} {3})"
-msgstr "Porušuje v existujúcom balíku „%s“ závislosť %s (%s %s)\n"
-
-#: ../crates/gdebi-core/src/depcheck.rs:381
-#, fuzzy, rust-format
-#| msgid "Breaks exisiting package '%s' conflict: %s (%s %s)\n"
-msgid "Breaks existing package '{0}' conflict: {1} ({2} {3})"
-msgstr "Porušuje v existujúcom balíku „%s“ konflikt: %s (%s %s)\n"
-
-#: ../crates/gdebi-core/src/depcheck.rs:388
-#, rust-format
-msgid ""
-"Breaks existing package '{0}' that conflict: '{1}'. But the '{2}' provides "
-"it via: '{3}'"
-msgstr ""
-
-#: ../crates/gdebi-core/src/error.rs:31
+#: ../crates/fdebm-core/src/error.rs:40
 #, rust-format
 msgid "cannot open {0}: {1}"
 msgstr ""
 
-#: ../crates/gdebi-core/src/error.rs:33
-#, fuzzy, rust-format
-#| msgid "'%s' is not a Debian package"
+#: ../crates/fdebm-core/src/error.rs:44
+#, rust-format
 msgid "{0} is not a Debian package"
-msgstr "„%s“ nie je balík Debianu"
+msgstr ""
 
-#: ../crates/gdebi-core/src/error.rs:34
+#: ../crates/fdebm-core/src/error.rs:47
 msgid "control file not found in package"
 msgstr ""
 
-#: ../crates/gdebi-core/src/error.rs:36
+#: ../crates/fdebm-core/src/error.rs:49
 #, rust-format
-msgid "{0} compressed control.tar is not supported yet (only gzip/plain)"
+msgid "cannot decompress control archive: {0}"
 msgstr ""
 
-#: ../crates/gdebi-core/src/error.rs:39
+#: ../crates/fdebm-core/src/error.rs:51
 #, rust-format
 msgid "missing control field: {0}"
 msgstr ""
 
-#: ../crates/gdebi-core/src/flow.rs:53
+#: ../crates/fdebm-core/src/error.rs:55
+#, rust-format
+msgid "subprocess {0} failed: {1}"
+msgstr ""
+
+#: ../crates/fdebm-core/src/error.rs:58
+#, rust-format
+msgid "cannot decompress repository index {0}: {1}"
+msgstr ""
+
+#: ../crates/fdebm-core/src/error.rs:61
+#, rust-format
+msgid "cannot download {0}: {1}"
+msgstr ""
+
+#: ../crates/fdebm-core/src/error.rs:62 ../crates/fdebm-gtk/src/gtk_app.rs:1161
+msgid "operation cancelled"
+msgstr ""
+
+#: ../crates/fdebm-core/src/flow.rs:53
 #, rust-format
 msgid "Binary file ({0}), {1} bytes"
 msgstr ""
 
-#: ../crates/gdebi-core/src/flow.rs:54
+#: ../crates/fdebm-core/src/flow.rs:54
 #, rust-format
 msgid "Binary file, {0} bytes"
 msgstr ""
 
-#: ../crates/gdebi-core/src/install.rs:47
-#, fuzzy
-#| msgid "Error during install: '%s'"
+#: ../crates/fdebm-core/src/install.rs:119
+#: ../crates/fdebm-core/src/install.rs:141
+#: ../crates/fdebm-core/src/install.rs:160
 msgid "Error during install"
-msgstr "Chyba počas inštalácie: „%s“"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:60
+#: ../crates/fdebm-core/src/solver.rs:326
+#, rust-format
+msgid "Wrong architecture '{0}'"
+msgstr "Nesprávna architektúra „{0}“"
+
+#: ../crates/fdebm-core/src/solver.rs:341
+msgid "A later version is already installed"
+msgstr "Novšia verzia je už nainštalovaná"
+
+#: ../crates/fdebm-core/src/solver.rs:567
+msgid ""
+"Failed to satisfy all dependencies (conflicting requests or missing packages)"
+msgstr ""
+
+#: ../crates/fdebm-daemon/src/txn.rs:371 ../crates/fdebm-daemon/src/txn.rs:428
+#, rust-format
+msgid "dpkg exited with status {0}"
+msgstr ""
+
+#: ../crates/fdebm-daemon/src/txn.rs:463
+#, rust-format
+msgid "Fetching file {0} of {1}"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:55
 msgid "simple tool to view and install deb files - GTK frontend"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:63
+#: ../crates/fdebm-gtk/src/gtk_app.rs:58
 msgid "Set an APT configuration option"
 msgstr "Nastaviť konfiguračnú voľbu APT"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:65
-#, fuzzy
-#| msgid "'%s' is not a Debian package"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:60
 msgid "Debian package to open"
-msgstr "„%s“ nie je balík Debianu"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:239
+#: ../crates/fdebm-gtk/src/gtk_app.rs:265
 msgid "Package Installer"
 msgstr "Inštalátor balíkov"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:278
-msgid "_Details"
-msgstr "Po_drobnosti"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:286
+#: ../crates/fdebm-gtk/src/gtk_app.rs:299
 msgid "Package:"
 msgstr "Balík:"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:286
+#: ../crates/fdebm-gtk/src/gtk_app.rs:299
 msgid "Status:"
 msgstr "Stav:"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:305
-#: ../crates/gdebi-gtk/src/gtk_app.rs:839
+#: ../crates/fdebm-gtk/src/gtk_app.rs:310
+#: ../crates/fdebm-gtk/src/gtk_app.rs:865
 msgid "_Install Package"
 msgstr "Na_inštalovať balík"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:306
+#: ../crates/fdebm-gtk/src/gtk_app.rs:311
 msgid "_Remove Package"
 msgstr "Odst_rániť balík"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:334
+#: ../crates/fdebm-gtk/src/gtk_app.rs:339
 msgid "Description"
 msgstr "Popis"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:350
-#, fuzzy
-#| msgid "<b>Version:</b>"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:355
 msgid "Version:"
-msgstr "<b>Verzia:</b>"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:351
-#, fuzzy
-#| msgid "<b>Maintainer:</b>"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:356
 msgid "Maintainer:"
-msgstr "<b>Správca:</b>"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:352
-#, fuzzy
-#| msgid "<b>Priority:</b>"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:357
 msgid "Priority:"
-msgstr "<b>Priorita:</b>"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:353
-#, fuzzy
-#| msgid "Description:"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:358
 msgid "Section:"
-msgstr "Popis:"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:354
+#: ../crates/fdebm-gtk/src/gtk_app.rs:359
 msgid "Size:"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:365
+#: ../crates/fdebm-gtk/src/gtk_app.rs:370
 msgid "Details"
 msgstr "Podrobnosti"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:393
+#: ../crates/fdebm-gtk/src/gtk_app.rs:398
 msgid "Included files"
 msgstr "Obsiahnuté súbory"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:403
+#: ../crates/fdebm-gtk/src/gtk_app.rs:408
 msgid "Lintian output"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:505
+#: ../crates/fdebm-gtk/src/gtk_app.rs:504
 msgid "Selection is a directory"
 msgstr "Výbraná položka je adresár"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:522
+#: ../crates/fdebm-gtk/src/gtk_app.rs:527
 msgid "File content can not be extracted"
 msgstr "Obsah súboru nemožno rozbaliť"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:523
-#, fuzzy, rust-format
-#| msgid "Error reading file content '%s'"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:528
+#, rust-format
 msgid "Error reading file content '{0}'"
-msgstr "Chyba počas čítania obsahu súboru „%s“"
+msgstr "Chyba počas čítania obsahu súboru „{0}“"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:534
+#: ../crates/fdebm-gtk/src/gtk_app.rs:539
 msgid "Package control data"
 msgstr "Riadiace údaje balíka"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:540
+#: ../crates/fdebm-gtk/src/gtk_app.rs:545
 msgid "Upstream data"
 msgstr "Údaje z upstream"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:552
+#: ../crates/fdebm-gtk/src/gtk_app.rs:556
 msgid "Error reading filelist"
 msgstr "Chyba pri čítaní zoznamu súborov"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:563
+#: ../crates/fdebm-gtk/src/gtk_app.rs:567
 msgid ""
 "No lintian available.\n"
 "Please install using sudo apt-get install lintian"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:567
+#: ../crates/fdebm-gtk/src/gtk_app.rs:571
 msgid "Running lintian..."
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:586
+#: ../crates/fdebm-gtk/src/gtk_app.rs:589
 #, rust-format
 msgid "Failed to run lintian: {0}"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:631
+#: ../crates/fdebm-gtk/src/gtk_app.rs:637
 #, rust-format
 msgid "Lintian finished with exit status {0}"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:643
+#: ../crates/fdebm-gtk/src/gtk_app.rs:652
 msgid "_Open…"
 msgstr "_Otvoriť…"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:644
+#: ../crates/fdebm-gtk/src/gtk_app.rs:653
 msgid "_Refresh"
 msgstr "_Obnoviť"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:645
+#: ../crates/fdebm-gtk/src/gtk_app.rs:654
 msgid "_Quit"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:647
+#: ../crates/fdebm-gtk/src/gtk_app.rs:656
 msgid "_About"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:649
+#: ../crates/fdebm-gtk/src/gtk_app.rs:658
 msgid "_File"
 msgstr "_Súbor"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:650
+#: ../crates/fdebm-gtk/src/gtk_app.rs:659
 msgid "_Help"
 msgstr "_Pomocník"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:659
-#, fuzzy
-#| msgid "'%s' is not a Debian package"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:668
 msgid "Open Debian package"
-msgstr "„%s“ nie je balík Debianu"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:697
+#: ../crates/fdebm-gtk/src/gtk_app.rs:708
 msgid "simple tool to view and install deb files"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:718
+#: ../crates/fdebm-gtk/src/gtk_app.rs:731
 msgid "Loading..."
 msgstr "Načítava sa..."
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:731
-#, fuzzy, rust-format
-#| msgid "gdebi error, file not found: %s\n"
-msgid "gdebi error, file not found: {0}"
-msgstr "chyba gdebi, súbor nebol nájdený: %s\n"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:745
+#, rust-format
+msgid "fdebm error, file not found: {0}"
+msgstr "chyba fdebm, súbor nebol nájdený: {0}"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:745
-#, fuzzy
-#| msgid "Failed to open the software package\n"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:760
 msgid "Could not open the software package"
-msgstr "Nepodarilo sa otvoriť balík softvéru\n"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:768
-msgid "Error opening the cache"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:780
-#, fuzzy
-#| msgid "Dependency problems"
-msgid "Dependency check failed"
-msgstr "Problémy so závislosťami"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:778
+msgid "Checking dependencies..."
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:792
+#: ../crates/fdebm-gtk/src/gtk_app.rs:803
+msgid "Dependency check failed"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:807
+#: ../crates/fdebm-gtk/src/gtk_app.rs:819
 #, rust-format
 msgid "<span foreground=\"red\" weight=\"bold\">Error: {0}</span>"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:806
-#, fuzzy, rust-format
-#| msgid "Requires the <b>removal</b> of %s packages\n"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:834
+#, rust-format
 msgid "Requires the <b>removal</b> of {0} package"
 msgid_plural "Requires the <b>removal</b> of {0} packages"
-msgstr[0] "Vyžaduje <b>odstránenie</b> %s balíkov\n"
-msgstr[1] "Vyžaduje <b>odstránenie</b> %s balíkov\n"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:817
-#, fuzzy, rust-format
-#| msgid "Requires the installation of %s packages"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:845
+#, rust-format
 msgid "Requires the installation of {0} package"
 msgid_plural "Requires the installation of {0} packages"
-msgstr[0] "Vyžaduje inštaláciu %s balíkov"
-msgstr[1] "Vyžaduje inštaláciu %s balíkov"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:832
+#: ../crates/fdebm-gtk/src/gtk_app.rs:860
 msgid "Same version is already installed"
 msgstr "Rovnaká verzia už je nainštalovaná"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:834
+#: ../crates/fdebm-gtk/src/gtk_app.rs:861
 msgid "_Reinstall Package"
 msgstr "P_reinštalovať balík"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:846
+#: ../crates/fdebm-gtk/src/gtk_app.rs:871
 msgid "All dependencies are satisfied"
 msgstr "Všetky závislosti sú splnené"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:896
+#: ../crates/fdebm-gtk/src/gtk_app.rs:935
 msgid "Applying changes"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:899
+#: ../crates/fdebm-gtk/src/gtk_app.rs:938
 msgid "Close"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:914
+#: ../crates/fdebm-gtk/src/gtk_app.rs:953
 msgid "Terminal"
 msgstr "Terminál"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:917
+#: ../crates/fdebm-gtk/src/gtk_app.rs:956
 msgid "Automatically close after the changes have been successfully applied"
 msgstr "Automaticky zatvoriť po úspešnom dokončení zmien"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1007
-#, fuzzy
-#| msgid "gdebi"
-msgid "gdebi error"
-msgstr "gdebi"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1049
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1135
+msgid "fdebm error"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1035
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1196
+msgid "Modified configuration files"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1198
+msgid ""
+"The following configuration files have been modified locally and the new "
+"package ships different versions:"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1202
+msgid "Keep _my version"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1203
+msgid "Use the package's _new version"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1204
+msgid "_Cancel"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1235
 msgid "Install unauthenticated software?"
 msgstr "Nainštalovať softvér, ktorého pravosť nebola overená?"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1037
-#, fuzzy, rust-format
-#| msgid "The following packages are UNAUTHENTICATED: "
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1237
+#, rust-format
 msgid "The following packages are UNAUTHENTICATED: {0}"
-msgstr "pri nasledovných balíkoch NEBOLO MOŽNÉ OVERIŤ PRAVOSŤ: "
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1047
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1050
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1259
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1263
 msgid "Installing package file..."
 msgstr "Inštaluje sa súbor balíka..."
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1051
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1264
 msgid "Installation complete"
 msgstr "Inštalácia dokončená"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1052
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1265
 msgid "Failed to install package file"
 msgstr "Nepodarilo sa nainštalovať súbor balíka"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1074
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1079
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1282
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1286
 msgid "Removing package..."
 msgstr "Ostraňuje sa balík..."
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1080
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1287
 msgid "Removal complete"
 msgstr "Odstránenie dokončené"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1081
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1288
 msgid "Failed to remove package"
 msgstr "Nepodarilo sa odstrániť balík"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1122
-msgid "You need to grant administrative rights to remove software"
-msgstr "Aby ste mohli odstraňovať softvér, musíte udeliť oprávnenia správcu"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1123
-msgid "It is a possible risk to remove packages."
-msgstr "Odstraňovanie balíkov je možné riziko"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1127
-msgid "You need to grant administrative rights to install software"
-msgstr "Musíte programu udeliť práva správcu aby mohol inštalovať softvér"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1129
-#, fuzzy
-#| msgid ""
-#| "\n"
-#| "It is a possible security risk to install packages files manually.\n"
-#| "Install software from trustworthy software distributors only.\n"
-msgid ""
-"It is a possible security risk to install packages files manually.\n"
-"Install software from trustworthy software distributors only."
-msgstr ""
-"\n"
-"Inštalovať súbory balíkov manuálne je potenciálne bezpečnostné riziko.\n"
-"Inštalujte iba softvér od dôveryhodných dodávateľov.\n"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1147
-#, fuzzy
-#| msgid "Failed to open the software package\n"
-msgid "Failed to locate the program executable"
-msgstr "Nepodarilo sa otvoriť balík softvéru\n"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1171
-#, fuzzy
-#| msgid "Failed to install package file"
-msgid "Failed to start pkexec"
-msgstr "Nepodarilo sa nainštalovať súbor balíka"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1184
-#, fuzzy, rust-format
-#| msgid "<b>To be removed: %s</b>"
-msgid "<b>To be removed: {0}</b>"
-msgstr "<b>Na odstránenie: %s</b>"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1188
-#, fuzzy, rust-format
-#| msgid "To be installed: %s"
-msgid "To be installed: {0}"
-msgstr "Na inštaláciu: %s"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1196
-#, fuzzy
-#| msgid "Media Change"
-msgid "Changes"
-msgstr "Výmena nosiča"
-
-#, c-format
-#~ msgid ""
-#~ "usage: %prog [options] filename\n"
-#~ "For a graphical version run gdebi-gtk\n"
-#~ msgstr ""
-#~ "Použitie: %prog [voľby] názov_súboru\n"
-#~ "Grafickú verziu spustíte pomocou gdebi-gtk\n"
-
-#~ msgid "Run non-interactive (dangerous!)"
-#~ msgstr "Spustiť v neinteraktívnom režime (nebezpečné!)"
-
-#~ msgid "Do not show progress information"
-#~ msgstr "Nezobrazovať informácie o priebehu"
-
-#~ msgid "Simulate only and print a apt-get install compatible line to stderr"
-#~ msgstr ""
-#~ "Vykonať iba simuláciu a vypísať na štandardný chybový výstup riadok "
-#~ "kompatibilný s apt-get install"
-
-#~ msgid "Use alternative root dir"
-#~ msgstr "Použiť alternatívny koreňový adresár"
-
-#~ msgid "Need to be root to install packages"
-#~ msgstr "Aby ste mohli inštalovať balíky, musíte byť root"
-
-#~ msgid "Do you want to install the software package? [y/N]:"
-#~ msgstr "Chcete nainštalovať softvérový balík? [a/N]:"
-
-#~ msgid "Auto close when the install is finished"
-#~ msgstr "Automaticky zatvoriť pri dokončení inštalácie"
-
-#~ msgid "Use alternative datadir"
-#~ msgstr "Použiť alternatívny dátový priečinok"
-
-#~ msgid "Remove package"
-#~ msgstr "Odstrániť balík"
-
-#~ msgid "Software index is broken"
-#~ msgstr "Index softvéru je poškodený"
-
-#~ msgid ""
-#~ "This is a major failure of your software management system. Please check "
-#~ "for broken packages with synaptic, check the file permissions and "
-#~ "correctness of the file '/etc/apt/sources.list' and reload the software "
-#~ "information with: 'sudo apt-get update' and 'sudo apt-get install -f'."
-#~ msgstr ""
-#~ "Toto je závažná chyba vášho softvéru na správu softvéru. Skontrolujte "
-#~ "prosím pokazené balíky pomocou aplikácie Synaptic, skontrolujte "
-#~ "oprávnenia a správnosť súboru „/etc/apt/sources.list“ aktualizujte "
-#~ "informácie o softvéri pomocou „sudo apt-get update“ a „sudo apt-get "
-#~ "install -f“."
-
-#~ msgid "Install and view software packages"
-#~ msgstr "Inštalácia a zobrazenie balíkov softvéru"
-
-#~ msgid "GPL, see /usr/share/common-licenses/GPL"
-#~ msgstr "GPL, pozri /usr/share/common-licenses/GPL"
-
-#~ msgid "<b>To install the following changes are required:</b>"
-#~ msgstr "<b>Nasledovné zmeny umožnia inštaláciu:</b>"
-
-#~ msgid "_Edit"
-#~ msgstr "_Upraviť"
-
-#~ msgid "<b><big>   </big></b>"
-#~ msgstr "<b><big>   </big></b>"
-
-#~ msgid "_Download Package"
-#~ msgstr "_Stiahnuť balík"
-
-#~ msgid "<b>Section:</b>"
-#~ msgstr "<b>Sekcia:</b>"
-
-#~ msgid "<b>Size:</b>"
-#~ msgstr "<b>Veľkosť:</b>"
-
-#~ msgid "  "
-#~ msgstr "  "
-
-#~ msgid "GDebi Package Installer"
-#~ msgstr "Inštalátor balíkov GDebi"
-
-#, python-format
-#~ msgid "%s is not available"
-#~ msgstr "Pole %s nie je dostupné"
-
-#~ msgid "Copy selected text"
-#~ msgstr "Kopírovať vybraný text"
-
-#~ msgid "Can not download as root"
-#~ msgstr "Nie je možné sťahovať ako root"
-
-#~ msgid ""
-#~ "Remote packages can not be downloaded when running as root. Please try "
-#~ "again as a normal user."
-#~ msgstr ""
-#~ "Vzdialené balíky nie je možné sťahovať ak ste prihlásený ako root. "
-#~ "Prosím,  skúste to znova ako obyčajný používateľ."
-
-#~ msgid "Downloading package"
-#~ msgstr "Sťahuje sa balík"
-
-#~ msgid "Download failed"
-#~ msgstr "Sťahovanie zlyhalo"
-
-#, python-format
-#~ msgid "Downloading the package failed: file '%s' '%s'"
-#~ msgstr "Sťahovanie balíka zlyhalo: súbor „%s“ „%s“"
-
-#, python-format
-#~ msgid "Package Installer - %s"
-#~ msgstr "Inštalátor balíkov - %s"
-
-#~ msgid "Error: "
-#~ msgstr "Chyba: "
-
-#~ msgid "Error: no longer provides "
-#~ msgstr "Chyba: už viac neposkytuje "
-
-#~ msgid "Open Software Package"
-#~ msgstr "Otvoriť balík softvéru"
-
-#~ msgid "Software packages"
-#~ msgstr "Balíky softvéru"
-
-#, python-format
-#~ msgid "One or more packages are required by %s, it cannot be removed."
-#~ msgstr "%s požaduje jeden alebo viac balíkov, nemožno ho odstrániť."
-
-#~ msgid "File not found"
-#~ msgstr "Súbor nebol nájdený"
-
-#~ msgid "You tried to install a file that does not (or no longer) exist. "
-#~ msgstr "Pokúsili ste sa nainštalovať súbor, ktorý (už) neexistuje. "
-
-#~ msgid ""
-#~ "Malicious software can damage your data and take control of your system.\n"
-#~ "\n"
-#~ "The packages below are not authenticated and could therefore be of "
-#~ "malicious nature."
-#~ msgstr ""
-#~ "Zákerný softvér (malware) môže poškodiť vaše dáta a ovládnuť systém.\n"
-#~ "\n"
-#~ "Tieto balíky nie sú overené a preto môžu byť nebezpečné."
-
-#~ msgid "Could not download all required files"
-#~ msgstr "Nepodarilo sa stiahnuť všetky požadované súbory"
-
-#~ msgid "Please check your internet connection or installation medium."
-#~ msgstr ""
-#~ "Skontrolujte prosím svoje pripojenie k internetu alebo inštalačný nosič."
-
-#~ msgid "Could not install all dependencies"
-#~ msgstr "Nebolo možné nainštalovať všetky závislosti"
-
-#~ msgid ""
-#~ "Usually this is related to an error of the software distributor. See the "
-#~ "terminal window for more details."
-#~ msgstr ""
-#~ "Toto sa zvyčajne týka chyby distribútora softvéru. Podrobnosti nájdete v "
-#~ "okne terminálu."
-
-#, python-format
-#~ msgid "Installing %s"
-#~ msgstr "Inštaluje sa %s"
-
-#, python-format
-#~ msgid "Removing %s"
-#~ msgstr "Odstraňuje sa %s"
-
-#~ msgid "Installation finished"
-#~ msgstr "Inštalácia dokončená"
-
-#~ msgid "Removal finished"
-#~ msgstr "Odstránenie dokončené"
-
-#, python-format
-#~ msgid "Package '%s' was installed"
-#~ msgstr "Bol nainštalovaný balík „%s“"
-
-#, python-format
-#~ msgid "Package '%s' was removed"
-#~ msgstr "Balík „%s“ bol odstránený"
-
-#, python-format
-#~ msgid "Failed to install package '%s'"
-#~ msgstr "Nepodarilo sa nainštalovať balík „%s“"
-
-#, python-format
-#~ msgid "Failed to remove package '%s'"
-#~ msgstr "Nepodarilo sa odstrániť balík „%s“"
-
-#~ msgid "Failed to completely install all dependencies"
-#~ msgstr "Nepodarilo sa úplne nainštalovať všetky závislosti"
-
-#~ msgid "Failed to completely remove package"
-#~ msgstr "Nepodarilo sa úplne odstrániť balík"
-
-#~ msgid "To fix this run 'sudo apt-get install -f' in a terminal window."
-#~ msgstr ""
-#~ "Ak chcete túto situáciu opraviť, spustite v okne terminálu „sudo apt-get "
-#~ "install -f“."
-
-#, python-format
-#~ msgid "Installing '%s'..."
-#~ msgstr "Inštaluje sa „%s“..."
-
-#, python-format
-#~ msgid "Removing '%s'..."
-#~ msgstr "Odstraňuje sa „%s“"
-
-#~ msgid "Installing dependencies..."
-#~ msgstr "Inštalujú sa závislosti..."
-
-#~ msgid "Downloading additional package files..."
-#~ msgstr "Sťahujú sa ďalšie súbory balíkov..."
-
-#, python-format
-#~ msgid "File %s of %s at %sB/s"
-#~ msgstr "Súbor %s z %s pri rýchlosti %sB/s"
-
-#, python-format
-#~ msgid "File %s of %s"
-#~ msgstr "Súbor %s z %s"
-
-#, python-format
-#~ msgid "Please insert '%s' into the drive '%s'"
-#~ msgstr "Prosím vložte „%s“ do mechaniky „%s“"
-
-#~ msgid "Configuration items must be specified with a =<value>\n"
-#~ msgstr "Položky konfigurácie je potrebné uviesť s =<hodnota>\n"
-
-#, python-format
-#~ msgid "Couldn't set APT option %s to %s\n"
-#~ msgstr "Nepodarilo sa nastaviť voľbu APT %s na hodnotu %s\n"
-
-#, python-format
-#~ msgid "Unknown package type '%s', exiting\n"
-#~ msgstr "Neznámy typ balíka „%s“, ukončuje sa\n"
-
-#~ msgid ""
-#~ "The package might be corrupted or you are not allowed to open the file. "
-#~ "Check the permissions of the file.\n"
-#~ msgstr ""
-#~ "Balík môže byť poškodený alebo nemáte oprávnenie na otvorenie súboru. "
-#~ "Skontrolujte oprávnenia súboru.\n"
-
-#~ msgid "This package is uninstallable\n"
-#~ msgstr "Tento balík nie je možné nainštalovať\n"
-
-#~ msgid "No description is available"
-#~ msgstr "Popis nie je dostupný"
-
-#~ msgid "Requires the REMOVAL of the following packages: "
-#~ msgstr "Vyžaduje ODSTRÁNENIE nasledovných balíkov: "
-
-#~ msgid "Requires the installation of the following packages: "
-#~ msgstr "Vyžaduje inštaláciu nasledovných balíkov: "
-
-#~ msgid "Included Files"
-#~ msgstr "Obsahuje súbory"
-
-#~ msgid "&Install Package"
-#~ msgstr "Na&inštalovať balík"
-
-#~ msgid "&Download Package"
-#~ msgstr "&Stiahnuť balík"
-
-#~ msgid "The package file does not exist"
-#~ msgstr "Súbor balíka neexistuje"
-
-#~ msgid ""
-#~ "A nonexistent file has been selected for installation. Please select an "
-#~ "existing .deb package file."
-#~ msgstr ""
-#~ "Na inštaláciu bol vybraný neexistujúci súbor. Prosím, vyberte existujúci "
-#~ "súbor balíka .deb."
-
-#~ msgid "&Reinstall Package"
-#~ msgstr "P&reinštalovať balík"
-
-#~ msgid "Re&install Package"
-#~ msgstr "Pre&inštalovať balík"
-
-#, python-format
-#~ msgid "To be removed: %s"
-#~ msgstr "Na odstránenie: %s"
-
-#~ msgid "Broken dependencies"
-#~ msgstr "Poškodené závislosti"
-
-#~ msgid ""
-#~ "Your system has broken dependencies. This application can not continue "
-#~ "until this is fixed. To fix it run 'gksudo synaptic' or 'sudo apt-get "
-#~ "install -f' in a terminal window."
-#~ msgstr ""
-#~ "Váš systém obsahuje poškodené závislosti. Táto aplikácia nemôže "
-#~ "pokračovať, kým nebude problém opravený. Ak to chcete opraviť, spustite v "
-#~ "okne terminálu „gksudo synaptic“ alebo „sudo apt-get install -f“."
-
-#, python-format
-#~ msgid ""
-#~ "The MIME type of this file is '%s' and can not be installed on this "
-#~ "system."
-#~ msgstr ""
-#~ "Typ MIME tohto súboru je „%s“ a nemožno ho na tomto systéme nainštalovať."
-
-#, python-format
-#~ msgid "Could not open '%s'"
-#~ msgstr "Nepodarilo sa otvoriť „%s“"
-
-#~ msgid ""
-#~ "The package might be corrupted or you are not allowed to open the file. "
-#~ "Check the permissions of the file."
-#~ msgstr ""
-#~ "Balík môže byť poškodený alebo nemáte oprávnenie otvoriť súbor. "
-#~ "Skontrolujte oprávnenia súboru."
-
-#~ msgid "Same version is available in a software channel"
-#~ msgstr "Zdroj softvéru poskytuje rovnakú verziu."
-
-#~ msgid ""
-#~ "You are recommended to install the software from the channel instead."
-#~ msgstr "Odporúča sa namiesto toho inštalovať softvér zo zdroja softvéru."
-
-#~ msgid "An older version is available in a software channel"
-#~ msgstr "Zdroj softvéru poskytuje staršiu verziu."
-
-#~ msgid ""
-#~ "Generally you are recommended to install the version from the software "
-#~ "channel, since it is usually better supported."
-#~ msgstr ""
-#~ "Vo všeobecnosti sa odporúča inštalovať softvér zo zdroja softvéru, "
-#~ "pretože je zvyčajne lepšie podporovaný."
-
-#~ msgid "A later version is available in a software channel"
-#~ msgstr "Zdroj softvéru poskytuje novšiu verziu."
-
-#~ msgid ""
-#~ "You are strongly advised to install the version from the software "
-#~ "channel, since it is usually better supported."
-#~ msgstr ""
-#~ "Dôrazne sa odporúča inštalovať softvér zo zdroja softvéru, pretože je "
-#~ "zvyčajne lepšie podporovaný."
-
-#~ msgid "Only one software management tool is allowed to run at the same time"
-#~ msgstr "Naraz môže bežať iba jeden nástroj na správu softvéru"
-
-#~ msgid ""
-#~ "Please close the other application e.g. 'Update Manager', 'aptitude' or "
-#~ "'Synaptic' first."
-#~ msgstr ""
-#~ "Prosím, najskôr zatvorte druhú aplikáciu (napr. „Správca aktualizácií“, "
-#~ "„aptitude“ alebo „Synaptic“)."
-
-#, python-format
-#~ msgid "Wrong architecture '%s'"
-#~ msgstr "Nesprávna architektúra „%s“"
-
-#~ msgid "Y"
-#~ msgstr "A"
-
-#~ msgid "Open..."
-#~ msgstr "Otvoriť..."
-
-#~ msgid "translator-credits"
-#~ msgstr ""
-#~ "Launchpad Contributions:\n"
-#~ "  6205 https://launchpad.net/~6205-reactivated-deactivatedaccount\n"
-#~ "  Martin https://launchpad.net/~martin10\n"
-#~ "  Matej Duman https://launchpad.net/~dumi\n"
-#~ "  Peter Chabada https://launchpad.net/~ubuntu-chabada\n"
-#~ "  helix84 https://launchpad.net/~helix84\n"
-#~ "  mehturt https://launchpad.net/~mehturt"
-
-#~ msgid "Software package"
-#~ msgstr "Balík softvéru"
-
-#~ msgid ""
-#~ "Malicous software can damage your data and take control of your system.\n"
-#~ "\n"
-#~ "The packages below are not authenticated and could therefor be of "
-#~ "malicous nature."
-#~ msgstr ""
-#~ "Zákerný softvér môže poškodiť vaše dáta a prebrať kontrolu nad vaším "
-#~ "systémom.\n"
-#~ "\n"
-#~ "Pravosť dolu uvedených balíkov nebola overená a preto môžu byť podvrhnuté."
-
-#~ msgid "Analysing dependencies"
-#~ msgstr "Analyzujú sa závislosti"
-
-#, python-format
-#~ msgid "Cannot install '%s'"
-#~ msgstr "Nemožno nainštalovať „%s“"
-
-#~ msgid "List of files could not be read, please report this as a bug"
-#~ msgstr ""
-#~ "Zoznam súborov, ktoré nebolo možné načítať. Ohláste to prosím ako chybu."
-
-#, python-format
-#~ msgid "IOError during filelist read: %s"
-#~ msgstr "V/V chyba počas čítania zoznamu súborov: %s"
-
-#~ msgid "<b>"
-#~ msgstr "<b>"

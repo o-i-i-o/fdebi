@@ -1,13 +1,12 @@
-# Korean translation for gdebi
-# Copyright (c) (c) 2006 Canonical Ltd, and Rosetta Contributors 2006
-# This file is distributed under the same license as the gdebi package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2006.
+# Korean translation for fdebm.
+# Copyright (C) fdebm contributors
+# Distributed under the terms of the GNU General Public License v3.0 or later.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: gdebi\n"
+"Project-Id-Version: fdebm 0.1.1\n"
 "Report-Msgid-Bugs-To: sebastian.heinlein@web.de\n"
-"POT-Creation-Date: 2026-10-22 14:45+0800\n"
+"POT-Creation-Date: 2026-10-22 23:27+0800\n"
 "PO-Revision-Date: 2012-03-12 18:24+0000\n"
 "Last-Translator: Kim Boram <boramism@gmail.com>\n"
 "Language-Team: Korean <ko@li.org>\n"
@@ -15,836 +14,362 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2014-03-12 19:04+0000\n"
-"X-Generator: Launchpad (build 16963)\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
 
-#: ../crates/gdebi-core/src/depcheck.rs:170
-msgid "No Architecture field in the package"
-msgstr "패키지에 아키텍쳐 구분 없음"
-
-#: ../crates/gdebi-core/src/depcheck.rs:180
-#, rust-format
-msgid ""
-"Wrong architecture '{0}' -- Run dpkg --add-architecture to add it and update "
-"afterwards"
-msgstr ""
-
-#: ../crates/gdebi-core/src/depcheck.rs:192
-msgid "A later version is already installed"
-msgstr "새 버전이 이미 설치되어 있습니다"
-
-#: ../crates/gdebi-core/src/depcheck.rs:234
-#, fuzzy, rust-format
-#| msgid "Dependency is not satisfiable: %s\n"
-msgid "Dependency is not satisfiable: {0}\n"
-msgstr "의존 패키지를 만족 못함: %s\n"
-
-#: ../crates/gdebi-core/src/depcheck.rs:237
-msgid "Failed to satisfy all dependencies (broken cache)"
-msgstr "모든 패키지 의존관계를 만족하는데 실패 하였습니다 (캐쉬 깨짐)"
-
-#: ../crates/gdebi-core/src/depcheck.rs:336
-#, fuzzy, rust-format
-#| msgid "Conflicts with the installed package '%s'\n"
-msgid "Conflicts with the installed package '{0}'"
-msgstr "설치되어있는 패키지 '%s'와 충돌함\n"
-
-#: ../crates/gdebi-core/src/depcheck.rs:359
-#, fuzzy, rust-format
-#| msgid "Breaks exisiting package '%s' dependency %s (%s %s)\n"
-msgid "Breaks existing package '{0}' dependency {1} ({2} {3})"
-msgstr "이미 존재하는 '%s' 패키지의 의존성 깨짐 %s (%s %s)\n"
-
-#: ../crates/gdebi-core/src/depcheck.rs:381
-#, fuzzy, rust-format
-#| msgid "Breaks exisiting package '%s' conflict: %s (%s %s)\n"
-msgid "Breaks existing package '{0}' conflict: {1} ({2} {3})"
-msgstr "이미 존재하는 '%s' 패키지와 충돌: %s (%s %s)\n"
-
-#: ../crates/gdebi-core/src/depcheck.rs:388
-#, rust-format
-msgid ""
-"Breaks existing package '{0}' that conflict: '{1}'. But the '{2}' provides "
-"it via: '{3}'"
-msgstr ""
-
-#: ../crates/gdebi-core/src/error.rs:31
+#: ../crates/fdebm-core/src/error.rs:40
 #, rust-format
 msgid "cannot open {0}: {1}"
 msgstr ""
 
-#: ../crates/gdebi-core/src/error.rs:33
-#, fuzzy, rust-format
-#| msgid "'%s' is not a Debian package"
+#: ../crates/fdebm-core/src/error.rs:44
+#, rust-format
 msgid "{0} is not a Debian package"
-msgstr "'%s'은(는) 데비안 패키지가 아닙니다"
+msgstr ""
 
-#: ../crates/gdebi-core/src/error.rs:34
+#: ../crates/fdebm-core/src/error.rs:47
 msgid "control file not found in package"
 msgstr ""
 
-#: ../crates/gdebi-core/src/error.rs:36
+#: ../crates/fdebm-core/src/error.rs:49
 #, rust-format
-msgid "{0} compressed control.tar is not supported yet (only gzip/plain)"
+msgid "cannot decompress control archive: {0}"
 msgstr ""
 
-#: ../crates/gdebi-core/src/error.rs:39
+#: ../crates/fdebm-core/src/error.rs:51
 #, rust-format
 msgid "missing control field: {0}"
 msgstr ""
 
-#: ../crates/gdebi-core/src/flow.rs:53
+#: ../crates/fdebm-core/src/error.rs:55
+#, rust-format
+msgid "subprocess {0} failed: {1}"
+msgstr ""
+
+#: ../crates/fdebm-core/src/error.rs:58
+#, rust-format
+msgid "cannot decompress repository index {0}: {1}"
+msgstr ""
+
+#: ../crates/fdebm-core/src/error.rs:61
+#, rust-format
+msgid "cannot download {0}: {1}"
+msgstr ""
+
+#: ../crates/fdebm-core/src/error.rs:62 ../crates/fdebm-gtk/src/gtk_app.rs:1161
+msgid "operation cancelled"
+msgstr ""
+
+#: ../crates/fdebm-core/src/flow.rs:53
 #, rust-format
 msgid "Binary file ({0}), {1} bytes"
 msgstr ""
 
-#: ../crates/gdebi-core/src/flow.rs:54
+#: ../crates/fdebm-core/src/flow.rs:54
 #, rust-format
 msgid "Binary file, {0} bytes"
 msgstr ""
 
-#: ../crates/gdebi-core/src/install.rs:47
-#, fuzzy
-#| msgid "Error during install: '%s'"
+#: ../crates/fdebm-core/src/install.rs:119
+#: ../crates/fdebm-core/src/install.rs:141
+#: ../crates/fdebm-core/src/install.rs:160
 msgid "Error during install"
-msgstr "설치 도중 오류가 발생했습니다: '%s'"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:60
+#: ../crates/fdebm-core/src/solver.rs:326
+#, rust-format
+msgid "Wrong architecture '{0}'"
+msgstr "잘못된 아키텍처 '{0}'"
+
+#: ../crates/fdebm-core/src/solver.rs:341
+msgid "A later version is already installed"
+msgstr "새 버전이 이미 설치되어 있습니다"
+
+#: ../crates/fdebm-core/src/solver.rs:567
+msgid ""
+"Failed to satisfy all dependencies (conflicting requests or missing packages)"
+msgstr ""
+
+#: ../crates/fdebm-daemon/src/txn.rs:371 ../crates/fdebm-daemon/src/txn.rs:428
+#, rust-format
+msgid "dpkg exited with status {0}"
+msgstr ""
+
+#: ../crates/fdebm-daemon/src/txn.rs:463
+#, rust-format
+msgid "Fetching file {0} of {1}"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:55
 msgid "simple tool to view and install deb files - GTK frontend"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:63
+#: ../crates/fdebm-gtk/src/gtk_app.rs:58
 msgid "Set an APT configuration option"
 msgstr "APT 설정 옵션 설정"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:65
-#, fuzzy
-#| msgid "'%s' is not a Debian package"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:60
 msgid "Debian package to open"
-msgstr "'%s'은(는) 데비안 패키지가 아닙니다"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:239
+#: ../crates/fdebm-gtk/src/gtk_app.rs:265
 msgid "Package Installer"
 msgstr "패키지 설치 프로그램"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:278
-msgid "_Details"
-msgstr "자세한 내용(_D)"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:286
+#: ../crates/fdebm-gtk/src/gtk_app.rs:299
 msgid "Package:"
 msgstr "패키지:"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:286
+#: ../crates/fdebm-gtk/src/gtk_app.rs:299
 msgid "Status:"
 msgstr "상태:"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:305
-#: ../crates/gdebi-gtk/src/gtk_app.rs:839
+#: ../crates/fdebm-gtk/src/gtk_app.rs:310
+#: ../crates/fdebm-gtk/src/gtk_app.rs:865
 msgid "_Install Package"
 msgstr "패키지 설치(_I)"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:306
+#: ../crates/fdebm-gtk/src/gtk_app.rs:311
 msgid "_Remove Package"
 msgstr "패키지 제거(_R)"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:334
+#: ../crates/fdebm-gtk/src/gtk_app.rs:339
 msgid "Description"
 msgstr "설명"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:350
-#, fuzzy
-#| msgid "<b>Version:</b>"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:355
 msgid "Version:"
-msgstr "<b>버전:</b>"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:351
-#, fuzzy
-#| msgid "<b>Maintainer:</b>"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:356
 msgid "Maintainer:"
-msgstr "<b>관리자:</b>"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:352
-#, fuzzy
-#| msgid "<b>Priority:</b>"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:357
 msgid "Priority:"
-msgstr "<b>우선 순위:</b>"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:353
-#, fuzzy
-#| msgid "Description:"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:358
 msgid "Section:"
-msgstr "설명:"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:354
+#: ../crates/fdebm-gtk/src/gtk_app.rs:359
 msgid "Size:"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:365
+#: ../crates/fdebm-gtk/src/gtk_app.rs:370
 msgid "Details"
 msgstr "자세한 내용"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:393
+#: ../crates/fdebm-gtk/src/gtk_app.rs:398
 msgid "Included files"
 msgstr "포함된 파일"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:403
+#: ../crates/fdebm-gtk/src/gtk_app.rs:408
 msgid "Lintian output"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:505
+#: ../crates/fdebm-gtk/src/gtk_app.rs:504
 msgid "Selection is a directory"
 msgstr "선택한 것은 디렉터리입니다"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:522
+#: ../crates/fdebm-gtk/src/gtk_app.rs:527
 msgid "File content can not be extracted"
 msgstr "파일 내용을 풀 수 없습니다"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:523
-#, fuzzy, rust-format
-#| msgid "Error reading file content '%s'"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:528
+#, rust-format
 msgid "Error reading file content '{0}'"
-msgstr "파일 내용 '%s'을(를) 읽던 중 오류가 발생했습니다"
+msgstr "파일 내용 '{0}'을(를) 읽던 중 오류가 발생했습니다"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:534
+#: ../crates/fdebm-gtk/src/gtk_app.rs:539
 msgid "Package control data"
 msgstr "패키지 제어 데이터"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:540
+#: ../crates/fdebm-gtk/src/gtk_app.rs:545
 msgid "Upstream data"
 msgstr "업스트림 데이터"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:552
+#: ../crates/fdebm-gtk/src/gtk_app.rs:556
 msgid "Error reading filelist"
 msgstr "파일 목록을 읽는 중 오류 발생"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:563
+#: ../crates/fdebm-gtk/src/gtk_app.rs:567
 msgid ""
 "No lintian available.\n"
 "Please install using sudo apt-get install lintian"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:567
+#: ../crates/fdebm-gtk/src/gtk_app.rs:571
 msgid "Running lintian..."
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:586
+#: ../crates/fdebm-gtk/src/gtk_app.rs:589
 #, rust-format
 msgid "Failed to run lintian: {0}"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:631
+#: ../crates/fdebm-gtk/src/gtk_app.rs:637
 #, rust-format
 msgid "Lintian finished with exit status {0}"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:643
+#: ../crates/fdebm-gtk/src/gtk_app.rs:652
 msgid "_Open…"
 msgstr "열기(_O)…"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:644
+#: ../crates/fdebm-gtk/src/gtk_app.rs:653
 msgid "_Refresh"
 msgstr "새로 고침(_R)"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:645
+#: ../crates/fdebm-gtk/src/gtk_app.rs:654
 msgid "_Quit"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:647
+#: ../crates/fdebm-gtk/src/gtk_app.rs:656
 msgid "_About"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:649
+#: ../crates/fdebm-gtk/src/gtk_app.rs:658
 msgid "_File"
 msgstr "파일(_F)"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:650
+#: ../crates/fdebm-gtk/src/gtk_app.rs:659
 msgid "_Help"
 msgstr "도움말(_H)"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:659
-#, fuzzy
-#| msgid "'%s' is not a Debian package"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:668
 msgid "Open Debian package"
-msgstr "'%s'은(는) 데비안 패키지가 아닙니다"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:697
+#: ../crates/fdebm-gtk/src/gtk_app.rs:708
 msgid "simple tool to view and install deb files"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:718
+#: ../crates/fdebm-gtk/src/gtk_app.rs:731
 msgid "Loading..."
 msgstr "불러오는 중..."
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:731
-#, fuzzy, rust-format
-#| msgid "gdebi error, file not found: %s\n"
-msgid "gdebi error, file not found: {0}"
-msgstr "gdebi 오류, 파일을 찾을 수 없음: %s\n"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:745
+#, rust-format
+msgid "fdebm error, file not found: {0}"
+msgstr "fdebm 오류, 파일을 찾을 수 없음: {0}"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:745
-#, fuzzy
-#| msgid "Failed to open the software package\n"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:760
 msgid "Could not open the software package"
-msgstr "소프트웨어 패키지를 열 수 없습니다\n"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:768
-msgid "Error opening the cache"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:780
-#, fuzzy
-#| msgid "Dependency problems"
-msgid "Dependency check failed"
-msgstr "의존성 문제 발생"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:778
+msgid "Checking dependencies..."
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:792
+#: ../crates/fdebm-gtk/src/gtk_app.rs:803
+msgid "Dependency check failed"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:807
+#: ../crates/fdebm-gtk/src/gtk_app.rs:819
 #, rust-format
 msgid "<span foreground=\"red\" weight=\"bold\">Error: {0}</span>"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:806
-#, fuzzy, rust-format
-#| msgid "Requires the <b>removal</b> of %s packages\n"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:834
+#, rust-format
 msgid "Requires the <b>removal</b> of {0} package"
 msgid_plural "Requires the <b>removal</b> of {0} packages"
-msgstr[0] "패키지 %s을(를) <b>제거</b>해야 합니다\n"
-msgstr[1] "패키지 %s을(를) <b>제거</b>해야 합니다\n"
+msgstr[0] ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:817
-#, fuzzy, rust-format
-#| msgid "Requires the installation of %s packages"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:845
+#, rust-format
 msgid "Requires the installation of {0} package"
 msgid_plural "Requires the installation of {0} packages"
-msgstr[0] "패키지 %s을(를) 설치해야 합니다."
-msgstr[1] "패키지 %s을(를) 설치해야 합니다."
+msgstr[0] ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:832
+#: ../crates/fdebm-gtk/src/gtk_app.rs:860
 msgid "Same version is already installed"
 msgstr "이미 같은 버전을 설치했습니다"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:834
+#: ../crates/fdebm-gtk/src/gtk_app.rs:861
 msgid "_Reinstall Package"
 msgstr "패키지 다시 설치(_R)"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:846
+#: ../crates/fdebm-gtk/src/gtk_app.rs:871
 msgid "All dependencies are satisfied"
 msgstr "모든 의존 패키지가 만족함"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:896
+#: ../crates/fdebm-gtk/src/gtk_app.rs:935
 msgid "Applying changes"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:899
+#: ../crates/fdebm-gtk/src/gtk_app.rs:938
 msgid "Close"
 msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:914
+#: ../crates/fdebm-gtk/src/gtk_app.rs:953
 msgid "Terminal"
 msgstr "터미널"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:917
+#: ../crates/fdebm-gtk/src/gtk_app.rs:956
 msgid "Automatically close after the changes have been successfully applied"
 msgstr "바뀐 내용을 적용하는 데 성공하면 자동으로 창 닫기"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1007
-#, fuzzy
-#| msgid "gdebi"
-msgid "gdebi error"
-msgstr "gdebi"
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1049
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1135
+msgid "fdebm error"
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1035
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1196
+msgid "Modified configuration files"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1198
+msgid ""
+"The following configuration files have been modified locally and the new "
+"package ships different versions:"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1202
+msgid "Keep _my version"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1203
+msgid "Use the package's _new version"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1204
+msgid "_Cancel"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1235
 msgid "Install unauthenticated software?"
 msgstr "인증되지 않은 소프트웨어를 설치 합니까?"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1037
-#, fuzzy, rust-format
-#| msgid "The following packages are UNAUTHENTICATED: "
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1237
+#, rust-format
 msgid "The following packages are UNAUTHENTICATED: {0}"
-msgstr "다음 패키지는 인증되지 않았습니다: "
+msgstr ""
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1047
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1050
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1259
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1263
 msgid "Installing package file..."
 msgstr "패키지 파일 설치 중..."
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1051
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1264
 msgid "Installation complete"
 msgstr "설치 완료"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1052
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1265
 msgid "Failed to install package file"
 msgstr "패키지 파일을 설치할 수 없습니다"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1074
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1079
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1282
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1286
 msgid "Removing package..."
 msgstr "패키지 제거 중..."
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1080
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1287
 msgid "Removal complete"
 msgstr "제거 완료"
 
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1081
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1288
 msgid "Failed to remove package"
 msgstr "패키지 제거 실패"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1122
-msgid "You need to grant administrative rights to remove software"
-msgstr "소프트웨어를 제거하려면 관리자 권한이 필요합니다"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1123
-msgid "It is a possible risk to remove packages."
-msgstr "피패키지를 제거하는 것은 위험할 수 있습니다."
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1127
-msgid "You need to grant administrative rights to install software"
-msgstr "소프트웨어를 설치하려면 관리자 권한이 필요합니다"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1129
-#, fuzzy
-#| msgid ""
-#| "\n"
-#| "It is a possible security risk to install packages files manually.\n"
-#| "Install software from trustworthy software distributors only.\n"
-msgid ""
-"It is a possible security risk to install packages files manually.\n"
-"Install software from trustworthy software distributors only."
-msgstr ""
-"\n"
-"패키지를 직접 설치하는 것은 보안 상 위험할 수 있습니다.\n"
-"신뢰할 수 있는 소프트웨어 배포자가 배포한 소프트웨어만 설치하십시오.\n"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1147
-#, fuzzy
-#| msgid "Failed to open the software package\n"
-msgid "Failed to locate the program executable"
-msgstr "소프트웨어 패키지를 열 수 없습니다\n"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1171
-#, fuzzy
-#| msgid "Failed to install package file"
-msgid "Failed to start pkexec"
-msgstr "패키지 파일을 설치할 수 없습니다"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1184
-#, fuzzy, rust-format
-#| msgid "<b>To be removed: %s</b>"
-msgid "<b>To be removed: {0}</b>"
-msgstr "<b>제거함: %s</b>"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1188
-#, fuzzy, rust-format
-#| msgid "To be installed: %s"
-msgid "To be installed: {0}"
-msgstr "설치함: %s"
-
-#: ../crates/gdebi-gtk/src/gtk_app.rs:1196
-#, fuzzy
-#| msgid "Media Change"
-msgid "Changes"
-msgstr "미디어 바꾸기"
-
-#, c-format
-#~ msgid ""
-#~ "usage: %prog [options] filename\n"
-#~ "For a graphical version run gdebi-gtk\n"
-#~ msgstr "사용법: %prog [옵션] 파일 이름\n"
-
-#~ msgid "Run non-interactive (dangerous!)"
-#~ msgstr "대화없이 실행 (위험!)"
-
-#~ msgid "Do not show progress information"
-#~ msgstr "진행 상황을 표시하지 않음"
-
-#~ msgid "Simulate only and print a apt-get install compatible line to stderr"
-#~ msgstr "시뮬레이션을 수행하고 apt-get install 호환 라인을 표준 에러로 보기"
-
-#~ msgid "Use alternative root dir"
-#~ msgstr "대체 루트 디렉토리 사용"
-
-#~ msgid "Need to be root to install packages"
-#~ msgstr "패키지를 설치하려면 관리자 권한이 필요합니다"
-
-#~ msgid "Do you want to install the software package? [y/N]:"
-#~ msgstr "소프트웨어 패키지를 설치하시겠습니까? [y/N]:"
-
-#~ msgid "Auto close when the install is finished"
-#~ msgstr "설치가 끝나면 자동으로 닫기"
-
-#~ msgid "Use alternative datadir"
-#~ msgstr "대체 데이터 디렉터리 사용"
-
-#~ msgid "Remove package"
-#~ msgstr "패키지 제거"
-
-#~ msgid "Software index is broken"
-#~ msgstr "소프트웨어 목록이 망가짐"
-
-#~ msgid ""
-#~ "This is a major failure of your software management system. Please check "
-#~ "for broken packages with synaptic, check the file permissions and "
-#~ "correctness of the file '/etc/apt/sources.list' and reload the software "
-#~ "information with: 'sudo apt-get update' and 'sudo apt-get install -f'."
-#~ msgstr ""
-#~ "이 문제는 소프트웨어 관리 시스템의 중대한 오류입니다. 시냅틱을 이용하여 잘"
-#~ "못된 꾸러미들이 있는지 확인하고, '/etc/apt/sources.list' 파일을 사용할 수 "
-#~ "있는 권한 및 내용을 점검한 뒤 'sudo apt-get update' 그리고 'sudo apt-get "
-#~ "install -f' 명령으로 소프트웨어 정보를 다시 불러오십시오."
-
-#~ msgid "Install and view software packages"
-#~ msgstr "소프트웨어 패키지를 설치하고 봅니다"
-
-#~ msgid "GPL, see /usr/share/common-licenses/GPL"
-#~ msgstr "GPL, /usr/share/common-licenses/GPL 참조"
-
-#~ msgid "<b>To install the following changes are required:</b>"
-#~ msgstr "<b>설치하려면 다음 내용을 바꿔야 합니다:</b>"
-
-#~ msgid "_Edit"
-#~ msgstr "편집(_E)"
-
-#~ msgid "<b><big>   </big></b>"
-#~ msgstr "<b><big> </big></b>"
-
-#~ msgid "_Download Package"
-#~ msgstr "패키지 다운로드(_D)"
-
-#~ msgid "<b>Section:</b>"
-#~ msgstr "<b>분류:</b>"
-
-#~ msgid "<b>Size:</b>"
-#~ msgstr "<b>크기:</b>"
-
-#~ msgid "  "
-#~ msgstr "  "
-
-#~ msgid "GDebi Package Installer"
-#~ msgstr "GDebi 패키지 설치 프로그램"
-
-#, python-format
-#~ msgid "%s is not available"
-#~ msgstr "%s을(를) 사용할 수 없습니다"
-
-#~ msgid "Copy selected text"
-#~ msgstr "선택한 텍스트 복사"
-
-#~ msgid "Can not download as root"
-#~ msgstr "관리자 권한으로 다운로드할 수 없습니다"
-
-#~ msgid ""
-#~ "Remote packages can not be downloaded when running as root. Please try "
-#~ "again as a normal user."
-#~ msgstr ""
-#~ "관리자 권한으로 실행하고 있을 때는 원격 패키지를 다운로드할 수 없습니다. "
-#~ "일반 사용자로 다시 시도하십시오."
-
-#~ msgid "Downloading package"
-#~ msgstr "패키지 파일 다운로드"
-
-#~ msgid "Download failed"
-#~ msgstr "다운로드 실패"
-
-#, python-format
-#~ msgid "Downloading the package failed: file '%s' '%s'"
-#~ msgstr "패키지 다운로드 실패: 파일 '%s' '%s'"
-
-#, python-format
-#~ msgid "Package Installer - %s"
-#~ msgstr "패키지 설치 프로그램 - %s"
-
-#~ msgid "Error: "
-#~ msgstr "오류: "
-
-#~ msgid "Error: no longer provides "
-#~ msgstr "오류: 더 이상 제공하지 않음 "
-
-#~ msgid "Open Software Package"
-#~ msgstr "소프트웨어 패키지 열기"
-
-#~ msgid "Software packages"
-#~ msgstr "소프트웨어 패키지"
-
-#, python-format
-#~ msgid "One or more packages are required by %s, it cannot be removed."
-#~ msgstr "하나 이상의 패키지가 %s을(를) 필요로 합니다. 제거할 수 없습니다."
-
-#~ msgid "File not found"
-#~ msgstr "파일을 찾을 수 없음"
-
-#~ msgid "You tried to install a file that does not (or no longer) exist. "
-#~ msgstr "설치하려는 파일이 (더이상)존재하지 않습니다. "
-
-#~ msgid ""
-#~ "Malicious software can damage your data and take control of your system.\n"
-#~ "\n"
-#~ "The packages below are not authenticated and could therefore be of "
-#~ "malicious nature."
-#~ msgstr ""
-#~ "악의를 가지고 만든 프로그램이 시스템의 권한을 빼앗고 자료를 파괴할 수 있습"
-#~ "니다.\n"
-#~ "\n"
-#~ "아래의 패키지는 인증되지 않았으며 악의를 가지고 만들어 진 것일 수 있습니"
-#~ "다."
-
-#~ msgid "Could not download all required files"
-#~ msgstr "필요한 모든 파일을 다운로드 할 수 없습니다"
-
-#~ msgid "Please check your internet connection or installation medium."
-#~ msgstr "인터넷 연결 또는 설치 매체를 확인 하십시오."
-
-#~ msgid "Could not install all dependencies"
-#~ msgstr "의존 패키지를 전부 설치할 수 없습니다"
-
-#~ msgid ""
-#~ "Usually this is related to an error of the software distributor. See the "
-#~ "terminal window for more details."
-#~ msgstr ""
-#~ "이것은 보통 소프트웨어 배포자의 오류와 관련된 문제입니다. 자세한 내용은 터"
-#~ "미널 창을 참조하십시오."
-
-#, python-format
-#~ msgid "Installing %s"
-#~ msgstr "%s 설치 중"
-
-#, python-format
-#~ msgid "Removing %s"
-#~ msgstr "%s을(를) 제거하는 중"
-
-#~ msgid "Installation finished"
-#~ msgstr "설치 완료"
-
-#~ msgid "Removal finished"
-#~ msgstr "제거 완료"
-
-#, python-format
-#~ msgid "Package '%s' was installed"
-#~ msgstr "패키지 '%s'을(를) 설치했습니다"
-
-#, python-format
-#~ msgid "Package '%s' was removed"
-#~ msgstr "패키지 '%s'을(를) 제거했습니다"
-
-#, python-format
-#~ msgid "Failed to install package '%s'"
-#~ msgstr "패키지 '%s'을(를) 설치할 수 없습니다"
-
-#, python-format
-#~ msgid "Failed to remove package '%s'"
-#~ msgstr "패키지 '%s'을(를) 제거할 수 없습니다"
-
-#~ msgid "Failed to completely install all dependencies"
-#~ msgstr "모든 의존 패키지를 완전히 설치할 수 없습니다"
-
-#~ msgid "Failed to completely remove package"
-#~ msgstr "패키지를 완전히 제거할 수 없습니다"
-
-#~ msgid "To fix this run 'sudo apt-get install -f' in a terminal window."
-#~ msgstr ""
-#~ "이것을 고치려면 터미널 창에서 'sudo apt-get install -f' 명령을 실행 하십시"
-#~ "오."
-
-#, python-format
-#~ msgid "Installing '%s'..."
-#~ msgstr "'%s' 설치 중..."
-
-#, python-format
-#~ msgid "Removing '%s'..."
-#~ msgstr "'%s' 제거 중..."
-
-#~ msgid "Installing dependencies..."
-#~ msgstr "의존 패키지 설치 중..."
-
-#~ msgid "Downloading additional package files..."
-#~ msgstr "추가 패키지 파일 다운로드 중..."
-
-#, python-format
-#~ msgid "File %s of %s at %sB/s"
-#~ msgstr "파일 %s / %s, 속도 %sB/s"
-
-#, python-format
-#~ msgid "File %s of %s"
-#~ msgstr "파일 %s / %s"
-
-#, python-format
-#~ msgid "Please insert '%s' into the drive '%s'"
-#~ msgstr "'%s'(을)를 '%s' 드라이브에 넣으십시오."
-
-#~ msgid "Configuration items must be specified with a =<value>\n"
-#~ msgstr "설정은 =<value>(으)로 지정해야 합니다\n"
-
-#, python-format
-#~ msgid "Couldn't set APT option %s to %s\n"
-#~ msgstr "APT 설정 %s을(를) %s(으)로 바꿀 수 없습니다\n"
-
-#, python-format
-#~ msgid "Unknown package type '%s', exiting\n"
-#~ msgstr "'%s'은(는) 알 수 없는 패키지입니다. 끝냅니다\n"
-
-#~ msgid ""
-#~ "The package might be corrupted or you are not allowed to open the file. "
-#~ "Check the permissions of the file.\n"
-#~ msgstr ""
-#~ "패키지가 망가졌거나, 파일을 열 수 있는 권한이 없는 것 같습니다. 파일의 권"
-#~ "한을 확인하십시오.\n"
-
-#~ msgid "This package is uninstallable\n"
-#~ msgstr "이 패키지는 설치할 수 없습니다\n"
-
-#~ msgid "No description is available"
-#~ msgstr "설명이 없습니다"
-
-#~ msgid "Requires the REMOVAL of the following packages: "
-#~ msgstr "다음 패키지를 제거해야 합니다: "
-
-#~ msgid "Requires the installation of the following packages: "
-#~ msgstr "다음 패키지를 설치해야 합니다: "
-
-#~ msgid "Included Files"
-#~ msgstr "포함된 파일"
-
-#~ msgid "&Install Package"
-#~ msgstr "패키지 설치(&I)"
-
-#~ msgid "&Download Package"
-#~ msgstr "패키지 다운로드(&D)"
-
-#~ msgid "The package file does not exist"
-#~ msgstr "패키지 파일이 존재하지 않습니다"
-
-#~ msgid ""
-#~ "A nonexistent file has been selected for installation. Please select an "
-#~ "existing .deb package file."
-#~ msgstr ""
-#~ "설치할 파일로 존재하지 않는 파일을 선택했습니다. 존재하는 데비안 패키지 파"
-#~ "일을 선택해주십시오."
-
-#~ msgid "&Reinstall Package"
-#~ msgstr "패키지 다시 설치(&R)"
-
-#~ msgid "Re&install Package"
-#~ msgstr "패키지 다시 설치(&I)"
-
-#, python-format
-#~ msgid "To be removed: %s"
-#~ msgstr "제거함: %s"
-
-#~ msgid "Broken dependencies"
-#~ msgstr "의존성 망가짐"
-
-#~ msgid ""
-#~ "Your system has broken dependencies. This application can not continue "
-#~ "until this is fixed. To fix it run 'gksudo synaptic' or 'sudo apt-get "
-#~ "install -f' in a terminal window."
-#~ msgstr ""
-#~ "시스템 의존성이 망가졌습니다. 이 문제를 해결하기 전에는 프로그램을 계속 사"
-#~ "용 할 수 없습니다. 이 문제를 해결하려면 'gksudo synaptic' 또는 'sudo apt-"
-#~ "get install -f' 명령을 터미널 창에서 실행하십시오."
-
-#, python-format
-#~ msgid ""
-#~ "The MIME type of this file is '%s' and can not be installed on this "
-#~ "system."
-#~ msgstr "이 파일의 MIME 형식 '%s'은(는) 이 시스템에 설치할 수 없습니다."
-
-#, python-format
-#~ msgid "Could not open '%s'"
-#~ msgstr "'%s'을(를) 열 수 없습니다"
-
-#~ msgid ""
-#~ "The package might be corrupted or you are not allowed to open the file. "
-#~ "Check the permissions of the file."
-#~ msgstr ""
-#~ "패키지가 잘못 되었거나 파일을 여는 것이 허용되지 않았습니다. 파일의 접근 "
-#~ "권한을 점검 하십시오."
-
-#~ msgid "Same version is available in a software channel"
-#~ msgstr "소프트웨어 보관소에서 같은 버전을 사용할 수 있습니다"
-
-#~ msgid ""
-#~ "You are recommended to install the software from the channel instead."
-#~ msgstr "보관소에 있는 소프트웨어를 설치하는 것을 권장 합니다."
-
-#~ msgid "An older version is available in a software channel"
-#~ msgstr "소프트웨어 보관소에서 이전 버전을 사용할 수 있습니다"
-
-#~ msgid ""
-#~ "Generally you are recommended to install the version from the software "
-#~ "channel, since it is usually better supported."
-#~ msgstr ""
-#~ "일반적으로 보다 나은 지원을 받을 수 있는 소프트웨어 보관소에 있는 버전을 "
-#~ "설치하는 것을 권장 합니다."
-
-#~ msgid "A later version is available in a software channel"
-#~ msgstr "소프트웨어 보관소에서 새 버전을 사용할 수 있습니다"
-
-#~ msgid ""
-#~ "You are strongly advised to install the version from the software "
-#~ "channel, since it is usually better supported."
-#~ msgstr ""
-#~ "보다 나은 지원을 받을 수 있는 소프트웨어 보관소에 있는 버전을 설치하는 것"
-#~ "을 강력히 추천 합니다."
-
-#~ msgid "Only one software management tool is allowed to run at the same time"
-#~ msgstr "하나의 소프트웨어 관리 도구 만을 실행할 수 있습니다."
-
-#~ msgid ""
-#~ "Please close the other application e.g. 'Update Manager', 'aptitude' or "
-#~ "'Synaptic' first."
-#~ msgstr ""
-#~ "먼저 다른 프로그램 예를 들어 '업데이트 관리자', 'aptitude' 또는 '시냅틱' "
-#~ "프로그램을 종료 하십시오."
-
-#, python-format
-#~ msgid "Wrong architecture '%s'"
-#~ msgstr "잘못된 아키텍처 '%s'"
-
-#~ msgid "Y"
-#~ msgstr "Y"
-
-#~ msgid "Open..."
-#~ msgstr "열기..."
-
-#~ msgid "Software package"
-#~ msgstr "소프트웨어 패키지"
-
-#~ msgid ""
-#~ "Malicous software can damage your data and take control of your system.\n"
-#~ "\n"
-#~ "The packages below are not authenticated and could therefor be of "
-#~ "malicous nature."
-#~ msgstr ""
-#~ "오동작하는 소프트웨어는 자료를 손실시키거나 시스템을 통제할 수 있습니다.\n"
-#~ "\n"
-#~ "아래의 패키지는 인증되지 않았으며 오동작하는 소프트웨어일 수도 있습니다."
-
-#~ msgid "Analysing dependencies"
-#~ msgstr "의존성 분석 중"
-
-#, python-format
-#~ msgid "IOError during filelist read: %s"
-#~ msgstr "파일 목록 읽는 중 I/O 에러: %s"
-
-#~ msgid "List of files could not be read, please report this as a bug"
-#~ msgstr "파일 목록을 읽을 수 없습니다, 이 문제를 버그 보고 해주십시오."
-
-#~ msgid "<b>"
-#~ msgstr "<b>"
-
-#, python-format
-#~ msgid "Cannot install '%s'"
-#~ msgstr "'%s' (을)를 설치할 수 없습니다"
-
-#~ msgid "translator-credits"
-#~ msgstr ""
-#~ "Launchpad Contributions:\n"
-#~ "  Andy Ju https://launchpad.net/~posilife\n"
-#~ "  Bugbear5 https://launchpad.net/~bugbear5\n"
-#~ "  Bundo https://launchpad.net/~kang-bundo\n"
-#~ "  Kim Boram https://launchpad.net/~boramism\n"
-#~ "  atie https://launchpad.net/~atie-at-matrix\n"
-#~ "  funcrush https://launchpad.net/~xfuncrushx\n"
-#~ "  sangho https://launchpad.net/~sangho"
-
-#~ msgid "_Open..."
-#~ msgstr "열기(_O).."
