@@ -647,12 +647,18 @@ fn run_lintian(gui: &MainWindow, file: &Path) {
 }
 
 fn setup_actions(app: &Application, gui: &Rc<MainWindow>) {
-    // 菜单栏:File: Open…/Refresh/Quit;Help: About
+    // 菜单栏:File: Open…/Refresh/Quit;Help: Keyboard Shortcuts/About
     let file_menu = gio::Menu::new();
     file_menu.append(Some(gettext("_Open…").as_str()), Some("app.open"));
     file_menu.append(Some(gettext("_Refresh").as_str()), Some("app.refresh"));
     file_menu.append(Some(gettext("_Quit").as_str()), Some("app.quit"));
+    // Help 保持两项:GTK 弹出菜单只有一项时,内核滚动区按 46px 最小高度撑开,
+    // 底部会多出一条空白行(两项及以上不复现)
     let help_menu = gio::Menu::new();
+    help_menu.append(
+        Some(gettext("_Keyboard Shortcuts").as_str()),
+        Some("app.shortcuts"),
+    );
     help_menu.append(Some(gettext("_About").as_str()), Some("app.about"));
     let menubar = gio::Menu::new();
     menubar.append_submenu(Some(gettext("_File").as_str()), &file_menu);
@@ -695,6 +701,19 @@ fn setup_actions(app: &Application, gui: &Rc<MainWindow>) {
     // 终结应用,曾表现为"无法关闭";GApplication::quit 无条件收尾
     quit.connect_activate(move |_, _| app_quit.quit());
     app.add_action(&quit);
+
+    // 快捷键速查(Help 的第二项)
+    let shortcuts = gio::SimpleAction::new("shortcuts", None);
+    let win_shortcuts = gui.window.clone();
+    shortcuts.connect_activate(move |_, _| {
+        show_alert(
+            &win_shortcuts,
+            AlertKind::Info,
+            gettext("Keyboard Shortcuts").as_str(),
+            Some(gettext("Ctrl+O  Open a Debian package\nCtrl+Q  Quit").as_str()),
+        );
+    });
+    app.add_action(&shortcuts);
 
     let about = gio::SimpleAction::new("about", None);
     let win_about = gui.window.clone();
