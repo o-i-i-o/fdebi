@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fdebm 0.1.1\n"
 "Report-Msgid-Bugs-To: sebastian.heinlein@web.de\n"
-"POT-Creation-Date: 2026-10-22 23:27+0800\n"
+"POT-Creation-Date: 2026-10-29 07:55+0800\n"
 "PO-Revision-Date: 2013-11-27 17:12+0000\n"
 "Last-Translator: Andrej Znidarsic <andrej.znidarsic@gmail.com>\n"
 "Language-Team: Slovenian <sl@li.org>\n"
@@ -56,7 +56,7 @@ msgstr ""
 msgid "cannot download {0}: {1}"
 msgstr ""
 
-#: ../crates/fdebm-core/src/error.rs:62 ../crates/fdebm-gtk/src/gtk_app.rs:1161
+#: ../crates/fdebm-core/src/error.rs:62 ../crates/fdebm-gtk/src/gtk_app.rs:1180
 msgid "operation cancelled"
 msgstr ""
 
@@ -125,7 +125,7 @@ msgid "Status:"
 msgstr "Stanje:"
 
 #: ../crates/fdebm-gtk/src/gtk_app.rs:310
-#: ../crates/fdebm-gtk/src/gtk_app.rs:865
+#: ../crates/fdebm-gtk/src/gtk_app.rs:884
 msgid "_Install Package"
 msgstr "_Namesti paket"
 
@@ -228,54 +228,68 @@ msgstr "O_sveži"
 msgid "_Quit"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:656
+#: ../crates/fdebm-gtk/src/gtk_app.rs:659
+msgid "_Keyboard Shortcuts"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:662
 msgid "_About"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:658
+#: ../crates/fdebm-gtk/src/gtk_app.rs:664
 msgid "_File"
 msgstr "_Datoteka"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:659
+#: ../crates/fdebm-gtk/src/gtk_app.rs:665
 msgid "_Help"
 msgstr "_Pomoč"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:668
+#: ../crates/fdebm-gtk/src/gtk_app.rs:674
 msgid "Open Debian package"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:708
+#: ../crates/fdebm-gtk/src/gtk_app.rs:712
+msgid "Keyboard Shortcuts"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:713
+msgid ""
+"Ctrl+O  Open a Debian package\n"
+"Ctrl+Q  Quit"
+msgstr ""
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:727
 msgid "simple tool to view and install deb files"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:731
+#: ../crates/fdebm-gtk/src/gtk_app.rs:750
 msgid "Loading..."
 msgstr "Nalaganje ..."
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:745
+#: ../crates/fdebm-gtk/src/gtk_app.rs:764
 #, rust-format
 msgid "fdebm error, file not found: {0}"
 msgstr "napaka fdebm, datoteke ni mogoče najti: {0}"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:760
+#: ../crates/fdebm-gtk/src/gtk_app.rs:779
 msgid "Could not open the software package"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:778
+#: ../crates/fdebm-gtk/src/gtk_app.rs:797
 msgid "Checking dependencies..."
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:803
+#: ../crates/fdebm-gtk/src/gtk_app.rs:822
 msgid "Dependency check failed"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:807
-#: ../crates/fdebm-gtk/src/gtk_app.rs:819
+#: ../crates/fdebm-gtk/src/gtk_app.rs:826
+#: ../crates/fdebm-gtk/src/gtk_app.rs:838
 #, rust-format
 msgid "<span foreground=\"red\" weight=\"bold\">Error: {0}</span>"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:834
+#: ../crates/fdebm-gtk/src/gtk_app.rs:853
 #, rust-format
 msgid "Requires the <b>removal</b> of {0} package"
 msgid_plural "Requires the <b>removal</b> of {0} packages"
@@ -284,7 +298,7 @@ msgstr[1] ""
 msgstr[2] ""
 msgstr[3] ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:845
+#: ../crates/fdebm-gtk/src/gtk_app.rs:864
 #, rust-format
 msgid "Requires the installation of {0} package"
 msgid_plural "Requires the installation of {0} packages"
@@ -293,92 +307,92 @@ msgstr[1] ""
 msgstr[2] ""
 msgstr[3] ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:860
+#: ../crates/fdebm-gtk/src/gtk_app.rs:879
 msgid "Same version is already installed"
 msgstr "Ta različica paketa je že nameščena"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:861
+#: ../crates/fdebm-gtk/src/gtk_app.rs:880
 msgid "_Reinstall Package"
 msgstr "_Znova namesti paket"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:871
+#: ../crates/fdebm-gtk/src/gtk_app.rs:890
 msgid "All dependencies are satisfied"
 msgstr "Vsem odvisnostim je zadoščeno"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:935
+#: ../crates/fdebm-gtk/src/gtk_app.rs:954
 msgid "Applying changes"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:938
+#: ../crates/fdebm-gtk/src/gtk_app.rs:957
 msgid "Close"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:953
+#: ../crates/fdebm-gtk/src/gtk_app.rs:972
 msgid "Terminal"
 msgstr "Terminal"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:956
+#: ../crates/fdebm-gtk/src/gtk_app.rs:975
 msgid "Automatically close after the changes have been successfully applied"
 msgstr "Samodejno zapri po uspešno uveljavljenih spremembah."
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1049
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1135
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1068
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1154
 msgid "fdebm error"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1196
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1215
 msgid "Modified configuration files"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1198
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1217
 msgid ""
 "The following configuration files have been modified locally and the new "
 "package ships different versions:"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1202
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1221
 msgid "Keep _my version"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1203
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1222
 msgid "Use the package's _new version"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1204
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1223
 msgid "_Cancel"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1235
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1254
 msgid "Install unauthenticated software?"
 msgstr "Namestim neoverjeno programsko opremo?"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1237
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1256
 #, rust-format
 msgid "The following packages are UNAUTHENTICATED: {0}"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1259
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1263
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1278
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1282
 msgid "Installing package file..."
 msgstr "Nameščanje paketne datoteke ..."
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1264
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1283
 msgid "Installation complete"
 msgstr "Namestitev končana"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1265
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1284
 msgid "Failed to install package file"
 msgstr "Paketne datoteke ni bilo mogoče namestiti"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1282
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1286
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1301
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1305
 msgid "Removing package..."
 msgstr "Odstranjevanje paketa ..."
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1287
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1306
 msgid "Removal complete"
 msgstr "Odstranitev končana"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1288
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1307
 msgid "Failed to remove package"
 msgstr "Paketa ni bilo mogoče odstraniti"
