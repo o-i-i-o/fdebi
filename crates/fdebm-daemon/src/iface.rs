@@ -4,12 +4,16 @@
 //! - AnalyzeLocalFile(s path, as apt_opts) → (b installable, s failure,
 //!   as install, as remove, as unauthenticated, s installed_version,
 //!   a(ss) conffile_conflicts)
-//! - InstallLocalFile(s path, as apt_opts, s conf_policy) → u id
+//! - InstallLocalFiles(as paths, as apt_opts, s conf_policy) → u id
 //! - RemovePackage(s name) → u id
-//! - Cancel(u id) → b accepted
-//! - GetTransactionStatus(u id) → (s state, s error)
+//! - Cancel(u id) → b accepted(仅事务发起者)
+//! - SendInput(u id, s line) → b accepted(交互式安装应答,仅事务发起者)
+//! - GetTransactionStatus(u id) → (s state, s error)(仅事务发起者)
 //!
-//! 信号见 txn.rs 头注释。分析为只读操作,免 Polkit 授权。
+//! 信号:TransactionEvent / OutputLine / ProgressChanged / PackageStatus /
+//! InputState(交互应答开关)/ Finished。
+//!
+//! 分析为只读操作,免 Polkit 授权;安装为批量事务(逐包执行、失败不中断)。
 
 use std::sync::Arc;
 
@@ -55,20 +59,25 @@ impl FdebmIface {
             .map_err(zbus::fdo::Error::Failed)
     }
 
-    async fn install_local_file(
+    async fn install_local_files(
         &self,
         #[zbus(header)] header: Header<'_>,
         #[zbus(connection)] conn: &zbus::Connection,
-        path: String,
+        paths: Vec<String>,
         apt_opts: Vec<String>,
         conf_policy: String,
     ) -> zbus::fdo::Result<u32> {
+        if paths.is_empty() {
+            return Err(zbus::fdo::Error::InvalidArgs(
+                "no package files given".to_string(),
+            ));
+        }
         let caller = Self::caller(&header)
             .ok_or_else(|| zbus::fdo::Error::Failed("unknown caller".to_string()))?;
         Ok(txn::start_install(
             &self.manager,
             conn,
-            path,
+            paths,
             apt_opts,
             conf_policy,
             caller,
@@ -86,13 +95,33 @@ impl FdebmIface {
         Ok(txn::start_remove(&self.manager, conn, name, caller))
     }
 
-    async fn cancel(&self, id: u32) -> zbus::fdo::Result<bool> {
-        Ok(self.manager.cancel(id))
+    async fn cancel(&self, #[zbus(header)] header: Header<'_>, id: u32) -> zbus::fdo::Result<bool> {
+        let caller = Self::caller(&header)
+            .ok_or_else(|| zbus::fdo::Error::Failed("unknown caller".to_string()))?;
+        Ok(self.manager.cancel(id, &caller))
     }
 
-    async fn get_transaction_status(&self, id: u32) -> zbus::fdo::Result<(String, String)> {
+    /// 交互式安装应答:写入 dpkg 的 stdin;非发起者或当前无交互安装时拒绝
+    async fn send_input(
+        &self,
+        #[zbus(header)] header: Header<'_>,
+        id: u32,
+        line: String,
+    ) -> zbus::fdo::Result<bool> {
+        let caller = Self::caller(&header)
+            .ok_or_else(|| zbus::fdo::Error::Failed("unknown caller".to_string()))?;
+        Ok(self.manager.send_input(id, &caller, &line))
+    }
+
+    async fn get_transaction_status(
+        &self,
+        #[zbus(header)] header: Header<'_>,
+        id: u32,
+    ) -> zbus::fdo::Result<(String, String)> {
+        let caller = Self::caller(&header)
+            .ok_or_else(|| zbus::fdo::Error::Failed("unknown caller".to_string()))?;
         self.manager
-            .status(id)
+            .status(id, &caller)
             .ok_or_else(|| zbus::fdo::Error::Failed(format!("unknown transaction {id}")))
     }
 }

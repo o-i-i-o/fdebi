@@ -23,6 +23,8 @@ pub enum FdebmError {
     ListDecompress(String, String),
     /// 下载失败:URL + 原因
     Download(String, String),
+    /// 求解/下载期间文件被替换或删除(TOCTOU):路径
+    FileChanged(PathBuf),
     /// 用户请求取消
     Cancelled,
 }
@@ -59,6 +61,10 @@ impl fmt::Display for FdebmError {
                 &[path, reason],
             ),
             Self::Download(url, reason) => tf("cannot download {0}: {1}", &[url, reason]),
+            Self::FileChanged(path) => tf(
+                "package file {0} changed or disappeared before installation",
+                &[&path.display().to_string()],
+            ),
             Self::Cancelled => gettext("operation cancelled"),
         };
         f.write_str(&msg)

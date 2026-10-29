@@ -2,10 +2,15 @@
 //!
 //! 状态机(对应 readme:分析中→等待授权→下载中→安装中→完成/失败):
 //! analyzing → waiting-auth → downloading → installing → done | failed | cancelled
+//! 批量安装:授权一次,逐包求解/下载/安装;单包失败不中断其余包,
+//! 每包状态经 PackageStatus 上报。
 //! 信号契约(org.fdebm):
 //! - TransactionEvent(u32 id, String state)
 //! - OutputLine(u32 id, String line)
 //! - ProgressChanged(u32 id, f64 percent /*-1=pulse*/, String description)
+//! - PackageStatus(u32 id, String path, String name, String state, String detail)
+//!   state: installing | done | failed
+//! - InputState(u32 id, bool enabled):交互式安装可应答开关
 //! - Finished(u32 id, bool ok, String detail)
 
 use std::collections::HashMap;
@@ -14,9 +19,13 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::SystemTime;
 
+use fdebm_core::aptmark;
+use fdebm_core::batch::{self, LocalMeta};
 use fdebm_core::download::{self, DownloadProgress};
-use fdebm_core::i18n::tf;
-use fdebm_core::install::{self, CancelHandle, ConfPolicy, InstallBatch};
+use fdebm_core::i18n::{gettext, ngettext, tf};
+use fdebm_core::install::{self, CancelHandle, ConfPolicy, FileStamp, InstallBatch};
+use fdebm_core::lock;
+use fdebm_core::pty::InputHandle;
 use fdebm_core::solver::{self, Verdict};
 use fdebm_core::sysstate::SysState;
 use fdebm_core::ui::{AlertKind, InstallProgress, Ui};
@@ -34,9 +43,20 @@ pub const DONE: &str = "done";
 pub const FAILED: &str = "failed";
 pub const CANCELLED: &str = "cancelled";
 
+/// 事务表上限(含运行中):超出后丢弃最早的事务记录
+const MAX_TXNS: usize = 64;
+
+fn is_terminal(state: &str) -> bool {
+    matches!(state, DONE | FAILED | CANCELLED)
+}
+
 struct Txn {
     state: Mutex<(String, String)>,
     cancel: Arc<CancelHandle>,
+    /// 交互式安装的应答入口(仅事务发起者写入)
+    input: Arc<InputHandle>,
+    /// 发起者总线唯一名:SendInput 据此校验归属
+    caller: String,
 }
 
 struct Inner {
@@ -61,32 +81,56 @@ impl Manager {
         })
     }
 
-    fn alloc(&self, cancel: Arc<CancelHandle>) -> u32 {
+    fn alloc(&self, cancel: Arc<CancelHandle>, caller: String) -> u32 {
         let id = self.inner.next_id.fetch_add(1, Ordering::SeqCst);
-        self.inner.txns.lock().unwrap().insert(
+        let mut txns = self.inner.txns.lock().unwrap();
+        // 常驻守护进程:优先回收已结束的事务,避免表随运行时长无限增长;
+        // 仍在执行的事务不能回收(取消/应答/状态查询还要用它)
+        if txns.len() >= MAX_TXNS
+            && let Some((&oldest, _)) = txns
+                .iter()
+                .filter(|(_, t)| is_terminal(&t.state.lock().unwrap().0))
+                .min_by_key(|(id, _)| **id)
+        {
+            txns.remove(&oldest);
+        }
+        txns.insert(
             id,
             Arc::new(Txn {
                 state: Mutex::new((ANALYZING.to_string(), String::new())),
                 cancel,
+                input: Arc::new(InputHandle::new()),
+                caller,
             }),
         );
         id
     }
 
-    pub fn status(&self, id: u32) -> Option<(String, String)> {
+    /// 事务状态:仅事务发起者可见(对他人表现为不存在)
+    pub fn status(&self, id: u32, caller: &str) -> Option<(String, String)> {
         let txns = self.inner.txns.lock().unwrap();
         let txn = txns.get(&id)?;
-        Some(txn.state.lock().unwrap().clone())
+        (txn.caller == caller).then(|| txn.state.lock().unwrap().clone())
     }
 
-    pub fn cancel(&self, id: u32) -> bool {
+    /// 取消事务:仅事务发起者可取消
+    pub fn cancel(&self, id: u32, caller: &str) -> bool {
         let txns = self.inner.txns.lock().unwrap();
         match txns.get(&id) {
-            Some(txn) => {
+            Some(txn) if txn.caller == caller => {
                 txn.cancel.cancel();
                 true
             }
-            None => false,
+            _ => false,
+        }
+    }
+
+    /// 交互应答:仅事务发起者可写,且当前确有交互式 dpkg 在等待输入
+    pub fn send_input(&self, id: u32, caller: &str, line: &str) -> bool {
+        let txns = self.inner.txns.lock().unwrap();
+        match txns.get(&id) {
+            Some(txn) if txn.caller == caller => txn.input.send(line),
+            _ => false,
         }
     }
 
@@ -141,6 +185,21 @@ fn emit_progress(conn: &zbus::Connection, id: u32, percent: f64, desc: &str) {
     emit(conn, "ProgressChanged", &(id, percent, desc.to_string()));
 }
 
+/// 批量逐包状态:path 用于前端行匹配;detail 仅 failed 时非空
+fn emit_package(conn: &zbus::Connection, id: u32, item: &BatchItem, state: &str, detail: &str) {
+    emit(
+        conn,
+        "PackageStatus",
+        &(
+            id,
+            item.path_str.clone(),
+            item.name.clone(),
+            state.to_string(),
+            detail.to_string(),
+        ),
+    );
+}
+
 /// 终态落账 + Finished 信号
 fn finalize(conn: &zbus::Connection, txn: &Txn, state: &str, detail: &str, id: u32, ok: bool) {
     *txn.state.lock().unwrap() = (state.to_string(), detail.to_string());
@@ -154,7 +213,8 @@ fn finalize(conn: &zbus::Connection, txn: &Txn, state: &str, detail: &str, id: u
 
 /// 一次安装事务的请求参数(收拢为结构体,避免 run_install 参数过长)
 struct InstallRequest {
-    path: String,
+    /// 本地 deb 路径(可多个;按批内依赖排序后逐包执行)
+    paths: Vec<String>,
     apt_opts: Vec<String>,
     conf_policy: ConfPolicy,
     caller: String,
@@ -163,17 +223,17 @@ struct InstallRequest {
 pub fn start_install(
     manager: &Arc<Manager>,
     conn: &zbus::Connection,
-    path: String,
+    paths: Vec<String>,
     apt_opts: Vec<String>,
     conf_policy: String,
     caller: String,
 ) -> u32 {
     let cancel = Arc::new(CancelHandle::new());
-    let id = manager.alloc(cancel.clone());
+    let id = manager.alloc(cancel.clone(), caller.clone());
     let m = manager.clone();
     let conn = conn.clone();
     let req = InstallRequest {
-        path,
+        paths,
         apt_opts,
         conf_policy: ConfPolicy::from_arg(&conf_policy),
         caller,
@@ -193,7 +253,7 @@ pub fn start_remove(
     caller: String,
 ) -> u32 {
     let cancel = Arc::new(CancelHandle::new());
-    let id = manager.alloc(cancel.clone());
+    let id = manager.alloc(cancel.clone(), caller.clone());
     let m = manager.clone();
     let conn = conn.clone();
     std::thread::spawn(move || {
@@ -210,6 +270,10 @@ pub fn analyze(
     path: &str,
     apt_opts: &[String],
 ) -> Result<fdebm_core::AnalyzeResult, String> {
+    // 只读免授权:拒绝 FIFO/设备等非普通文件,避免被诱导在打开时阻塞
+    if std::fs::metadata(path).is_ok_and(|m| !m.is_file()) {
+        return Err(gettext("not a regular file"));
+    }
     let run = || -> Result<_, FdebmError> {
         let deb = DebFile::open(path)?;
         let sys = manager.sys_state(apt_opts)?;
@@ -256,6 +320,55 @@ pub fn analyze(
 // 工作线程流程
 // ---------------------------------------------------------------------------
 
+/// 批量中的一个本地 deb(打开失败项也保留,用于逐包上报)
+struct BatchItem {
+    /// 原样路径字符串(GUI 按它匹配状态行)
+    path_str: String,
+    path: PathBuf,
+    /// 包名(取不到 Package 字段时退回文件名)
+    name: String,
+    /// 打开时捕获的指纹(dpkg 执行前复核)
+    stamp: Option<FileStamp>,
+    deb: Option<DebFile>,
+    open_error: Option<String>,
+}
+
+impl BatchItem {
+    fn new(path: &str) -> Self {
+        let path_buf = PathBuf::from(path);
+        let name = path_buf
+            .file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_else(|| path.to_string());
+        Self {
+            path_str: path.to_string(),
+            stamp: FileStamp::capture(&path_buf).ok(),
+            path: path_buf,
+            name,
+            deb: None,
+            open_error: None,
+        }
+    }
+}
+
+/// control.tar 携带 debconf templates → 安装时需要交互应答
+fn deb_has_templates(deb: &DebFile) -> bool {
+    deb.control_content("templates")
+        .is_ok_and(|t| !t.is_empty())
+}
+
+/// 批量取消时的进度摘要
+fn installed_summary(installed: usize, total: usize) -> String {
+    tf(
+        &ngettext(
+            "Installed {0} of {1} package",
+            "Installed {0} of {1} packages",
+            total as u32,
+        ),
+        &[&installed.to_string(), &total.to_string()],
+    )
+}
+
 fn run_install(
     manager: &Arc<Manager>,
     conn: &zbus::Connection,
@@ -264,40 +377,17 @@ fn run_install(
     req: &InstallRequest,
 ) {
     let InstallRequest {
-        path,
+        paths,
         apt_opts,
         conf_policy,
         caller,
     } = req;
-    // 1. 解析 + 求解
-    let deb = match DebFile::open(path) {
-        Ok(d) => d,
-        Err(e) => {
-            finalize(conn, txn, FAILED, &e.to_string(), id, false);
-            return;
-        }
-    };
+    let total = paths.len();
     emit(conn, "TransactionEvent", &(id, ANALYZING.to_string()));
-    let sys = match manager.sys_state(apt_opts) {
-        Ok(s) => s,
-        Err(e) => {
-            finalize(conn, txn, FAILED, &e.to_string(), id, false);
-            return;
-        }
-    };
-    let resolution = match solver::resolve(&sys, &deb) {
-        Ok(Verdict::Installable(r)) => r,
-        Ok(Verdict::Uninstallable(failure)) => {
-            finalize(conn, txn, FAILED, &failure, id, false);
-            return;
-        }
-        Err(e) => {
-            finalize(conn, txn, FAILED, &e.to_string(), id, false);
-            return;
-        }
-    };
 
-    // 2. Polkit 授权(GUI 瘦客户端,认证由守护进程发起)
+    // 1. Polkit 授权(GUI 瘦客户端,认证由守护进程发起;整批一次)。
+    //    必须先于打开文件:未授权调用者不得让 root 守护进程读取任意路径
+    //    (FIFO 会阻塞 open)或承担解析开销。
     *txn.state.lock().unwrap() = (WAITING_AUTH.to_string(), String::new());
     emit(conn, "TransactionEvent", &(id, WAITING_AUTH.to_string()));
     let auth = async_io::block_on(polkit::check_authorized(
@@ -308,77 +398,264 @@ fn run_install(
     match auth {
         Ok(true) => {}
         Ok(false) => {
-            finalize(conn, txn, FAILED, "Not authorized", id, false);
+            finalize(conn, txn, FAILED, &gettext("Not authorized"), id, false);
             return;
         }
         Err(e) => {
-            finalize(conn, txn, FAILED, &format!("polkit: {e}"), id, false);
+            finalize(
+                conn,
+                txn,
+                FAILED,
+                &tf("polkit: {0}", &[&e.to_string()]),
+                id,
+                false,
+            );
             return;
         }
     }
 
     // 授权后响应取消(用户在认证窗口等待期间已点关闭)
     if txn.cancel.is_cancelled() {
-        finalize(conn, txn, CANCELLED, "operation cancelled", id, false);
+        finalize(
+            conn,
+            txn,
+            CANCELLED,
+            &installed_summary(0, total),
+            id,
+            false,
+        );
         return;
     }
 
-    // 3. 下载依赖(求解器给出坐标;无依赖则跳过)
-    if !resolution.downloads.is_empty() {
-        *txn.state.lock().unwrap() = (DOWNLOADING.to_string(), String::new());
-        emit(conn, "TransactionEvent", &(id, DOWNLOADING.to_string()));
-        let dp = TxnProgress {
-            id,
-            conn: conn.clone(),
-        };
-        if let Err(e) = download::download_all(&resolution.downloads, &dp, &txn.cancel) {
-            let (state, ok) = match e {
-                FdebmError::Cancelled => (CANCELLED, false),
-                _ => (FAILED, false),
-            };
-            finalize(conn, txn, state, &e.to_string(), id, ok);
-            return;
+    // 2. 打开全部本地 deb:打开失败项逐包上报,不阻塞其余包
+    let mut items: Vec<BatchItem> = paths.iter().map(|p| BatchItem::new(p)).collect();
+    for item in &mut items {
+        // 目录/FIFO/设备等非普通文件:open 会阻塞或无意义,直接拒绝。
+        // stat 失败(不存在等)交给 DebFile::open 产生带路径的错误信息。
+        if std::fs::metadata(&item.path).is_ok_and(|m| !m.is_file()) {
+            item.open_error = Some(gettext("not a regular file"));
+            continue;
+        }
+        match DebFile::open(&item.path) {
+            Ok(deb) => {
+                if let Some(name) = deb.field_trimmed("Package") {
+                    item.name = name.to_string();
+                }
+                item.deb = Some(deb);
+            }
+            Err(e) => item.open_error = Some(e.to_string()),
         }
     }
 
-    // 4. dpkg 执行层
     *txn.state.lock().unwrap() = (INSTALLING.to_string(), String::new());
     emit(conn, "TransactionEvent", &(id, INSTALLING.to_string()));
-    let batch = InstallBatch {
-        local: PathBuf::from(path),
-        dep_debs: resolution
-            .downloads
-            .iter()
-            .map(|d| d.dest.clone())
-            .collect(),
-        remove: resolution.changes.remove.clone(),
-        conf_policy: *conf_policy,
-    };
-    let ui = TxnUi {
-        id,
-        conn: conn.clone(),
-    };
-    let progress = TxnProgress {
-        id,
-        conn: conn.clone(),
-    };
-    match install::install(&ui, &progress, &txn.cancel, &batch) {
-        Ok(0) => finalize(conn, txn, DONE, "", id, true),
-        Ok(code) => finalize(
-            conn,
-            txn,
-            FAILED,
-            &tf("dpkg exited with status {0}", &[&code.to_string()]),
-            id,
-            false,
-        ),
-        Err(e) => {
-            let (state, ok) = match e {
-                FdebmError::Cancelled => (CANCELLED, false),
-                _ => (FAILED, false),
+
+    // 3. 逐包执行:批内依赖先装(求解下一包时才能看到已装满足者);
+    //    单包失败只记入失败列表,继续后续包
+    let metas: Vec<LocalMeta> = items
+        .iter()
+        .map(|it| {
+            let field = |name: &str| {
+                it.deb
+                    .as_ref()
+                    .and_then(|d| d.field_trimmed(name))
+                    .unwrap_or("")
             };
-            finalize(conn, txn, state, &e.to_string(), id, ok);
+            LocalMeta {
+                name: field("Package"),
+                depends: field("Depends"),
+                pre_depends: field("Pre-Depends"),
+                provides: field("Provides"),
+            }
+        })
+        .collect();
+    let order = batch::order_by_dependencies(&metas);
+
+    let mut installed = 0usize;
+    let mut failures: Vec<String> = Vec::new();
+
+    for (step, &idx) in order.iter().enumerate() {
+        if txn.cancel.is_cancelled() {
+            finalize(
+                conn,
+                txn,
+                CANCELLED,
+                &installed_summary(installed, total),
+                id,
+                false,
+            );
+            return;
         }
+        let item = &items[idx];
+
+        if let Some(reason) = &item.open_error {
+            emit_package(conn, id, item, "failed", reason);
+            failures.push(format!("{}: {reason}", item.name));
+            continue;
+        }
+        let Some(deb) = item.deb.as_ref() else {
+            continue;
+        };
+
+        emit_package(conn, id, item, "installing", "");
+        emit_progress(
+            conn,
+            id,
+            -1.0,
+            &tf(
+                "Installing {0} ({1}/{2})",
+                &[&item.name, &(step + 1).to_string(), &total.to_string()],
+            ),
+        );
+
+        // 先等外部包管理操作结束再取快照:否则方案可能基于正在被改写的状态
+        let lock_progress = TxnProgress {
+            id,
+            conn: conn.clone(),
+        };
+        if let Err(e) = lock::wait_until_idle(&lock_progress, &txn.cancel) {
+            if matches!(e, FdebmError::Cancelled) {
+                finalize(
+                    conn,
+                    txn,
+                    CANCELLED,
+                    &installed_summary(installed, total),
+                    id,
+                    false,
+                );
+            } else {
+                finalize(conn, txn, FAILED, &e.to_string(), id, false);
+            }
+            return;
+        }
+
+        // 每包重读系统状态:上一包可能改变了已装集合
+        let sys = match manager.sys_state(apt_opts) {
+            Ok(s) => s,
+            Err(e) => {
+                finalize(conn, txn, FAILED, &e.to_string(), id, false);
+                return;
+            }
+        };
+        let resolution = match solver::resolve(&sys, deb) {
+            Ok(Verdict::Installable(r)) => r,
+            Ok(Verdict::Uninstallable(failure)) => {
+                emit_package(conn, id, item, "failed", &failure);
+                failures.push(format!("{}: {failure}", item.name));
+                continue;
+            }
+            Err(e) => {
+                let detail = e.to_string();
+                emit_package(conn, id, item, "failed", &detail);
+                failures.push(format!("{}: {detail}", item.name));
+                continue;
+            }
+        };
+
+        if !resolution.downloads.is_empty() {
+            *txn.state.lock().unwrap() = (DOWNLOADING.to_string(), String::new());
+            emit(conn, "TransactionEvent", &(id, DOWNLOADING.to_string()));
+            let dp = TxnProgress {
+                id,
+                conn: conn.clone(),
+            };
+            if let Err(e) = download::download_all(&resolution.downloads, &dp, &txn.cancel) {
+                if matches!(e, FdebmError::Cancelled) {
+                    finalize(
+                        conn,
+                        txn,
+                        CANCELLED,
+                        &installed_summary(installed, total),
+                        id,
+                        false,
+                    );
+                    return;
+                }
+                let detail = e.to_string();
+                emit_package(conn, id, item, "failed", &detail);
+                failures.push(format!("{}: {detail}", item.name));
+                continue;
+            }
+            *txn.state.lock().unwrap() = (INSTALLING.to_string(), String::new());
+            emit(conn, "TransactionEvent", &(id, INSTALLING.to_string()));
+        }
+
+        // 本地包的 apt 键:外部架构带 :arch(与 extended_states 的键一致)
+        let local_key = {
+            let arch = deb.field_trimmed("Architecture").unwrap_or("");
+            if arch.is_empty() || arch == "all" || arch == sys.native_arch {
+                item.name.clone()
+            } else {
+                format!("{}:{}", item.name, arch)
+            }
+        };
+        // debconf 模板检测:本地包或任一依赖携带 templates → 交互式(PTY)
+        let interactive = deb_has_templates(deb)
+            || resolution
+                .downloads
+                .iter()
+                .any(|d| DebFile::open(&d.dest).is_ok_and(|dep| deb_has_templates(&dep)));
+        let batch = InstallBatch {
+            local: item.path.clone(),
+            local_stamp: item.stamp,
+            dep_debs: resolution
+                .downloads
+                .iter()
+                .map(|d| d.dest.clone())
+                .collect(),
+            remove: resolution.changes.remove.clone(),
+            conf_policy: *conf_policy,
+            // 依赖标记对齐 apt:只把本次新装的依赖标为 auto(升级已装包
+            // 不改动其手动标记),本地包标为 manual
+            auto_mark: aptmark::dependency_names(&resolution.changes.install, &local_key)
+                .into_iter()
+                .filter(|key| sys.installed_version(key).is_none())
+                .collect(),
+            local_package: local_key,
+            interactive,
+        };
+        let ui = TxnUi {
+            id,
+            conn: conn.clone(),
+        };
+        let progress = TxnProgress {
+            id,
+            conn: conn.clone(),
+        };
+        match install::install(&ui, &progress, &txn.cancel, &txn.input, &batch) {
+            Ok(report) if report.code == 0 => {
+                installed += 1;
+                emit_package(conn, id, item, "done", "");
+            }
+            Ok(report) => {
+                let detail = report.detail();
+                emit_package(conn, id, item, "failed", &detail);
+                failures.push(format!("{}: {detail}", item.name));
+            }
+            Err(FdebmError::Cancelled) => {
+                finalize(
+                    conn,
+                    txn,
+                    CANCELLED,
+                    &installed_summary(installed, total),
+                    id,
+                    false,
+                );
+                return;
+            }
+            Err(e) => {
+                let detail = e.to_string();
+                emit_package(conn, id, item, "failed", &detail);
+                failures.push(format!("{}: {detail}", item.name));
+            }
+        }
+    }
+
+    // 4. 汇总:失败包逐条列在 Finished detail(前端原样呈现,失败项在前)
+    if failures.is_empty() {
+        finalize(conn, txn, DONE, "", id, true);
+    } else {
+        finalize(conn, txn, FAILED, &failures.join("\n"), id, false);
     }
 }
 
@@ -401,11 +678,18 @@ fn run_remove(
     match auth {
         Ok(true) => {}
         Ok(false) => {
-            finalize(conn, txn, FAILED, "Not authorized", id, false);
+            finalize(conn, txn, FAILED, &gettext("Not authorized"), id, false);
             return;
         }
         Err(e) => {
-            finalize(conn, txn, FAILED, &format!("polkit: {e}"), id, false);
+            finalize(
+                conn,
+                txn,
+                FAILED,
+                &tf("polkit: {0}", &[&e.to_string()]),
+                id,
+                false,
+            );
             return;
         }
     }
@@ -420,15 +704,8 @@ fn run_remove(
         conn: conn.clone(),
     };
     match install::remove(&ui, &progress, &txn.cancel, name) {
-        Ok(0) => finalize(conn, txn, DONE, "", id, true),
-        Ok(code) => finalize(
-            conn,
-            txn,
-            FAILED,
-            &tf("dpkg exited with status {0}", &[&code.to_string()]),
-            id,
-            false,
-        ),
+        Ok(report) if report.code == 0 => finalize(conn, txn, DONE, "", id, true),
+        Ok(report) => finalize(conn, txn, FAILED, &report.detail(), id, false),
         Err(e) => {
             let (state, ok) = match e {
                 FdebmError::Cancelled => (CANCELLED, false),
@@ -451,6 +728,14 @@ struct TxnProgress {
 impl InstallProgress for TxnProgress {
     fn output_line(&self, line: &str) {
         emit(&self.conn, "OutputLine", &(self.id, line.to_string()));
+    }
+
+    fn stage(&self, desc: &str) {
+        emit_progress(&self.conn, self.id, -1.0, desc);
+    }
+
+    fn input_state(&self, enabled: bool) {
+        emit(&self.conn, "InputState", &(self.id, enabled));
     }
 }
 
@@ -506,5 +791,47 @@ impl Ui for TxnUi {
 
     fn confirm(&self, _header: &str, _body: Option<&str>) -> Result<bool, FdebmError> {
         Ok(false)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn only_initiator_can_cancel_or_query() {
+        let m = Manager::new_shared();
+        let id = m.alloc(Arc::new(CancelHandle::new()), ":1.42".to_string());
+        assert_eq!(
+            m.status(id, ":1.42"),
+            Some((ANALYZING.to_string(), String::new()))
+        );
+        assert_eq!(m.status(id, ":1.43"), None);
+        assert!(!m.cancel(id, ":1.43"));
+        assert!(m.cancel(id, ":1.42"));
+    }
+
+    #[test]
+    fn prune_only_recycles_finished_transactions() {
+        let m = Manager::new_shared();
+        let ids: Vec<u32> = (0..MAX_TXNS)
+            .map(|_| m.alloc(Arc::new(CancelHandle::new()), ":1.1".to_string()))
+            .collect();
+        // 全部仍在执行:表满时新增事务也不得回收进行中的事务
+        let _ = m.alloc(Arc::new(CancelHandle::new()), ":1.1".to_string());
+        assert!(m.status(ids[0], ":1.1").is_some());
+        // 结束最老事务后,再分配时才回收它(且只回收已结束的)
+        *m.inner
+            .txns
+            .lock()
+            .unwrap()
+            .get(&ids[0])
+            .unwrap()
+            .state
+            .lock()
+            .unwrap() = (DONE.to_string(), String::new());
+        let _ = m.alloc(Arc::new(CancelHandle::new()), ":1.1".to_string());
+        assert!(m.status(ids[0], ":1.1").is_none());
+        assert!(m.status(ids[1], ":1.1").is_some());
     }
 }

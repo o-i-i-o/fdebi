@@ -25,6 +25,7 @@ MOFILES  := $(LANGS:%=locale/%/LC_MESSAGES/$(DOMAIN).mo)
 
 XGETTEXT ?= xgettext
 MSGMERGE ?= msgmerge
+MSGATTRIB ?= msgattrib
 MSGFMT   ?= msgfmt
 PYTHON   ?= python3
 
@@ -55,10 +56,13 @@ $(DOMAIN).pot: $(POTFILES) POTFILES.in
 
 pot: $(DOMAIN).pot
 
+# lint 禁止 fuzzy 与废弃条目:关闭猜测式匹配,新/改动条目保持未翻译;
+# msgmerge 会把删掉的 msgid 留成 #~ 条目,一并清除
 merge-po: $(DOMAIN).pot
 	@for f in $(POFILES); do \
 	  echo "  MSGMERGE $$f"; \
-	  $(MSGMERGE) --update --backup=none --previous $$f $(DOMAIN).pot; \
+	  $(MSGMERGE) --update --backup=none --previous --no-fuzzy-matching $$f $(DOMAIN).pot || exit 1; \
+	  $(MSGATTRIB) --no-obsolete $$f -o $$f.tmp && mv $$f.tmp $$f || exit 1; \
 	done
 
 mo: $(MOFILES)

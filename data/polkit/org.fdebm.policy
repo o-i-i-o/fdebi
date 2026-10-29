@@ -3,8 +3,9 @@
   Polkit 策略(org.fdebm)
   部署: cp 到 /usr/share/polkit-1/actions/org.fdebm.policy
 
-  分析(AnalyzeLocalFile)免授权(只读);安装/卸载各需一次管理员认证,
-  auth_admin_keep 在短时间内免重复认证,避免批量操作时反复输密码。
+  分析(AnalyzeLocalFile)免授权(只读);安装(InstallLocalFiles)/卸载各需
+  一次管理员认证,auth_admin_keep 在短时间内免重复认证,批量安装多个包
+  只需在事务开始时认证一次。
 -->
 <!DOCTYPE policyconfig PUBLIC
  "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"

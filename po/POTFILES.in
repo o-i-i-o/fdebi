@@ -2,6 +2,7 @@
 crates/fdebm-core/src/error.rs
 crates/fdebm-core/src/flow.rs
 crates/fdebm-core/src/install.rs
+crates/fdebm-core/src/lock.rs
 crates/fdebm-core/src/solver.rs
 crates/fdebm-daemon/src/txn.rs
 crates/fdebm-gtk/src/gtk_app.rs

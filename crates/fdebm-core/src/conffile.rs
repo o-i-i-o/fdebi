@@ -97,7 +97,11 @@ mod tests {
         assert!(!is_conflict(Some(b"new config\n"), shipped, Some("aaa")));
         // 未修改(recorded md5 匹配):dpkg 静默升级
         let recorded = md5_hex(b"old config\n");
-        assert!(!is_conflict(Some(b"old config\n"), shipped, Some(&recorded)));
+        assert!(!is_conflict(
+            Some(b"old config\n"),
+            shipped,
+            Some(&recorded)
+        ));
         // 本地修改过且与新包不同:冲突
         assert!(is_conflict(Some(b"my config\n"), shipped, Some(&recorded)));
         // 未登记的 conffile(新包新增):按无提示处理
@@ -106,9 +110,6 @@ mod tests {
 
     #[test]
     fn md5_hex_known_vector() {
-        assert_eq!(
-            md5_hex(b""),
-            "d41d8cd98f00b204e9800998ecf8427e"
-        );
+        assert_eq!(md5_hex(b""), "d41d8cd98f00b204e9800998ecf8427e");
     }
 }

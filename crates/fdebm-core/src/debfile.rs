@@ -7,7 +7,7 @@
 //! (gzip/xz/zstd),避免逐格式引入解压依赖。
 
 use std::fs::File;
-use std::io::{Cursor, Read};
+use std::io::{Cursor, Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -33,13 +33,14 @@ impl DebFile {
         while let Some(entry) = archive.next_entry() {
             let mut entry = entry?;
             let name = entry.header().identifier().to_vec();
+            if !name.starts_with(b"control.tar") {
+                // data.tar 可能达 GB 级:定位到成员末尾,Drop 时便不再复制读取
+                entry.seek(SeekFrom::End(0))?;
+                continue;
+            }
             let mut data = Vec::new();
             entry.read_to_end(&mut data)?;
-            match name.as_slice() {
-                b"debian-binary" => {}
-                n if n.starts_with(b"control.tar") => control_tar = Some(data),
-                _ => {}
-            }
+            control_tar = Some(data);
         }
 
         let control_tar = control_tar.ok_or_else(|| FdebmError::NotADeb(path.to_path_buf()))?;
@@ -308,11 +309,23 @@ mod tests {
 
             let deb = DebFile::open(&path).unwrap_or_else(|e| panic!("open {pkg}: {e}"));
             assert_eq!(deb.field_trimmed("Package"), Some(pkg), "{pkg}");
-            assert_eq!(deb.control_filelist().unwrap(), vec!["./", "control"], "{pkg}");
+            assert_eq!(
+                deb.control_filelist().unwrap(),
+                vec!["./", "control"],
+                "{pkg}"
+            );
             // control 原始字节与 dpkg-deb -f 逐字节一致(压缩不得改动内容)
-            let out = Command::new("dpkg-deb").arg("-f").arg(&path).output().unwrap();
+            let out = Command::new("dpkg-deb")
+                .arg("-f")
+                .arg(&path)
+                .output()
+                .unwrap();
             assert!(out.status.success(), "dpkg-deb -f {pkg}");
-            assert_eq!(deb.raw_control(), out.stdout.as_slice(), "{pkg} control bytes");
+            assert_eq!(
+                deb.raw_control(),
+                out.stdout.as_slice(),
+                "{pkg} control bytes"
+            );
         }
     }
 

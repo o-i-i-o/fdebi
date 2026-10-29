@@ -444,10 +444,7 @@ pub fn provided_names(field: &str) -> Vec<(String, Option<String>)> {
             }
             let (name, ver) = match e.find('(') {
                 Some(i) => {
-                    let inner = e[i..]
-                        .trim_start_matches('(')
-                        .trim_end_matches(')')
-                        .trim();
+                    let inner = e[i..].trim_start_matches('(').trim_end_matches(')').trim();
                     let mut it = inner.splitn(2, char::is_whitespace);
                     let op = it.next().unwrap_or("").trim();
                     let v = it.next().unwrap_or("").trim();

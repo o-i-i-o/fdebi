@@ -26,4 +26,11 @@ pub trait Ui {
 /// dpkg 安装进度:子进程输出逐行转发,前端写入进度对话框的终端输出区
 pub trait InstallProgress {
     fn output_line(&self, line: &str);
+
+    /// 阶段提示(等待锁、开始安装等),显示在进度对话框的描述处
+    fn stage(&self, _desc: &str) {}
+
+    /// 交互输入开关:交互式安装(dpkg 在 PTY 中运行)开始/结束时切换,
+    /// 前端据此启用应答输入框
+    fn input_state(&self, _enabled: bool) {}
 }

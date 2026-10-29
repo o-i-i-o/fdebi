@@ -3,7 +3,8 @@
 //! 架构(crates/readme.md):GUI 永不 root;本守护进程是唯一"实干者",
 //! 以 root 注册系统总线 org.fdebm,经 Polkit 授权后执行:
 //! - AnalyzeLocalFile:解析 + 纯 Rust SAT 求解(只读,免授权)
-//! - InstallLocalFile / RemovePackage:事务(下载 → dpkg),发进度信号
+//! - InstallLocalFiles / RemovePackage:事务(下载 → dpkg),发进度信号
+//! - SendInput:交互式安装(debconf 模板)的应答,写入 dpkg 的 stdin
 //!
 //! 部署:data/dbus、data/polkit 三个文件(见各文件头注释)。
 //! 开发期:sudo ./target/debug/fdebm-daemon 前台运行。

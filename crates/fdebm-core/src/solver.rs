@@ -192,7 +192,9 @@ impl<'a> Encoding<'a> {
         }
         self.meta(u).provides.iter().any(|(n, pv)| {
             n == base_name(&d.name)
-                && pv.as_ref().is_some_and(|pv| ver_matches(pv, &d.oper, &d.ver))
+                && pv
+                    .as_ref()
+                    .is_some_and(|pv| ver_matches(pv, &d.oper, &d.ver))
         })
     }
 
@@ -261,9 +263,11 @@ impl<'a> Encoding<'a> {
 
     /// 组是否已在模型内被满足(存在满足者为真)
     fn group_satisfied_in_model(&self, group: &[Dep], model: &HashSet<usize>) -> bool {
-        group
-            .iter()
-            .any(|d| self.satisfiers(d).iter().any(|&s| model.contains(&self.unit_idx(s))))
+        group.iter().any(|d| {
+            self.satisfiers(d)
+                .iter()
+                .any(|&s| model.contains(&self.unit_idx(s)))
+        })
     }
 }
 
@@ -374,9 +378,7 @@ fn local_candidate(deb: &DebFile, native_arch: &str) -> crate::sysstate::Candida
 /// AMO/冲突子句对真值子集封闭(子集不引入新的同为真对)。
 fn extract_needed(enc: &Encoding<'_>, model: &HashSet<usize>) -> HashSet<usize> {
     // 已装保持集:模型真值中的已装单元全部保留(不参与可达性裁剪)
-    let mut needed: HashSet<usize> = (0..enc.n_installed)
-        .filter(|i| model.contains(i))
-        .collect();
+    let mut needed: HashSet<usize> = (0..enc.n_installed).filter(|i| model.contains(i)).collect();
     if enc.local.is_some() {
         needed.insert(enc.n_installed + enc.n_cands);
     }
@@ -596,8 +598,7 @@ fn encode_and_solve(sys: &SysState, local: crate::sysstate::Candidate) -> Verdic
         .iter()
         .filter_map(|&i| {
             let c = i.checked_sub(enc.n_installed)?;
-            (c < enc.n_cands)
-                .then(|| sys.all_candidates[c].pkg.key.clone())
+            (c < enc.n_cands).then(|| sys.all_candidates[c].pkg.key.clone())
         })
         .collect();
     keys_touched.sort();
@@ -910,10 +911,12 @@ mod tests {
         }]);
         let mut l = local("myapp", "1.0");
         l.pkg.depends = dep("www-browser", ">=", "0.9");
-        assert!(verdict_ok(encode_and_solve(&st, l.clone()))
-            .changes
-            .install
-            .contains(&"w3m".to_string()));
+        assert!(
+            verdict_ok(encode_and_solve(&st, l.clone()))
+                .changes
+                .install
+                .contains(&"w3m".to_string())
+        );
         // 仅无版本提供时不满足版本化依赖
         let mut st2 = sys_with(vec![]);
         st2.add_candidates(vec![Candidate {
