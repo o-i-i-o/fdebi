@@ -47,6 +47,10 @@ pub struct Pkg {
     /// 版本化关系对虚拟名仅命中版本化提供)
     pub provides: Vec<(String, Option<String>)>,
     pub essential: bool,
+    /// Protected: yes(dpkg ≥1.20;旧写法 "Important: yes" 等价,dpkg 兼容两者)。
+    /// 与 Essential 同级的保护性约束:不得在事务中被自动卸载(Debian Policy 5.6.11,
+    /// 对应 dpkg --force-remove-protected 的守门对象)
+    pub protected: bool,
     /// 已安装版本登记的 conffiles:(绝对路径, 装包时的 md5);
     /// 仅 status 有此字段,仓库索引条目为空表
     pub conffiles: Vec<(String, String)>,
@@ -233,6 +237,8 @@ pub fn pkg_from_fields<'a>(
         replaces: parse_depends(get("Replaces").unwrap_or("")),
         provides: provided_names(get("Provides").unwrap_or("")),
         essential: get("Essential").map(str::trim) == Some("yes"),
+        protected: get("Protected").map(str::trim) == Some("yes")
+            || get("Important").map(str::trim) == Some("yes"),
         conffiles: parse_conffiles(get("Conffiles").unwrap_or("")),
     })
 }
@@ -516,6 +522,18 @@ mod tests {
     fn foreign_arch_key_gets_qualifier() {
         let p = pkg_from("Package: libc6-i386\nArchitecture: i386\nVersion: 1\n").unwrap();
         assert_eq!(p.key, "libc6-i386:i386");
+    }
+
+    /// Protected: yes 与旧写法 Important: yes 均记为保护(dpkg 兼容两者),
+    /// 其他取值(如 no)与缺省不算
+    #[test]
+    fn protected_field_parsing() {
+        let p = pkg_from("Package: dpkg\nVersion: 1\nProtected: yes\n").unwrap();
+        assert!(p.protected && !p.essential);
+        let p = pkg_from("Package: x\nVersion: 1\nImportant: yes\n").unwrap();
+        assert!(p.protected);
+        let p = pkg_from("Package: x\nVersion: 1\nProtected: no\n").unwrap();
+        assert!(!p.protected);
     }
 
     #[test]

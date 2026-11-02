@@ -11,7 +11,8 @@
 //!   管道 + noninteractive(无 tty,提示按默认值执行)
 //! - 进度:子进程输出逐行转发 [`InstallProgress::output_line`]
 //!   (stdout/stderr 双 reader 线程合并,避免管道缓冲死锁)
-//! - 互斥:执行前经 [`lock`] 探测 dpkg 是否在运行并等待其结束
+//! - 互斥:执行前经 [`lock`] 探测包管理前端是否占锁(dpkg/apt-get/apt 等)
+//!   并等待其结束
 //! - 复核:dpkg 执行前用 [`FileStamp`] 确认本地 deb 未被替换
 //! - 标记:成功后经 [`aptmark`] 补齐 apt 标记(依赖 auto / 本地包 manual),
 //!   对齐 apt 的 autoremove 语义;标记失败仅告警,不影响安装结论

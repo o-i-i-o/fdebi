@@ -479,9 +479,11 @@ fn encode_and_solve(sys: &SysState, local: crate::sysstate::Candidate) -> Verdic
     lits.push(enc.plit(local_idx));
     add_clause(&mut solver, &mut lits);
 
-    // Essential 包强制保持安装(保护性约束)
+    // Essential/Protected 包强制保持安装(保护性约束,dpkg 语义:
+    // Essential 是 --force-remove-essential、Protected 是 --force-remove-protected
+    // 的守门对象;Protected: yes 同样包括 dpkg 兼容的旧写法 Important: yes)
     for (i, pkg) in sys.installed.iter().enumerate() {
-        if pkg.essential {
+        if pkg.essential || pkg.protected {
             lits.clear();
             lits.push(enc.plit(i));
             add_clause(&mut solver, &mut lits);
@@ -510,26 +512,27 @@ fn encode_and_solve(sys: &SysState, local: crate::sysstate::Candidate) -> Verdic
     }
     enc.add_dep_clauses(local_idx, &mut solver, &mut lits, &mut sats);
 
-    // Conflicts(按名字索引取 victim,避免全单元平方级扫描)与 Breaks(仅已安装)
+    // Conflicts 与 Breaks(按名字索引取 victim,避免全单元平方级扫描)。
+    // 两者对 solver 同构(apt 解析语义:breaks 也是互斥约束),作用于全部单元
+    // —— 已装×候选(如已装 dpkg Breaks 旧版 lsb-base,候选 lsb-base 不得
+    // 被选中降 dead dpkg)与候选×候选(同一变更集内互不相容)都必须编码,
+    // 否则违规要到 dpkg 配置阶段(--auto-deconfigure 会把已装受害方降置
+    // deconfigured)才暴露。仅"双方均已安装"的存量违规不回溯修复:
+    // dpkg 不会重新校验存量态,历史冲突不应当阻断 keep-all 快路径。
     for idx in 0..n_units {
         let u = enc.unit(idx);
         let meta = enc.meta(u);
         if meta.conflicts.is_empty() && meta.breaks.is_empty() {
             continue;
         }
-        for (deps, only_installed) in meta
-            .conflicts
-            .iter()
-            .map(|g| (g, false))
-            .chain(meta.breaks.iter().map(|g| (g, true)))
-        {
+        for deps in meta.conflicts.iter().chain(meta.breaks.iter()) {
             for c in deps {
                 // hits() 的名字命中 = 直接同名 ∪ 虚拟提供,victim 集按此索引
                 let base = base_name(&c.name);
                 let mut victims: Vec<Unit> = enc.by_name.get(base).cloned().unwrap_or_default();
                 victims.extend(enc.providers.get(base).cloned().unwrap_or_default());
                 for v in victims {
-                    if v == u || (only_installed && !matches!(v, Unit::Installed(_))) {
+                    if v == u {
                         continue;
                     }
                     // 双方均已安装:存量态dpkg不会重新校验(apt 亦不重排),
@@ -848,6 +851,109 @@ mod tests {
         let mut l = local("rival", "1.0");
         l.pkg.conflicts = dep("core", "", "");
         assert_uninstallable(encode_and_solve(&st, l));
+    }
+
+    /// Protected: yes 与 Essential 同级:被本地包冲突时不得自动卸载
+    /// (Debian Policy 5.6.11,dpkg --force-remove-protected 的守门对象)
+    #[test]
+    fn protected_never_removed() {
+        let st = sys_with(vec![Pkg {
+            protected: true,
+            ..pkg("crypto", "1.0")
+        }]);
+        let mut l = local("rival", "1.0");
+        l.pkg.conflicts = dep("crypto", "", "");
+        assert_uninstallable(encode_and_solve(&st, l));
+    }
+
+    /// 已装包 Breaks 版本命中的仓库直连候选:此前该对未编码,keep-all
+    /// 快路径误判"可安装",违规延迟到 dpkg 解包阶段才暴露。编码后的
+    /// 语义与 Conflicts 一致 —— 冲突方需在事务中先被卸载/保护则不可安装。
+    #[test]
+    fn installed_breaks_forces_removal_of_breaker() {
+        let mut st = sys_with(vec![Pkg {
+            breaks: dep("lsb-base", "<<", "3.3"),
+            ..pkg("dpkg", "1.20")
+        }]);
+        st.add_candidates(vec![cand("lsb-base", "3.1", true)]);
+        let mut l = local("myapp", "1.0");
+        l.pkg.depends = dep("lsb-base", "", "");
+        let r = verdict_ok(encode_and_solve(&st, l));
+        assert!(r.changes.remove.contains(&"dpkg".to_string()));
+    }
+
+    /// 真实 Debian 上 dpkg 本身 Essential: yes:候选受害方不得以卸载
+    /// Essential 的代价被选中 → 不可安装
+    #[test]
+    fn installed_breaks_block_versioned_direct_candidate() {
+        let mut st = sys_with(vec![Pkg {
+            essential: true,
+            breaks: dep("lsb-base", "<<", "3.3"),
+            ..pkg("dpkg", "1.20")
+        }]);
+        st.add_candidates(vec![cand("lsb-base", "3.1", true)]);
+        let mut l = local("myapp", "1.0");
+        l.pkg.depends = dep("lsb-base", "", "");
+        assert_uninstallable(encode_and_solve(&st, l));
+    }
+
+    /// 同上场景改经虚拟包满足:无版本提供不受版本化 Breaks 制约(dpkg
+    /// ≥1.17.11 语义),经提供者候选仍可满足依赖且不动已装保
+    #[test]
+    fn installed_breaks_miss_unversioned_candidate_provider() {
+        let mut st = sys_with(vec![Pkg {
+            breaks: dep("lsb-base", "<<", "3.3"),
+            ..pkg("dpkg", "1.20")
+        }]);
+        st.add_candidates(vec![Candidate {
+            pkg: Pkg {
+                provides: vec![("lsb-base".into(), None)],
+                ..pkg("sysvinit-utils", "3.0")
+            },
+            ..cand("sysvinit-utils", "3.0", true)
+        }]);
+        let mut l = local("myapp", "1.0");
+        l.pkg.depends = dep("lsb-base", "", "");
+        let r = verdict_ok(encode_and_solve(&st, l));
+        assert!(r.changes.remove.is_empty());
+        assert!(r.changes.install.contains(&"sysvinit-utils".to_string()));
+    }
+
+    /// 候选×候选的 Breaks 互斥:同一变更集内两个新装包互 Breaking 时不可
+    /// 同时选中(本地同时依赖两者 → 不可安装;仅依赖一方 → 正常安装)
+    #[test]
+    fn breaks_between_candidates_block_selection() {
+        let mut st = sys_with(vec![]);
+        st.add_candidates(vec![
+            Candidate {
+                pkg: Pkg {
+                    breaks: dep("app-b", "", ""),
+                    ..pkg("app-a", "1.0")
+                },
+                ..cand("app-a", "1.0", true)
+            },
+            cand("app-b", "1.0", true),
+        ]);
+        let mut l = local("myapp", "1.0");
+        l.pkg.depends = vec![
+            vec![Dep {
+                name: "app-a".into(),
+                ver: String::new(),
+                oper: String::new(),
+            }],
+            vec![Dep {
+                name: "app-b".into(),
+                ver: String::new(),
+                oper: String::new(),
+            }],
+        ];
+        assert_uninstallable(encode_and_solve(&st, l));
+
+        let mut l2 = local("myapp2", "1.0");
+        l2.pkg.depends = dep("app-a", "", "");
+        let r = verdict_ok(encode_and_solve(&st, l2));
+        assert!(r.changes.install.contains(&"app-a".to_string()));
+        assert!(!r.changes.install.contains(&"app-b".to_string()));
     }
 
     #[test]

@@ -13,7 +13,7 @@
 //! - [`batch`]:批量本地 deb 的安装顺序(批内依赖拓扑排序)
 //! - [`conffile`]:安装前 conffile 冲突预检
 //! - [`download`]:ureq(rustls)下载 + sha256 校验
-//! - [`lock`]:dpkg 运行探测与等待(ps comm 列)
+//! - [`lock`]:包管理前端占锁探测与等待(ps comm 列,含 apt 系交互前端)
 //! - [`aptmark`]:安装后 apt 标记补齐(依赖 auto / 本地包 manual)
 //! - [`pty`]:debconf 交互式安装的伪终端执行(行式问答 + 应答注入)
 //! - [`install`]:dpkg 执行层(批量 -i + 取消句柄),进度经 [`ui::InstallProgress`]

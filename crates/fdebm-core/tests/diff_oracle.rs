@@ -99,3 +99,56 @@ fn error_messages_in_english() {
     let e = FdebmError::MissingControl;
     assert_eq!(e.to_string(), "control file not found in package");
 }
+
+// ---------------------------------------------------------------------------
+// 版本比较:oracle 为 dpkg --compare-versions(与 verrevcmp 直译逐对对齐)
+// ---------------------------------------------------------------------------
+
+/// 覆盖 epoch/revision/位数/前置尾部等边界(均来自 Debian 的真实版本号形态)
+const VERSION_PAIRS: &[(&str, &str)] = &[
+    ("1.0", "1.0"),
+    ("1.0", "2.0"),
+    ("1.0~rc1", "1.0"),
+    ("1.0", "1.0~rc1"),
+    ("1:0.9", "0.99"),
+    ("1.0-1", "1.0"),
+    ("1.0a", "1.0"),
+    ("01.0", "1.0"),
+    ("1.0", "1.0+b1"),
+    ("2.0-1+b2", "2.0-1"),
+    ("3.3.1-1", "3.3.1-1~exp1"),
+    ("1.0.0", "0.9.9"),
+    ("9", "10"),
+    ("0.12", "0.10"),
+    ("2016-1", "2:1"),
+    ("1:0", "0:1"),
+    ("9:1.0", "1:9.0"),
+    ("1.0~", "0.9"),
+    ("a", "A"),
+    ("1.0~beta.1-2", "1.0~beta.10-2"),
+];
+
+#[test]
+fn version_compare_matches_dpkg_oracle() {
+    let ours_for = |a: &str, b: &str| fdebm_core::cmp_version(a, b);
+    for (a, b) in VERSION_PAIRS {
+        // ours:三态;dpkg:分别以 lt/ne 之外的 eq/gt 断言
+        let expected = ours_for(a, b);
+        let ops = [
+            ("lt", matches!(expected, std::cmp::Ordering::Less)),
+            ("eq", matches!(expected, std::cmp::Ordering::Equal)),
+            ("gt", matches!(expected, std::cmp::Ordering::Greater)),
+        ];
+        for (op, want) in ops {
+            let out = Command::new("dpkg")
+                .args(["--compare-versions", a, op, b])
+                .output()
+                .expect("spawn dpkg --compare-versions");
+            assert_eq!(
+                out.status.success(),
+                want,
+                "dpkg --compare-versions {a} {op} {b}"
+            );
+        }
+    }
+}
