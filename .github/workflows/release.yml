@@ -1,0 +1,64 @@
+name: Release
+
+# CD 发布流程:推送 v* 标签触发
+#   1. 复用 CI 门禁(fmt / clippy / test / po lint / 打包)
+#   2. 校验标签版本与 Cargo.toml 一致,防止发布错版本
+#   3. 直接取 CI 打包产物(不重复构建),生成 SHA256SUMS,
+#      创建 GitHub Release 并上传 .deb 与校验文件
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: CI 门禁
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    name: 发布 GitHub Release
+    runs-on: ubuntu-latest
+    needs: ci
+    permissions:
+      contents: write # 创建 Release 并上传产物
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 校验标签与 Cargo.toml 版本一致
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          CARGO_VERSION=$(sed -n 's/^version *= *"\(.*\)"/\1/p' Cargo.toml | head -1)
+          echo "标签: v$TAG / Cargo.toml: $CARGO_VERSION"
+          if [[ "$TAG" != "$CARGO_VERSION" ]]; then
+            echo "::error::标签 v$TAG 与 Cargo.toml 版本 $CARGO_VERSION 不一致" >&2
+            exit 1
+          fi
+
+      - name: 下载 CI 打包产物
+        uses: actions/download-artifact@v4
+        with:
+          name: fdebm-deb
+          path: dist
+
+      - name: 生成 SHA256SUMS
+        run: |
+          cd dist
+          sha256sum -- *.deb > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: 创建 Release 并上传产物
+        # Release 已存在(失败重跑)时改为覆盖上传
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" --clobber dist/*.deb dist/SHA256SUMS
+          else
+            gh release create "$GITHUB_REF_NAME" \
+              --title "fdebm $GITHUB_REF_NAME" \
+              --generate-notes \
+              --verify-tag \
+              dist/*.deb dist/SHA256SUMS
+          fi

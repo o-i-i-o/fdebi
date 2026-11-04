@@ -4,7 +4,17 @@ on:
   push:
     branches: [main, master]
   pull_request:
+  workflow_call: # 供 release.yml 复用:CD 发布前强制过 CI 门禁
   workflow_dispatch:
+
+# 最小权限;发布所需的 contents: write 只在 release.yml 的发布 job 上单独授予
+permissions:
+  contents: read
+
+# 同 ref 新提交自动取消仍在跑的旧运行(PR 必取消;tag/分支推送保留完整记录)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   CARGO_TERM_COLOR: always
@@ -20,6 +30,10 @@ jobs:
         with:
           components: clippy, rustfmt
 
+      # fmt 只需工具链,无需系统依赖与编译缓存,放最前快速失败
+      - name: cargo fmt --check
+        run: cargo fmt --check
+
       - uses: Swatinem/rust-cache@v2
 
       # GTK4 开发头(gtk4-rs 经 pkg-config 探测)+ gettext 工具链(po 构建/校验)
@@ -33,18 +47,16 @@ jobs:
       - name: po lint
         run: make -C po lint
 
+      # --locked:Cargo.lock 与 Cargo.toml 不同步时立即失败,防止依赖漂移
       - name: cargo build
-        run: cargo build --workspace
+        run: cargo build --workspace --locked
 
       - name: cargo clippy(-D warnings)
-        run: cargo clippy --workspace --all-targets -- -D warnings
-
-      - name: cargo fmt --check
-        run: cargo fmt --check
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
 
       # 单元/差分测试均不启动 GUI;dpkg-deb 由 runner 预装
       - name: cargo test
-        run: cargo test --workspace
+        run: cargo test --workspace --locked
 
   package:
     name: 打包 .deb

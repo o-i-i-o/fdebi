@@ -27,7 +27,7 @@ DEB="dist/${NAME}_${VERSION}_${ARCH}.deb"
 [[ -n "$VERSION" ]] || { echo "错误:无法从 Cargo.toml 解析版本" >&2; exit 1; }
 
 echo "==> cargo build --release"
-cargo build --release --workspace
+cargo build --release --workspace --locked
 
 echo "==> 编译翻译(po/*.po → locale/*/LC_MESSAGES/fdebm.mo)"
 make -C po mo
