@@ -522,6 +522,7 @@ name = "fdebm-core"
 version = "0.1.1"
 dependencies = [
  "ar",
+ "clap",
  "flate2",
  "gettext-rs",
  "libc",

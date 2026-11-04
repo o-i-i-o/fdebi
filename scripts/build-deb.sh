@@ -12,6 +12,9 @@
 #   usr/share/icons/hicolor/scalable/apps/ org.fdebm.gtk.svg(应用图标)
 #   usr/share/doc/fdebm/copyright        LICENSE
 #
+# 注:crates/fdebm-core 另产出同名测试 CLI(target/release/fdebm-core,
+#     命令行直跑 deb 安装管线,验证安装流程用),仅供开发,不装进包。
+#
 # 不引入 cargo-deb;依赖:cargo、dpkg-deb、msgfmt(gettext)、strip(binutils)。
 # 产物:dist/fdebm_<版本>_<架构>.deb
 set -euo pipefail
