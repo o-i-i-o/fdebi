@@ -15,6 +15,7 @@ use std::io::{BufRead, Write};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::SystemTime;
 
 use clap::Parser;
 
@@ -98,9 +99,10 @@ fn spawn_signal_watcher(cancel: Arc<CancelHandle>) {
 
 fn run(args: &Args, conf_policy: ConfPolicy, cancel: &CancelHandle) -> i32 {
     let items = open_items(&args.debs);
+    let mut sys_cache: Option<(SystemTime, SystemTime, Arc<SysState>)> = None;
 
     // ---- 分析:快照系统状态,逐包求解并打印方案 ----
-    let sys = match SysState::load(&args.apt_opt) {
+    let sys = match sys_cached(&mut sys_cache, &args.apt_opt) {
         Ok(s) => s,
         Err(e) => {
             eprintln!("fdebm-core: {e}");
@@ -143,7 +145,34 @@ fn run(args: &Args, conf_policy: ConfPolicy, cancel: &CancelHandle) -> i32 {
         }
     }
 
-    install_phase(args, conf_policy, cancel, &items)
+    install_phase(args, conf_policy, cancel, &items, &mut sys_cache)
+}
+
+/// mtime 缓存的系统状态加载(与守护进程 sys_state 同策略):
+/// dpkg status 与 apt 列表目录的 mtime 未变时直接复用,免去重复解析
+/// 全部仓库索引(真实索引规模下单次加载约 0.8s)
+fn sys_cached(
+    cache: &mut Option<(SystemTime, SystemTime, Arc<SysState>)>,
+    apt_opts: &[String],
+) -> Result<Arc<SysState>, FdebmError> {
+    if apt_opts.is_empty() {
+        let st_mtime = std::fs::metadata(fdebm_core::sysstate::DPKG_STATUS)
+            .and_then(|m| m.modified())
+            .unwrap_or(SystemTime::UNIX_EPOCH);
+        let li_mtime = std::fs::metadata(fdebm_core::sysstate::LISTS_DIR)
+            .and_then(|m| m.modified())
+            .unwrap_or(SystemTime::UNIX_EPOCH);
+        if let Some((st, li, state)) = cache
+            && *st == st_mtime
+            && *li == li_mtime
+        {
+            return Ok(state.clone());
+        }
+        let state = Arc::new(SysState::load(apt_opts)?);
+        *cache = Some((st_mtime, li_mtime, state.clone()));
+        return Ok(state);
+    }
+    Ok(Arc::new(SysState::load(apt_opts)?))
 }
 
 /// 打印单个 deb 的分析方案;可安装时返回其求解结果
@@ -234,6 +263,7 @@ fn install_phase(
     conf_policy: ConfPolicy,
     cancel: &CancelHandle,
     items: &[Item],
+    cache: &mut Option<(SystemTime, SystemTime, Arc<SysState>)>,
 ) -> i32 {
     let input = Arc::new(InputHandle::new());
     let ui = CliUi;
@@ -298,8 +328,8 @@ fn install_phase(
             return flow_aborted(e, total, installed);
         }
 
-        // 每包重读系统状态:上一包可能改变了已装集合
-        let sys = match SysState::load(&args.apt_opt) {
+        // 每包重读系统状态(mtime 缓存):上一包可能改变了已装集合
+        let sys = match sys_cached(cache, &args.apt_opt) {
             Ok(s) => s,
             Err(e) => return flow_aborted(e, total, installed),
         };

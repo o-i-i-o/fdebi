@@ -289,14 +289,15 @@ pub fn install(
 
     progress.stage(&gettext("Installing packages..."));
     let mut cmd = Command::new("dpkg");
-    cmd.arg("--auto-deconfigure")
-        .arg("-i")
-        .arg(std::path::absolute(&batch.local)?);
-    for deb in &batch.dep_debs {
-        cmd.arg(deb);
-    }
+    cmd.arg("--auto-deconfigure").arg("-i");
+    // conffile 策略是 dpkg 选项,必须排在归档文件参数之前 —— 曾追加在
+    // 文件列表之后,dpkg 将其误解析为归档路径(dpkg 退出状态 2)
     if let Some(arg) = batch.conf_policy.dpkg_arg() {
         cmd.arg(arg);
+    }
+    cmd.arg(std::path::absolute(&batch.local)?);
+    for deb in &batch.dep_debs {
+        cmd.arg(deb);
     }
     // 交互式:readline 前端把 debconf 问题转成行式问答(PTY 提供终端语义);
     // 其余情况(noninteractive)问题按默认策略静默处理
