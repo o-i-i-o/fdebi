@@ -1,7 +1,7 @@
 //! GTK4 前端(gtk4 为硬依赖)—— 瘦客户端。
 //! 布局：菜单栏(File/Help)+ 左侧信息表(Package/Status)+
-//! 右侧动作按钮列 + Notebook(Description/Details)+ 底部缓存进度条与状态栏 +
-//! 安装/移除进度对话框(Terminal expander + autoclose)。
+//! 右侧动作按钮列 + Notebook(Description/Details)+ 底部自动关闭开关与状态栏 +
+//! 安装/移除进度对话框(Terminal expander)。
 //! 文案经 gettext 国际化。
 //!
 //! 本前端永不 root、不做依赖求解、不执行 dpkg —— 三者全部委托特权守护进程 org.fdebm
@@ -237,6 +237,8 @@ struct MainWindow {
     tree_files: gtk::TreeView,
     file_content: gtk::TextView,
     lintian_output: gtk::TextView,
+    /// 预览页上的“自动关闭窗口”开关:成功安装后是否自动关闭全部窗口
+    autoclose: gtk::CheckButton,
     statusbar: gtk::Statusbar,
     status_ctx: u32,
     apt_opts: Vec<String>,
@@ -261,6 +263,10 @@ pub fn run() {
     let args = Args::from_arg_matches(&matches).unwrap_or_else(|e| e.exit());
     let app = Application::builder()
         .application_id("org.fdebm.gtk")
+        // 单实例模式下,用 deb 关联启动的后续进程只会激活已有窗口,
+        // 而该窗口仍持有首次启动时的 LaunchAction,表现为一直显示旧包。
+        // 每次关联启动使用独立实例,确保打开的是命令行传入的文件。
+        .flags(gio::ApplicationFlags::NON_UNIQUE)
         .build();
     let action = args.into_action();
     app.connect_activate(move |app| activate(app, action.clone()));
@@ -433,7 +439,12 @@ fn build_window(window: &gtk::ApplicationWindow, apt_opts: Vec<String>) -> Rc<Ma
     let tab_lintian = gtk::Label::new(Some(gettext("Lintian output").as_str()));
     notebook.append_page(&scroll(&lintian_output), Some(&tab_lintian));
 
-    // 底部:statusbar_main(状态栏;不再放从未使用过的空进度条)
+    // 底部:自动关闭开关 + statusbar_main(不再放从未使用过的空进度条)。
+    // 开关放在预览页:小包安装可能在用户来得及操作对话框前就结束,
+    // 必须在开始安装前就能决定是否保留窗口查看输出。
+    let autoclose = gtk::CheckButton::with_label(&gettext("Automatically close the window"));
+    autoclose.set_active(true);
+    autoclose.set_halign(gtk::Align::Start);
     let statusbar = gtk::Statusbar::new();
     statusbar.set_hexpand(true);
     let status_ctx = statusbar.context_id("context_main_window");
@@ -460,6 +471,7 @@ fn build_window(window: &gtk::ApplicationWindow, apt_opts: Vec<String>) -> Rc<Ma
     vbox.append(&batch_scroll);
     vbox.append(&hbox_main);
     vbox.append(&notebook);
+    vbox.append(&autoclose);
     vbox.append(&statusbar);
     window.set_child(Some(&vbox));
 
@@ -478,6 +490,7 @@ fn build_window(window: &gtk::ApplicationWindow, apt_opts: Vec<String>) -> Rc<Ma
         tree_files,
         file_content,
         lintian_output,
+        autoclose,
         statusbar,
         status_ctx,
         apt_opts,
@@ -1199,8 +1212,8 @@ enum TxnRequest {
 }
 
 /// 事务进度对话框:label_action + 批量包状态列表 + progressbar +
-/// label_install_status + Terminal expander + autoclose 勾选;
-/// 期间主窗口禁用,完成后恢复。
+/// label_install_status + Terminal expander;
+/// 期间主窗口禁用,完成后恢复(是否自动关闭由预览页开关决定)。
 /// 执行流:连接系统总线 → 订阅信号(先于方法调用,防漏早期输出)→
 /// 调用 InstallLocalFiles/RemovePackage → 信号泵直至 Finished。
 fn run_txn_dialog(
@@ -1264,12 +1277,9 @@ fn run_txn_dialog(
     // 只有 debconf 交互事务才需要应答行;普通安装没有问题时整行隐藏,
     // 避免对话框里出现一条永远禁用的空白输入控件
     row_response.set_visible(false);
-    let autoclose = gtk::CheckButton::with_label(&gettext(
-        "Automatically close after the changes have been successfully applied",
-    ));
-    autoclose.set_active(true);
-    autoclose.set_halign(gtk::Align::Start);
-
+    // 预览页上的“自动关闭窗口”开关:事务期间主窗口不可操作,
+    // 开始安装时取值即可(小包也不会出现来不及勾选的问题)
+    let autoclose = gui.autoclose.is_active();
     let box_ = gtk::Box::builder()
         .orientation(gtk::Orientation::Vertical)
         .spacing(8)
@@ -1324,7 +1334,6 @@ fn run_txn_dialog(
     if matches!(&req, TxnRequest::Install { .. }) {
         box_.append(&row_response);
     }
-    box_.append(&autoclose);
     dialog.content_area().append(&box_);
 
     // Close 始终可用:运行中关闭 = 取消事务并立即恢复界面。
@@ -1576,7 +1585,7 @@ fn run_txn_dialog(
         // - 勾选自动关闭:立即退出,两个窗口一起关闭;
         // - 未勾选:保留对话框供查看输出,用户手动关闭时再连同预览窗口退出。
         if finished && ok {
-            if autoclose.is_active() || dialog_closed.get() {
+            if autoclose || dialog_closed.get() {
                 dialog.destroy();
                 quit_app(window.upcast_ref());
             } else {
