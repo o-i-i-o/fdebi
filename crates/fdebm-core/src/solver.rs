@@ -619,14 +619,28 @@ fn encode_and_solve(sys: &SysState, local: crate::sysstate::Candidate) -> Verdic
         .collect();
     let mut forced: Vec<Lit> = Vec::new();
     let model: HashSet<usize>;
-    if let Some(m) = solve_verified(&mut solver, &enc, &keeps, &mut encoded, &mut lits, &mut sats) {
+    if let Some(m) = solve_verified(
+        &mut solver,
+        &enc,
+        &keeps,
+        &mut encoded,
+        &mut lits,
+        &mut sats,
+    ) {
         model = m;
     } else {
         // 存在必须卸载/换版的包:退回无保留假设,再逐包尝试保持(最小化卸载)。
         // 试探只消费"已装单元是否保留",直接读模型真值;全量必要集提取
         // 留到循环结束后做一次(每次提取要扫全部已装单元的依赖组,
         // 曾在 1500+ 次试探里重复提取,占 resolve 耗时九成)。
-        let mut m = match solve_verified(&mut solver, &enc, &forced, &mut encoded, &mut lits, &mut sats) {
+        let mut m = match solve_verified(
+            &mut solver,
+            &enc,
+            &forced,
+            &mut encoded,
+            &mut lits,
+            &mut sats,
+        ) {
             Some(m) => m,
             None => {
                 return Verdict::Uninstallable(gettext(
@@ -640,7 +654,14 @@ fn encode_and_solve(sys: &SysState, local: crate::sysstate::Candidate) -> Verdic
             }
             let mut assumps = forced.clone();
             assumps.push(enc.plit(i));
-            if let Some(m2) = solve_verified(&mut solver, &enc, &assumps, &mut encoded, &mut lits, &mut sats) {
+            if let Some(m2) = solve_verified(
+                &mut solver,
+                &enc,
+                &assumps,
+                &mut encoded,
+                &mut lits,
+                &mut sats,
+            ) {
                 forced = assumps;
                 m = m2;
             }
@@ -685,7 +706,14 @@ fn encode_and_solve(sys: &SysState, local: crate::sysstate::Candidate) -> Verdic
         }
         let mut assumps = forced.clone();
         assumps.push(enc.plit(newest_idx));
-        if let Some(m) = solve_verified(&mut solver, &enc, &assumps, &mut encoded, &mut lits, &mut sats) {
+        if let Some(m) = solve_verified(
+            &mut solver,
+            &enc,
+            &assumps,
+            &mut encoded,
+            &mut lits,
+            &mut sats,
+        ) {
             forced = assumps;
             selected = extract_needed(&enc, &m);
         }
