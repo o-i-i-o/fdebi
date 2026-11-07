@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fdebm 0.1.1\n"
 "Report-Msgid-Bugs-To: sebastian.heinlein@web.de\n"
-"POT-Creation-Date: 2026-10-29 12:22+0800\n"
+"POT-Creation-Date: 2026-11-07 19:48+0800\n"
 "PO-Revision-Date: 2011-09-06 15:21+0000\n"
 "Last-Translator: Hideki Yamane <henrich@debian.or.jp>\n"
 "Language-Team: Japanese <ja@li.org>\n"
@@ -61,7 +61,7 @@ msgstr ""
 msgid "package file {0} changed or disappeared before installation"
 msgstr ""
 
-#: ../crates/fdebm-core/src/error.rs:68 ../crates/fdebm-gtk/src/gtk_app.rs:1545
+#: ../crates/fdebm-core/src/error.rs:68 ../crates/fdebm-gtk/src/gtk_app.rs:1585
 msgid "operation cancelled"
 msgstr ""
 
@@ -75,87 +75,166 @@ msgstr ""
 msgid "Binary file, {0} bytes"
 msgstr ""
 
-#: ../crates/fdebm-core/src/install.rs:186
+#: ../crates/fdebm-core/src/install.rs:187
 msgid "Another package operation is in progress. Please try again later."
 msgstr ""
 
-#: ../crates/fdebm-core/src/install.rs:189
+#: ../crates/fdebm-core/src/install.rs:190
 msgid "There is not enough disk space to complete the operation."
 msgstr ""
 
-#: ../crates/fdebm-core/src/install.rs:192
+#: ../crates/fdebm-core/src/install.rs:193
 msgid "Dependency problems prevented the operation from completing."
 msgstr ""
 
-#: ../crates/fdebm-core/src/install.rs:195
+#: ../crates/fdebm-core/src/install.rs:196
 msgid "A package maintainer script failed; see the log for details."
 msgstr ""
 
-#: ../crates/fdebm-core/src/install.rs:224
+#: ../crates/fdebm-core/src/install.rs:225
 #, rust-format
 msgid "dpkg exited with status {0}"
 msgstr ""
 
-#: ../crates/fdebm-core/src/install.rs:265
+#: ../crates/fdebm-core/src/install.rs:266
 msgid "Removing conflicting packages..."
 msgstr ""
 
-#: ../crates/fdebm-core/src/install.rs:275
-#: ../crates/fdebm-core/src/install.rs:318
-#: ../crates/fdebm-core/src/install.rs:369
+#: ../crates/fdebm-core/src/install.rs:276
+#: ../crates/fdebm-core/src/install.rs:320
+#: ../crates/fdebm-core/src/install.rs:371
 msgid "Error during install"
 msgstr ""
 
-#: ../crates/fdebm-core/src/install.rs:289
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1729
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1732
+#: ../crates/fdebm-core/src/install.rs:290
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1766
 msgid "Installing packages..."
 msgstr ""
 
-#: ../crates/fdebm-core/src/install.rs:338
+#: ../crates/fdebm-core/src/install.rs:340
 msgid "Marking dependencies as automatically installed..."
 msgstr ""
 
-#: ../crates/fdebm-core/src/install.rs:345
+#: ../crates/fdebm-core/src/install.rs:347
 #, rust-format
 msgid "Warning: could not update apt installation marks: {0}"
 msgstr ""
 
-#: ../crates/fdebm-core/src/install.rs:362
+#: ../crates/fdebm-core/src/install.rs:364
 msgid "Removing packages..."
 msgstr ""
 
-#: ../crates/fdebm-core/src/lock.rs:42
+#: ../crates/fdebm-core/src/lock.rs:50
 msgid "Another package operation is in progress; waiting..."
 msgstr ""
 
-#: ../crates/fdebm-core/src/lock.rs:44
+#: ../crates/fdebm-core/src/lock.rs:52
 msgid "dpkg is running; waiting for it to finish..."
 msgstr ""
 
-#: ../crates/fdebm-core/src/solver.rs:330
+#: ../crates/fdebm-core/src/main.rs:132
+msgid "The following packages cannot be authenticated:"
+msgstr ""
+
+#: ../crates/fdebm-core/src/main.rs:138
+msgid "Install these packages? [y/N]"
+msgstr ""
+
+#: ../crates/fdebm-core/src/main.rs:140
+msgid "Install them anyway? [y/N]"
+msgstr ""
+
+#: ../crates/fdebm-core/src/main.rs:143
+msgid "Cancelled."
+msgstr ""
+
+#: ../crates/fdebm-core/src/main.rs:200
+msgid "not installed"
+msgstr ""
+
+#: ../crates/fdebm-core/src/main.rs:201
+msgid "Package"
+msgstr ""
+
+#: ../crates/fdebm-core/src/main.rs:202
+msgid "Installed version"
+msgstr ""
+
+#: ../crates/fdebm-core/src/main.rs:209
+msgid "Install"
+msgstr ""
+
+#: ../crates/fdebm-core/src/main.rs:215
+msgid "Remove"
+msgstr ""
+
+#: ../crates/fdebm-core/src/main.rs:223
+msgid "Download"
+msgstr ""
+
+#: ../crates/fdebm-core/src/main.rs:234
+msgid "Unauthenticated"
+msgstr ""
+
+#: ../crates/fdebm-core/src/main.rs:241
+msgid "Conffile conflict"
+msgstr ""
+
+#: ../crates/fdebm-core/src/main.rs:302 ../crates/fdebm-core/src/main.rs:356
+#: ../crates/fdebm-core/src/main.rs:445
+msgid "Cancelled"
+msgstr ""
+
+#: ../crates/fdebm-core/src/main.rs:321 ../crates/fdebm-daemon/src/txn.rs:506
 #, rust-format
-msgid "Wrong architecture '{0}'"
-msgstr "アーキテクチャ '{0}' ではありません"
-
-#: ../crates/fdebm-core/src/solver.rs:345
-msgid "A later version is already installed"
+msgid "Installing {0} ({1}/{2})"
 msgstr ""
 
-#: ../crates/fdebm-core/src/solver.rs:569
-msgid ""
-"Failed to satisfy all dependencies (conflicting requests or missing packages)"
+#: ../crates/fdebm-core/src/main.rs:402 ../crates/fdebm-core/src/main.rs:611
+msgid "done"
 msgstr ""
 
-#: ../crates/fdebm-daemon/src/txn.rs:275 ../crates/fdebm-daemon/src/txn.rs:436
-msgid "not a regular file"
+#: ../crates/fdebm-core/src/main.rs:414
+msgid "All packages installed."
 msgstr ""
 
-#: ../crates/fdebm-daemon/src/txn.rs:364
+#: ../crates/fdebm-core/src/main.rs:419
+msgid "The following packages could not be installed"
+msgstr ""
+
+#: ../crates/fdebm-core/src/main.rs:431 ../crates/fdebm-daemon/src/txn.rs:364
 #, rust-format
 msgid "Installed {0} of {1} package"
 msgid_plural "Installed {0} of {1} packages"
 msgstr[0] ""
+
+#: ../crates/fdebm-core/src/main.rs:486 ../crates/fdebm-daemon/src/txn.rs:275
+#: ../crates/fdebm-daemon/src/txn.rs:436
+msgid "not a regular file"
+msgstr ""
+
+#: ../crates/fdebm-core/src/main.rs:573
+msgid "Interactive install: type answers here and press Enter."
+msgstr ""
+
+#: ../crates/fdebm-core/src/main.rs:595 ../crates/fdebm-daemon/src/txn.rs:748
+#, rust-format
+msgid "Fetching file {0} of {1}"
+msgstr ""
+
+#: ../crates/fdebm-core/src/solver.rs:344
+#, rust-format
+msgid "Wrong architecture '{0}'"
+msgstr "アーキテクチャ '{0}' ではありません"
+
+#: ../crates/fdebm-core/src/solver.rs:359
+msgid "A later version is already installed"
+msgstr ""
+
+#: ../crates/fdebm-core/src/solver.rs:647
+msgid ""
+"Failed to satisfy all dependencies (conflicting requests or missing packages)"
+msgstr ""
 
 #: ../crates/fdebm-daemon/src/txn.rs:401 ../crates/fdebm-daemon/src/txn.rs:681
 msgid "Not authorized"
@@ -164,16 +243,6 @@ msgstr ""
 #: ../crates/fdebm-daemon/src/txn.rs:409 ../crates/fdebm-daemon/src/txn.rs:689
 #, rust-format
 msgid "polkit: {0}"
-msgstr ""
-
-#: ../crates/fdebm-daemon/src/txn.rs:506
-#, rust-format
-msgid "Installing {0} ({1}/{2})"
-msgstr ""
-
-#: ../crates/fdebm-daemon/src/txn.rs:748
-#, rust-format
-msgid "Fetching file {0} of {1}"
 msgstr ""
 
 #: ../crates/fdebm-gtk/src/gtk_app.rs:59
@@ -201,8 +270,8 @@ msgid "Status:"
 msgstr "状態:"
 
 #: ../crates/fdebm-gtk/src/gtk_app.rs:335
-#: ../crates/fdebm-gtk/src/gtk_app.rs:835
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1139
+#: ../crates/fdebm-gtk/src/gtk_app.rs:831
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1133
 msgid "_Install Package"
 msgstr "パッケージをインストール(_I)"
 
@@ -246,289 +315,283 @@ msgstr "含まれているファイル"
 msgid "Lintian output"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:561
+#: ../crates/fdebm-gtk/src/gtk_app.rs:553
 msgid "Selection is a directory"
 msgstr "選択されているのはディレクトリです"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:584
+#: ../crates/fdebm-gtk/src/gtk_app.rs:576
 msgid "File content can not be extracted"
 msgstr "ファイルの内容が展開できません"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:585
+#: ../crates/fdebm-gtk/src/gtk_app.rs:577
 #, rust-format
 msgid "Error reading file content '{0}'"
 msgstr "ファイルの内容 '{0}' を読み込んでいる間にエラーが起きました"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:596
+#: ../crates/fdebm-gtk/src/gtk_app.rs:588
 msgid "Package control data"
 msgstr "パッケージの管理データ"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:602
+#: ../crates/fdebm-gtk/src/gtk_app.rs:594
 msgid "Upstream data"
 msgstr "開発元から取得したデータ"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:613
+#: ../crates/fdebm-gtk/src/gtk_app.rs:605
 msgid "Error reading filelist"
 msgstr "ファイル一覧を読み込んでいる間にエラーが起きました"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:624
+#: ../crates/fdebm-gtk/src/gtk_app.rs:616
 msgid ""
 "No lintian available.\n"
 "Please install using sudo apt-get install lintian"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:628
+#: ../crates/fdebm-gtk/src/gtk_app.rs:620
 msgid "Running lintian..."
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:646
+#: ../crates/fdebm-gtk/src/gtk_app.rs:638
 #, rust-format
 msgid "Failed to run lintian: {0}"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:694
+#: ../crates/fdebm-gtk/src/gtk_app.rs:686
 #, rust-format
 msgid "Lintian finished with exit status {0}"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:709
+#: ../crates/fdebm-gtk/src/gtk_app.rs:701
 msgid "_Open…"
 msgstr "開く(_O)..."
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:710
+#: ../crates/fdebm-gtk/src/gtk_app.rs:702
 msgid "_Refresh"
 msgstr "再読み込み(_R)"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:711
+#: ../crates/fdebm-gtk/src/gtk_app.rs:703
 msgid "_Quit"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:716
+#: ../crates/fdebm-gtk/src/gtk_app.rs:708
 msgid "_Keyboard Shortcuts"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:719
+#: ../crates/fdebm-gtk/src/gtk_app.rs:711
 msgid "_About"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:721
+#: ../crates/fdebm-gtk/src/gtk_app.rs:713
 msgid "_File"
 msgstr "ファイル(_F)"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:722
+#: ../crates/fdebm-gtk/src/gtk_app.rs:714
 msgid "_Help"
 msgstr "ヘルプ(_H)"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:731
+#: ../crates/fdebm-gtk/src/gtk_app.rs:723
 msgid "Open Debian package"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:784
+#: ../crates/fdebm-gtk/src/gtk_app.rs:776
 msgid "Keyboard Shortcuts"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:785
+#: ../crates/fdebm-gtk/src/gtk_app.rs:777
 msgid ""
 "Ctrl+O  Open a Debian package\n"
 "Ctrl+Q  Quit"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:799
+#: ../crates/fdebm-gtk/src/gtk_app.rs:791
 msgid "simple tool to view and install deb files"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:822
-msgid "Loading..."
-msgstr "読み込んでいます..."
-
-#: ../crates/fdebm-gtk/src/gtk_app.rs:839
-#: ../crates/fdebm-gtk/src/gtk_app.rs:942
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1061
+#: ../crates/fdebm-gtk/src/gtk_app.rs:835
+#: ../crates/fdebm-gtk/src/gtk_app.rs:937
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1055
 msgid "Checking dependencies..."
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:865
+#: ../crates/fdebm-gtk/src/gtk_app.rs:860
 #, rust-format
 msgid "fdebm error, file not found: {0}"
 msgstr "fdebm エラー　ファイルが見つかりません: {0}"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:879
+#: ../crates/fdebm-gtk/src/gtk_app.rs:874
 msgid "Could not open the software package"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:938
+#: ../crates/fdebm-gtk/src/gtk_app.rs:933
 msgid "Install _Packages"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1021
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1015
 msgid "Cannot install"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1023
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1017
 msgid "Ready to install"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1025
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1019
 msgid "Checking…"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1046
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1040
 #, rust-format
 msgid "{0} of {1} package cannot be installed"
 msgid_plural "{0} of {1} packages cannot be installed"
 msgstr[0] ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1064
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1058
 msgid "All selected packages can be installed"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1077
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1071
 msgid "Dependency check failed"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1081
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1093
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1075
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1087
 #, rust-format
 msgid "<span foreground=\"red\" weight=\"bold\">Error: {0}</span>"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1108
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1102
 #, rust-format
 msgid "Requires the <b>removal</b> of {0} package"
 msgid_plural "Requires the <b>removal</b> of {0} packages"
 msgstr[0] ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1119
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1113
 #, rust-format
 msgid "Requires the installation of {0} package"
 msgid_plural "Requires the installation of {0} packages"
 msgstr[0] ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1134
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1128
 msgid "Same version is already installed"
 msgstr "既に同じバージョンがインストールされています"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1135
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1129
 msgid "_Reinstall Package"
 msgstr "パッケージの再インストール(_R)"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1145
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1139
 msgid "All dependencies are satisfied"
 msgstr "すべての依存関係が満たされています"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1212
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1206
 msgid "Applying changes"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1215
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1210
 msgid "Close"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1230
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1236
 msgid "Terminal"
 msgstr "端末"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1235
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1244
 msgid "Type a response and press Enter"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1237
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1248
 msgid "Send"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1240
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1251
 msgid "Response"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1244
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1258
 msgid "Automatically close after the changes have been successfully applied"
 msgstr "変更が無事に適用できたら、自動的に終了する"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1269
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1284
 msgid "Waiting…"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1382
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1519
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1405
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1547
 msgid "fdebm error"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1463
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1488
 msgid "Installing…"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1464
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1489
 msgid "Installed"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1465
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1490
 msgid "Failed"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1484
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1510
 msgid "You can answer package questions below"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1598
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1638
 msgid "Modified configuration files"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1600
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1640
 msgid ""
 "The following configuration files have been modified locally and the new "
 "package ships different versions:"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1604
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1644
 msgid "Keep _my version"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1605
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1645
 msgid "Use the package's _new version"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1606
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1646
 msgid "_Cancel"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1637
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1709
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1677
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1745
 msgid "Install unauthenticated software?"
 msgstr "認証されていないソフトウェアをインストールしますか?"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1639
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1711
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1679
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1747
 #, rust-format
 msgid "The following packages are UNAUTHENTICATED: {0}"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1661
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1665
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1701
 msgid "Installing package file..."
 msgstr "パッケージファイルをインストールしています..."
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1666
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1733
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1702
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1767
 msgid "Installation complete"
 msgstr "インストールが完了しました"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1667
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1703
 msgid "Failed to install package file"
 msgstr "パッケージファイルのインストールが失敗しました"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1734
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1768
 msgid "Failed to install packages"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1751
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1755
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1787
 msgid "Removing package..."
 msgstr "パッケージを削除しています..."
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1756
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1788
 msgid "Removal complete"
 msgstr "削除が完了しました"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1757
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1789
 msgid "Failed to remove package"
 msgstr "パッケージの削除が失敗しました"
