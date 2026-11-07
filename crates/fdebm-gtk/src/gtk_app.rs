@@ -433,18 +433,10 @@ fn build_window(window: &gtk::ApplicationWindow, apt_opts: Vec<String>) -> Rc<Ma
     let tab_lintian = gtk::Label::new(Some(gettext("Lintian output").as_str()));
     notebook.append_page(&scroll(&lintian_output), Some(&tab_lintian));
 
-    // 底部:progressbar_cache + statusbar_main
-    let progressbar_cache = gtk::ProgressBar::new();
-    progressbar_cache.set_hexpand(true);
-    progressbar_cache.set_pulse_step(0.05);
+    // 底部:statusbar_main(状态栏;不再放从未使用过的空进度条)
     let statusbar = gtk::Statusbar::new();
+    statusbar.set_hexpand(true);
     let status_ctx = statusbar.context_id("context_main_window");
-    let hbox3 = gtk::Box::builder()
-        .orientation(gtk::Orientation::Horizontal)
-        .spacing(12)
-        .build();
-    hbox3.append(&progressbar_cache);
-    hbox3.append(&statusbar);
 
     // 批量包列表:多文件时显示,选中行预览该包详情
     let batch_list = gtk::ListBox::new();
@@ -468,7 +460,7 @@ fn build_window(window: &gtk::ApplicationWindow, apt_opts: Vec<String>) -> Rc<Ma
     vbox.append(&batch_scroll);
     vbox.append(&hbox_main);
     vbox.append(&notebook);
-    vbox.append(&hbox3);
+    vbox.append(&statusbar);
     window.set_child(Some(&vbox));
 
     let gui = Rc::new(MainWindow {
@@ -815,11 +807,26 @@ fn scroll(w: &impl IsA<gtk::Widget>) -> gtk::ScrolledWindow {
         .build()
 }
 
+/// 状态栏只保留一条消息:先清空上下文栈,避免多次操作后残留旧文案
+/// (例如安装完成后页脚仍显示上一次的“正在载入…”)
+fn set_statusbar(statusbar: &gtk::Statusbar, ctx: u32, text: &str) {
+    statusbar.remove_all(ctx);
+    statusbar.push(ctx, text);
+}
+
+/// 退出整个应用:同时关闭安装进度对话框与包预览主窗口。
+/// 主窗口 close() 在仍有 transient 对话框存活时不会结束应用,故直接 quit。
+fn quit_app(window: &gtk::Window) {
+    if let Some(app) = window.application() {
+        app.quit();
+    } else {
+        window.close();
+    }
+}
+
 /// 单文件模式:清空批量状态后加载并分析该文件
 fn load_deb(gui: &Rc<MainWindow>, file: &Path) {
     clear_batch(gui);
-    gui.statusbar
-        .push(gui.status_ctx, gettext("Loading...").as_str());
     // 新代际:使在途的旧分析结果失效
     let generation = gui.analysis_gen.get() + 1;
     gui.analysis_gen.set(generation);
@@ -827,7 +834,6 @@ fn load_deb(gui: &Rc<MainWindow>, file: &Path) {
     gui.conffiles.borrow_mut().clear();
 
     let Some(info) = preview_deb(gui, file) else {
-        gui.statusbar.pop(gui.status_ctx);
         return;
     };
 
@@ -837,7 +843,6 @@ fn load_deb(gui: &Rc<MainWindow>, file: &Path) {
     gui.button_remove.hide();
     gui.label_status
         .set_text(&gettext("Checking dependencies..."));
-    gui.statusbar.pop(gui.status_ctx);
 
     let gui_wait = gui.clone();
     let file2 = file.to_path_buf();
@@ -940,7 +945,6 @@ fn load_files(gui: &Rc<MainWindow>, files: Vec<PathBuf>) {
     gui.button_remove.hide();
     gui.label_status
         .set_text(&gettext("Checking dependencies..."));
-    gui.statusbar.pop(gui.status_ctx);
 
     // 逐包分析(顺序执行;每完成一个刷新行文案与汇总)
     let gui_all = gui.clone();
@@ -1257,6 +1261,9 @@ fn run_txn_dialog(
     row_response.append(&gtk::Label::new(Some(&gettext("Response"))));
     row_response.append(&entry_response);
     row_response.append(&button_send);
+    // 只有 debconf 交互事务才需要应答行;普通安装没有问题时整行隐藏,
+    // 避免对话框里出现一条永远禁用的空白输入控件
+    row_response.set_visible(false);
     let autoclose = gtk::CheckButton::with_label(&gettext(
         "Automatically close after the changes have been successfully applied",
     ));
@@ -1337,12 +1344,23 @@ fn run_txn_dialog(
         },
     ));
 
-    // 用户关闭 → 经 channel 通知信号泵;对话框立即销毁,收尾在泵内完成
+    // 用户关闭 → 经 channel 通知信号泵;对话框立即销毁,收尾在泵内完成。
+    // 成功且未勾选自动关闭时对话框会保留供查看输出,此后的手动关闭即代表
+    // 结束安装任务,需把预览主窗口一起关掉并退出应用。
     let (close_tx, close_rx) = async_channel::bounded::<()>(1);
+    let quit_on_close = Rc::new(Cell::new(false));
+    let dialog_closed = Rc::new(Cell::new(false));
+    let quit_flag = quit_on_close.clone();
+    let closed_flag = dialog_closed.clone();
+    let window_close = gui.window.clone();
     dialog.connect_response(move |d, r| {
         if matches!(r, ResponseType::Close | ResponseType::DeleteEvent) {
             let _ = close_tx.try_send(());
             d.destroy();
+            closed_flag.set(true);
+            if quit_flag.get() {
+                quit_app(window_close.upcast_ref());
+            }
         }
     });
     dialog.present();
@@ -1404,7 +1422,7 @@ fn run_txn_dialog(
                 }
                 bar.set_fraction(1.0);
                 window.set_sensitive(true);
-                statusbar.push(ctx, &failed);
+                set_statusbar(&statusbar, ctx, &failed);
                 show_alert(&window, AlertKind::Error, &gettext("fdebm error"), Some(&e));
                 return;
             }
@@ -1503,6 +1521,7 @@ fn run_txn_dialog(
                             {
                                 entry_response.set_sensitive(enabled);
                                 button_send.set_sensitive(enabled);
+                                row_response.set_visible(enabled);
                                 if enabled {
                                     // 交互通道在整个 PTY 运行期间开放,包未必已在提问;
                                     // 具体问题与可选项在终端视图里,展开才看得见
@@ -1533,12 +1552,9 @@ fn run_txn_dialog(
                                     }
                                 }
                                 if ok {
-                                    statusbar.push(ctx, &complete);
-                                    if autoclose.is_active() {
-                                        dialog.destroy();
-                                    }
+                                    set_statusbar(&statusbar, ctx, &complete);
                                 } else {
-                                    statusbar.push(ctx, &failed);
+                                    set_statusbar(&statusbar, ctx, &failed);
                                     show_alert(
                                         &window,
                                         AlertKind::Error,
@@ -1556,6 +1572,19 @@ fn run_txn_dialog(
             }
         }
 
+        // 成功:安装任务已结束,不再回到预览页。
+        // - 勾选自动关闭:立即退出,两个窗口一起关闭;
+        // - 未勾选:保留对话框供查看输出,用户手动关闭时再连同预览窗口退出。
+        if finished && ok {
+            if autoclose.is_active() || dialog_closed.get() {
+                dialog.destroy();
+                quit_app(window.upcast_ref());
+            } else {
+                quit_on_close.set(true);
+            }
+            return;
+        }
+
         // 用户运行中关闭:取消事务并立即恢复界面。cancel 以独立任务发射、
         // 不等守护进程应答(守护进程可能已挂起,等待会让"关闭"再次卡死);
         // 对话框已在响应回调中销毁,不再触碰其子控件
@@ -1568,7 +1597,7 @@ fn run_txn_dialog(
                 pid.remove();
             }
             window.set_sensitive(true);
-            statusbar.push(ctx, gettext("operation cancelled").as_str());
+            set_statusbar(&statusbar, ctx, gettext("operation cancelled").as_str());
             return;
         }
 
@@ -1579,7 +1608,7 @@ fn run_txn_dialog(
             }
             window.set_sensitive(true);
             if !ok {
-                statusbar.push(ctx, &failed);
+                set_statusbar(&statusbar, ctx, &failed);
             }
             return;
         }
@@ -1682,10 +1711,6 @@ fn on_install_clicked(gui: &Rc<MainWindow>) {
         }
     };
     let file = gui.current_file.borrow().clone().unwrap_or_default();
-    gui.statusbar.push(
-        gui.status_ctx,
-        gettext("Installing package file...").as_str(),
-    );
     run_txn_dialog(
         gui,
         &gettext("Installing package file..."),
@@ -1751,8 +1776,6 @@ fn on_batch_install_clicked(gui: &Rc<MainWindow>) {
             None => return,
         }
     };
-    gui.statusbar
-        .push(gui.status_ctx, gettext("Installing packages...").as_str());
     run_txn_dialog(
         gui,
         &gettext("Installing packages..."),
@@ -1773,8 +1796,6 @@ fn on_remove_clicked(gui: &Rc<MainWindow>) {
     else {
         return;
     };
-    gui.statusbar
-        .push(gui.status_ctx, gettext("Removing package...").as_str());
     // dpkg -r 单包卸载;反向依赖会阻止卸载并报错(由输出呈现)
     run_txn_dialog(
         gui,
