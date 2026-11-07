@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fdebm 0.1.1\n"
 "Report-Msgid-Bugs-To: sebastian.heinlein@web.de\n"
-"POT-Creation-Date: 2026-11-07 19:48+0800\n"
+"POT-Creation-Date: 2026-11-07 23:54+0800\n"
 "PO-Revision-Date: 2012-01-23 12:01+0000\n"
 "Last-Translator: Christos Spyroglou <Unknown>\n"
 "Language-Team: Greek <el@li.org>\n"
@@ -60,7 +60,7 @@ msgstr ""
 msgid "package file {0} changed or disappeared before installation"
 msgstr ""
 
-#: ../crates/fdebm-core/src/error.rs:68 ../crates/fdebm-gtk/src/gtk_app.rs:1585
+#: ../crates/fdebm-core/src/error.rs:68 ../crates/fdebm-gtk/src/gtk_app.rs:1609
 msgid "operation cancelled"
 msgstr ""
 
@@ -106,7 +106,7 @@ msgid "Error during install"
 msgstr ""
 
 #: ../crates/fdebm-core/src/install.rs:290
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1766
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1790
 msgid "Installing packages..."
 msgstr ""
 
@@ -257,344 +257,344 @@ msgstr "Ορίστε μια επιλογή ρυθμίσεων του APT"
 msgid "Debian packages to open"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:290
+#: ../crates/fdebm-gtk/src/gtk_app.rs:296
 msgid "Package Installer"
 msgstr "Εγκατάσταση πακέτων"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:324
+#: ../crates/fdebm-gtk/src/gtk_app.rs:330
 msgid "Package:"
 msgstr "Πακέτο:"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:324
+#: ../crates/fdebm-gtk/src/gtk_app.rs:330
 msgid "Status:"
 msgstr "Κατάσταση:"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:335
-#: ../crates/fdebm-gtk/src/gtk_app.rs:831
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1133
+#: ../crates/fdebm-gtk/src/gtk_app.rs:341
+#: ../crates/fdebm-gtk/src/gtk_app.rs:854
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1156
 msgid "_Install Package"
 msgstr "_Εγκατάσταση πακέτου"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:336
+#: ../crates/fdebm-gtk/src/gtk_app.rs:342
 msgid "_Remove Package"
 msgstr "Α_φαίρεση πακέτου"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:364
+#: ../crates/fdebm-gtk/src/gtk_app.rs:370
 msgid "Description"
 msgstr "Περιγραφή"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:380
+#: ../crates/fdebm-gtk/src/gtk_app.rs:386
 msgid "Version:"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:381
+#: ../crates/fdebm-gtk/src/gtk_app.rs:387
 msgid "Maintainer:"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:382
+#: ../crates/fdebm-gtk/src/gtk_app.rs:388
 msgid "Priority:"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:383
+#: ../crates/fdebm-gtk/src/gtk_app.rs:389
 msgid "Section:"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:384
+#: ../crates/fdebm-gtk/src/gtk_app.rs:390
 msgid "Size:"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:395
+#: ../crates/fdebm-gtk/src/gtk_app.rs:401
 msgid "Details"
 msgstr "Λεπτομέρειες"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:423
+#: ../crates/fdebm-gtk/src/gtk_app.rs:429
 msgid "Included files"
 msgstr "συμπεριλαμβανόμενα αρχεία"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:433
+#: ../crates/fdebm-gtk/src/gtk_app.rs:439
 msgid "Lintian output"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:553
+#: ../crates/fdebm-gtk/src/gtk_app.rs:445
+msgid "Automatically close the window"
+msgstr "Αυτόματο κλείσιμο μετά την επιτυχή εφαρμογή των αλλαγών"
+
+#: ../crates/fdebm-gtk/src/gtk_app.rs:566
 msgid "Selection is a directory"
 msgstr "Η επιλογή είναι κατάλογος"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:576
+#: ../crates/fdebm-gtk/src/gtk_app.rs:589
 msgid "File content can not be extracted"
 msgstr "Δεν είναι δυνατή η εξαγωγή των περιεχομένων του αρχείου"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:577
+#: ../crates/fdebm-gtk/src/gtk_app.rs:590
 #, rust-format
 msgid "Error reading file content '{0}'"
 msgstr "Σφάλμα ανάγνωσης περιεχομένων του αρχείου '{0}'"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:588
+#: ../crates/fdebm-gtk/src/gtk_app.rs:601
 msgid "Package control data"
 msgstr "Δεδομένα ελέγχου πακέτου"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:594
+#: ../crates/fdebm-gtk/src/gtk_app.rs:607
 msgid "Upstream data"
 msgstr "Δεδομένα upstream"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:605
+#: ../crates/fdebm-gtk/src/gtk_app.rs:618
 msgid "Error reading filelist"
 msgstr "Σφάλμα ανάγνωσης λίστας αρχείων"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:616
+#: ../crates/fdebm-gtk/src/gtk_app.rs:629
 msgid ""
 "No lintian available.\n"
 "Please install using sudo apt-get install lintian"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:620
+#: ../crates/fdebm-gtk/src/gtk_app.rs:633
 msgid "Running lintian..."
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:638
+#: ../crates/fdebm-gtk/src/gtk_app.rs:651
 #, rust-format
 msgid "Failed to run lintian: {0}"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:686
+#: ../crates/fdebm-gtk/src/gtk_app.rs:699
 #, rust-format
 msgid "Lintian finished with exit status {0}"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:701
+#: ../crates/fdebm-gtk/src/gtk_app.rs:714
 msgid "_Open…"
 msgstr "Άν_οιγμα…"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:702
+#: ../crates/fdebm-gtk/src/gtk_app.rs:715
 msgid "_Refresh"
 msgstr "_Ανανέωση"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:703
+#: ../crates/fdebm-gtk/src/gtk_app.rs:716
 msgid "_Quit"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:708
+#: ../crates/fdebm-gtk/src/gtk_app.rs:721
 msgid "_Keyboard Shortcuts"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:711
+#: ../crates/fdebm-gtk/src/gtk_app.rs:724
 msgid "_About"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:713
+#: ../crates/fdebm-gtk/src/gtk_app.rs:726
 msgid "_File"
 msgstr "_Αρχείο"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:714
+#: ../crates/fdebm-gtk/src/gtk_app.rs:727
 msgid "_Help"
 msgstr "_Βοήθεια"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:723
+#: ../crates/fdebm-gtk/src/gtk_app.rs:736
 msgid "Open Debian package"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:776
+#: ../crates/fdebm-gtk/src/gtk_app.rs:789
 msgid "Keyboard Shortcuts"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:777
+#: ../crates/fdebm-gtk/src/gtk_app.rs:790
 msgid ""
 "Ctrl+O  Open a Debian package\n"
 "Ctrl+Q  Quit"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:791
+#: ../crates/fdebm-gtk/src/gtk_app.rs:804
 msgid "simple tool to view and install deb files"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:835
-#: ../crates/fdebm-gtk/src/gtk_app.rs:937
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1055
+#: ../crates/fdebm-gtk/src/gtk_app.rs:858
+#: ../crates/fdebm-gtk/src/gtk_app.rs:960
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1078
 msgid "Checking dependencies..."
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:860
+#: ../crates/fdebm-gtk/src/gtk_app.rs:883
 #, rust-format
 msgid "fdebm error, file not found: {0}"
 msgstr "Σφάλμα του fdebm, το αρχείο που δεν βρέθηκε: {0}"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:874
+#: ../crates/fdebm-gtk/src/gtk_app.rs:897
 msgid "Could not open the software package"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:933
+#: ../crates/fdebm-gtk/src/gtk_app.rs:956
 msgid "Install _Packages"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1015
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1038
 msgid "Cannot install"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1017
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1040
 msgid "Ready to install"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1019
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1042
 msgid "Checking…"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1040
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1063
 #, rust-format
 msgid "{0} of {1} package cannot be installed"
 msgid_plural "{0} of {1} packages cannot be installed"
 msgstr[0] ""
 msgstr[1] ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1058
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1081
 msgid "All selected packages can be installed"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1071
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1094
 msgid "Dependency check failed"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1075
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1087
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1098
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1110
 #, rust-format
 msgid "<span foreground=\"red\" weight=\"bold\">Error: {0}</span>"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1102
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1125
 #, rust-format
 msgid "Requires the <b>removal</b> of {0} package"
 msgid_plural "Requires the <b>removal</b> of {0} packages"
 msgstr[0] ""
 msgstr[1] ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1113
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1136
 #, rust-format
 msgid "Requires the installation of {0} package"
 msgid_plural "Requires the installation of {0} packages"
 msgstr[0] ""
 msgstr[1] ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1128
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1151
 msgid "Same version is already installed"
 msgstr "Μια ίδια έκδοση είναι ήδη εγκατεστημένη"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1129
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1152
 msgid "_Reinstall Package"
 msgstr "_Επανεγκατάσταση πακέτου"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1139
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1162
 msgid "All dependencies are satisfied"
 msgstr "Όλες οι εξαρτήσεις ικανοποιήθηκαν"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1206
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1229
 msgid "Applying changes"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1210
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1233
 msgid "Close"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1236
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1259
 msgid "Terminal"
 msgstr "Τερματικό"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1244
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1267
 msgid "Type a response and press Enter"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1248
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1271
 msgid "Send"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1251
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1274
 msgid "Response"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1258
-msgid "Automatically close after the changes have been successfully applied"
-msgstr "Αυτόματο κλείσιμο μετά την επιτυχή εφαρμογή των αλλαγών"
-
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1284
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1304
 msgid "Waiting…"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1405
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1547
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1435
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1570
 msgid "fdebm error"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1488
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1516
 msgid "Installing…"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1489
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1517
 msgid "Installed"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1490
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1518
 msgid "Failed"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1510
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1538
 msgid "You can answer package questions below"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1638
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1662
 msgid "Modified configuration files"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1640
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1664
 msgid ""
 "The following configuration files have been modified locally and the new "
 "package ships different versions:"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1644
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1668
 msgid "Keep _my version"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1645
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1669
 msgid "Use the package's _new version"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1646
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1670
 msgid "_Cancel"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1677
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1745
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1701
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1769
 msgid "Install unauthenticated software?"
 msgstr "Εγκατάσταση μη πιστοποιημένου λογισμικού;"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1679
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1747
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1703
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1771
 #, rust-format
 msgid "The following packages are UNAUTHENTICATED: {0}"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1701
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1725
 msgid "Installing package file..."
 msgstr "Εγκατάσταση πακέτου..."
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1702
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1767
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1726
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1791
 msgid "Installation complete"
 msgstr "Η εγκατάσταση ολοκληρώθηκε"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1703
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1727
 msgid "Failed to install package file"
 msgstr "Αποτυχία εγκατάστασης πακέτου"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1768
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1792
 msgid "Failed to install packages"
 msgstr ""
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1787
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1811
 msgid "Removing package..."
 msgstr "Αφαίρεση πακέτου..."
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1788
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1812
 msgid "Removal complete"
 msgstr "Η αφαίρεση ολοκληρώθηκε"
 
-#: ../crates/fdebm-gtk/src/gtk_app.rs:1789
+#: ../crates/fdebm-gtk/src/gtk_app.rs:1813
 msgid "Failed to remove package"
 msgstr "Αποτυχία αφαίρεσης πακέτου"
