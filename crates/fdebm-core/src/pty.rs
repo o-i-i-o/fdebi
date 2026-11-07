@@ -5,8 +5,12 @@
 //! 本模块,其余安装仍用管道 + noninteractive(见 [`crate::install`])。
 //!
 //! - 输出:从端 stdout/stderr 合并为单流(pty 语义),按行转发;无换行的
-//!   片段(提示符)在完整 UTF-8 时立即呈现,前端不会等到换行才看到问题
+//!   片段(提示符)在完整 UTF-8 时立即呈现,前端不会等到换行才看到问题;
+//!   转发前去掉 ANSI 转义序列与回车、退格等终端控制字符(前端是纯文本
+//!   视图,不解释控制序列)
 //! - 输入:前端经 [`InputHandle`] 逐行写入主端,等效于在终端键入
+//! - 终端语义:子进程独立成会话并把从端设为控制终端,`/dev/tty` 可用;
+//!   从端关闭回显,避免前端已显示输入时再回显一遍
 //! - 取消:独立进程组 + SIGTERM(沿用 [`CancelHandle`])
 
 use std::collections::VecDeque;
@@ -60,15 +64,29 @@ pub fn run(
         .stderr(Stdio::from(slave))
         // 守护进程常运行在无 TERM 的环境(systemd);避免脚本查 terminfo 失败
         .env("TERM", "xterm");
-    // 与管道路径一致:cancel() 可对整组 SIGTERM(含维护脚本子进程)
-    cmd.process_group(0);
+    // 独立会话 + 从端设为控制终端:维护脚本里 `read </dev/tty`、
+    // stty/tput 等按终端语义工作的命令才可用(仅 new pgrp 不够)。
+    // 新会话的 pgid == 子 pid,取消时仍可对整组 SIGTERM。
+    // SAFETY: 闭包只调用异步信号安全的 setsid/ioctl,不做分配或加锁;
+    // 此时 std 已把 fd 0/1/2 接到从端。
+    unsafe {
+        cmd.pre_exec(|| {
+            if libc::setsid() < 0 {
+                return Err(io::Error::last_os_error());
+            }
+            if libc::ioctl(0, libc::TIOCSCTTY, 0) < 0 {
+                return Err(io::Error::last_os_error());
+            }
+            Ok(())
+        });
+    }
     let mut child = cmd.spawn()?;
     // 关闭父进程持有的从端副本:否则子进程退出后主端读不到 EOF(EIO),
     // 读线程与输出循环会永远等待
     drop(cmd);
     cancel.register(child.id());
 
-    // 写线程:InputHandle 的行 → 主端(回显由从端行规程负责)
+    // 写线程:InputHandle 的行 → 主端(从端已关闭回显,避免输出区重复输入)
     let (tx, rx) = mpsc::channel::<String>();
     *input.tx.lock().unwrap() = Some(tx);
     let writer_thread = std::thread::spawn(move || {
@@ -149,6 +167,20 @@ fn open_pty() -> io::Result<(File, File)> {
     };
     // SAFETY: slave 是有效 fd,winsize 为该 ioctl 的入参
     unsafe { libc::ioctl(slave.as_raw_fd(), libc::TIOCSWINSZ, &ws) };
+    // 回显关闭:输入由前端输入框(或用户自己的终端)呈现,PTY 再回显会在
+    // 输出区重复一遍;IUTF8 让行规程按 UTF-8 处理退格(多字节字符不被拆坏)
+    // SAFETY: termios 结构由内核填充,tcsetattr 只修改该从端
+    unsafe {
+        let mut term: libc::termios = std::mem::zeroed();
+        if libc::tcgetattr(slave.as_raw_fd(), &mut term) < 0 {
+            return Err(io::Error::last_os_error());
+        }
+        term.c_lflag &= !(libc::ECHO | libc::ECHOE | libc::ECHOK | libc::ECHONL);
+        term.c_iflag |= libc::IUTF8;
+        if libc::tcsetattr(slave.as_raw_fd(), libc::TCSANOW, &term) < 0 {
+            return Err(io::Error::last_os_error());
+        }
+    }
     Ok((master, slave))
 }
 
@@ -181,7 +213,8 @@ fn read_lines(mut master: File, tx: Sender<String>) {
     }
 }
 
-/// 去掉行尾换行与 CR(pty 输出把 \n 翻译为 \r\n)后发送
+/// 去掉行尾换行与 CR(pty 输出把 \n 翻译为 \r\n),并清理纯文本视图
+/// 无法解释的终端控制序列(ANSI CSI/OSC、回车、退格等)后发送
 fn send_line(tx: &Sender<String>, mut line: Vec<u8>) {
     if line.last() == Some(&b'\n') {
         line.pop();
@@ -189,7 +222,80 @@ fn send_line(tx: &Sender<String>, mut line: Vec<u8>) {
     if line.last() == Some(&b'\r') {
         line.pop();
     }
-    let _ = tx.send(String::from_utf8_lossy(&line).into_owned());
+    let _ = tx.send(sanitize(&line));
+}
+
+/// 转义序列解析状态
+#[derive(Clone, Copy)]
+enum EscState {
+    /// 普通文本
+    Text,
+    /// 刚读到 ESC
+    Esc,
+    /// ESC + 字符集/中间字节,再吞掉一个字符
+    EscIntermediate,
+    /// CSI(ESC [)
+    Csi,
+    /// OSC/字符串序列(ESC ] P X ^ _)
+    Osc,
+    /// OSC 内读到 ESC,等待 ST(ESC \)
+    OscEsc,
+}
+
+/// 把 PTY 输出清理成适合纯文本视图显示的内容:
+/// - 去掉 ANSI CSI(颜色、光标、括号粘贴等)与 OSC(标题等)序列
+/// - 回车按终端语义回到行首(清除本行已累积内容),其余 C0 控制字符丢弃
+/// - 退格按终端语义删除前一个字符;保留制表符
+fn sanitize(raw: &[u8]) -> String {
+    let text = String::from_utf8_lossy(raw);
+    let mut out = String::with_capacity(text.len());
+    let mut state = EscState::Text;
+    for ch in text.chars() {
+        state = match state {
+            EscState::Text => match ch {
+                '\x1b' => EscState::Esc,
+                '\r' => {
+                    out.clear();
+                    EscState::Text
+                }
+                '\x08' => {
+                    out.pop();
+                    EscState::Text
+                }
+                c if c.is_control() && c != '\t' => EscState::Text,
+                c => {
+                    out.push(c);
+                    EscState::Text
+                }
+            },
+            EscState::Esc => match ch {
+                '[' => EscState::Csi,
+                ']' | 'P' | 'X' | '^' | '_' => EscState::Osc,
+                '(' | ')' | '#' | '%' | '*' | '+' | '-' | '.' | '/' => EscState::EscIntermediate,
+                _ => EscState::Text,
+            },
+            EscState::EscIntermediate => EscState::Text,
+            // CSI 以 0x40..=0x7e 的终止字节结束
+            EscState::Csi => {
+                if ('\x40'..='\x7e').contains(&ch) {
+                    EscState::Text
+                } else {
+                    EscState::Csi
+                }
+            }
+            EscState::Osc => match ch {
+                '\x07' => EscState::Text,
+                '\x1b' => EscState::OscEsc,
+                _ => EscState::Osc,
+            },
+            EscState::OscEsc => match ch {
+                '\\' => EscState::Text,
+                '\x1b' => EscState::OscEsc,
+                _ => EscState::Osc,
+            },
+        };
+    }
+    out
 }
 
 #[cfg(test)]
@@ -266,5 +372,54 @@ mod tests {
     #[test]
     fn send_without_running_child_is_rejected() {
         assert!(!InputHandle::new().send("y"));
+    }
+
+    #[test]
+    fn child_gets_controlling_terminal() {
+        let mut cmd = Command::new("sh");
+        cmd.arg("-c")
+            .arg("printf 'tty? '; read ans </dev/tty; echo \"tty=$ans\"");
+        let progress = Collector::default();
+        let lines = progress.lines.clone();
+        let cancel = Arc::new(CancelHandle::new());
+        let input = Arc::new(InputHandle::new());
+
+        let input_tx = input.clone();
+        let sender = std::thread::spawn(move || {
+            let deadline = std::time::Instant::now() + Duration::from_secs(5);
+            while !input_tx.send("ok") {
+                if std::time::Instant::now() >= deadline {
+                    return false;
+                }
+                std::thread::sleep(Duration::from_millis(20));
+            }
+            true
+        });
+
+        let result = run(cmd, &progress, &cancel, &input);
+        assert!(sender.join().unwrap(), "runtime never accepted input");
+        let (code, _tail) = result.expect("pty run");
+        assert_eq!(code, 0);
+        let out = lines.lock().unwrap().join("\n");
+        // 没有控制终端时 /dev/tty 打不开,read 失败,答案不会出现
+        assert!(out.contains("tty=ok"), "/dev/tty unavailable: {out}");
+    }
+
+    #[test]
+    fn sanitize_strips_terminal_controls() {
+        assert_eq!(sanitize(b"plain"), "plain");
+        // CSI:下划线 + 重置、括号粘贴开关
+        assert_eq!(sanitize(b"\x1b[4mAsk\x1b[24m?"), "Ask?");
+        assert_eq!(sanitize(b"\x1b[?2004hask\x1b[?2004l"), "ask");
+        // ESC ( B 字符集选择、OSC 标题(BEL / ST 终止)
+        assert_eq!(sanitize(b"\x1b(Btext"), "text");
+        assert_eq!(sanitize(b"\x1b]0;title\x07text"), "text");
+        assert_eq!(sanitize(b"\x1b]0;title\x1b\\text"), "text");
+        // 回车按终端语义回到行首;退格删除前一个字符(含多字节)
+        assert_eq!(sanitize(b"abc\rdef"), "def");
+        assert_eq!(sanitize("ab\x08c".as_bytes()), "ac");
+        assert_eq!(sanitize("中\x08文".as_bytes()), "文");
+        // 制表符保留,其余 C0 控制字符丢弃
+        assert_eq!(sanitize(b"a\tb\x07c"), "a\tbc");
     }
 }

@@ -1210,7 +1210,8 @@ fn run_txn_dialog(
         .transient_for(&gui.window)
         .modal(true)
         .title(gettext("Applying changes").as_str())
-        .default_width(480)
+        .default_width(760)
+        .default_height(560)
         .build();
     dialog.add_button(&gettext("Close"), ResponseType::Close);
     dialog.set_default_response(ResponseType::Close);
@@ -1226,13 +1227,29 @@ fn run_txn_dialog(
         .editable(false)
         .cursor_visible(false)
         .monospace(true)
+        .wrap_mode(gtk::WrapMode::WordChar)
+        .build();
+    // 终端/输出区:给足初始高度(安装详情里的输出框),窗口放大时继续
+    // 随 expander 伸展;上限避免单包输出过多时把对话框撑出屏幕
+    let terminal_scroll = gtk::ScrolledWindow::builder()
+        .child(&textview)
+        .hexpand(true)
+        .vexpand(true)
+        .min_content_height(280)
+        .max_content_height(460)
+        .propagate_natural_height(true)
         .build();
     let exp = gtk::Expander::new(Some(gettext("Terminal").as_str()));
-    exp.set_child(Some(&scroll(&textview)));
+    exp.set_child(Some(&terminal_scroll));
+    exp.set_vexpand(true);
+    // 默认展开:输出与 debconf 问题(若有)直接可见,无需先点 Terminal
+    exp.set_expanded(true);
 
     // 交互应答:守护进程发 InputState 后启用(仅安装事务)
     let entry_response = gtk::Entry::new();
     entry_response.set_placeholder_text(Some(&gettext("Type a response and press Enter")));
+    // 回车只提交应答,不能触发对话框默认按钮(Close)导致事务被取消
+    entry_response.set_activates_default(false);
     entry_response.set_sensitive(false);
     let button_send = gtk::Button::with_label(&gettext("Send"));
     button_send.set_sensitive(false);
@@ -1253,6 +1270,7 @@ fn run_txn_dialog(
         .margin_bottom(10)
         .margin_start(12)
         .margin_end(12)
+        .vexpand(true)
         .build();
     box_.append(&label_action);
 
@@ -1281,7 +1299,15 @@ fn run_txn_dialog(
             list.append(&row);
             pkg_rows.insert(f.to_string_lossy().into_owned(), (row, label));
         }
-        box_.append(&list);
+        // 批量列表限高:包很多时不能把终端输出区挤出对话框
+        let list_scroll = gtk::ScrolledWindow::builder()
+            .child(&list)
+            .hexpand(true)
+            .min_content_height(60)
+            .max_content_height(180)
+            .propagate_natural_height(true)
+            .build();
+        box_.append(&list_scroll);
         pkg_list = Some(list);
     }
 
