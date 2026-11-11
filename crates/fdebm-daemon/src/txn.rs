@@ -22,6 +22,7 @@ use std::time::SystemTime;
 use fdebm_core::aptmark;
 use fdebm_core::batch::{self, LocalMeta};
 use fdebm_core::download::{self, DownloadProgress};
+use fdebm_core::health;
 use fdebm_core::i18n::{gettext, ngettext, tf};
 use fdebm_core::install::{self, CancelHandle, ConfPolicy, FileStamp, InstallBatch};
 use fdebm_core::lock;
@@ -264,56 +265,193 @@ pub fn start_remove(
     id
 }
 
+/// 打开一个待分析/安装的本地文件:拒绝 FIFO/设备等非普通文件,避免被诱导
+/// 在打开时阻塞;其余打开错误转成用户可见文案。
+fn open_item(path: &str) -> Result<DebFile, String> {
+    if std::fs::metadata(path).is_ok_and(|m| !m.is_file()) {
+        return Err(gettext("not a regular file"));
+    }
+    DebFile::open(path).map_err(|e| e.to_string())
+}
+
+/// deb 的 apt 键(键派生规则与 solver/conffile 一致)
+fn deb_key(sys: &SysState, deb: &DebFile) -> String {
+    let name = deb.field_trimmed("Package").unwrap_or("");
+    let arch = deb.field_trimmed("Architecture").unwrap_or("all");
+    if arch == "all" || arch == sys.native_arch {
+        name.to_string()
+    } else {
+        format!("{name}:{arch}")
+    }
+}
+
+/// deb 的已安装版本(未安装为空串)
+fn installed_version_of(sys: &SysState, deb: &DebFile) -> String {
+    sys.installed_version(&deb_key(sys, deb))
+        .unwrap_or_default()
+        .to_string()
+}
+
+/// deb 在软件源中的最高候选版本(源中没有该包为空串)
+fn repo_version_of(sys: &SysState, deb: &DebFile) -> String {
+    sys.candidate_version(&deb_key(sys, deb))
+        .unwrap_or_default()
+        .to_string()
+}
+
+fn conffile_conflicts_of(sys: &SysState, deb: &DebFile) -> Vec<(String, String)> {
+    fdebm_core::conffile::conflicts(deb, sys)
+        .into_iter()
+        .map(|c| (c.package, c.path))
+        .collect()
+}
+
+/// 求解结论 → D-Bus 分析结果(批量路径直接复用 resolve_batch 的结论)
+fn result_from_verdict(
+    sys: &SysState,
+    deb: &DebFile,
+    verdict: Verdict,
+    broken: &[String],
+) -> fdebm_core::AnalyzeResult {
+    let installed_version = installed_version_of(sys, deb);
+    let repo_version = repo_version_of(sys, deb);
+    let conffile_conflicts = conffile_conflicts_of(sys, deb);
+    let broken = broken.to_vec();
+    match verdict {
+        Verdict::Installable(res) => (
+            true,
+            String::new(),
+            res.changes.install,
+            res.changes.remove,
+            res.changes.unauthenticated,
+            installed_version,
+            repo_version,
+            broken,
+            conffile_conflicts,
+        ),
+        Verdict::Uninstallable(failure) => (
+            false,
+            failure,
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            installed_version,
+            repo_version,
+            broken,
+            conffile_conflicts,
+        ),
+    }
+}
+
+/// 系统异常包快照;查询失败不阻断分析(按无异常处理)
+fn broken_snapshot() -> Vec<String> {
+    health::broken_packages().unwrap_or_default()
+}
+
+/// 单文件分析的结论组装
+fn analyze_deb(sys: &SysState, deb: &DebFile) -> Result<fdebm_core::AnalyzeResult, FdebmError> {
+    let verdict = solver::resolve(sys, deb)?;
+    Ok(result_from_verdict(sys, deb, verdict, &broken_snapshot()))
+}
+
 /// 只读分析(D-Bus 方法内同步执行,重活放独立线程避免阻塞总线任务)
 pub fn analyze(
     manager: &Arc<Manager>,
     path: &str,
     apt_opts: &[String],
 ) -> Result<fdebm_core::AnalyzeResult, String> {
-    // 只读免授权:拒绝 FIFO/设备等非普通文件,避免被诱导在打开时阻塞
-    if std::fs::metadata(path).is_ok_and(|m| !m.is_file()) {
-        return Err(gettext("not a regular file"));
-    }
-    let run = || -> Result<_, FdebmError> {
-        let deb = DebFile::open(path)?;
-        let sys = manager.sys_state(apt_opts)?;
-        let name = deb.field_trimmed("Package").unwrap_or("").to_string();
-        let arch = deb
-            .field_trimmed("Architecture")
-            .unwrap_or("all")
-            .to_string();
-        let key = if arch == "all" || arch == sys.native_arch {
-            name.clone()
-        } else {
-            format!("{}:{}", name, arch)
-        };
-        let installed_version = sys.installed_version(&key).unwrap_or_default().to_string();
-        let conffile_conflicts: Vec<(String, String)> = fdebm_core::conffile::conflicts(&deb, &sys)
-            .into_iter()
-            .map(|c| (c.package, c.path))
-            .collect();
-        Ok(match solver::resolve(&sys, &deb)? {
-            Verdict::Installable(res) => (
-                true,
-                String::new(),
-                res.changes.install,
-                res.changes.remove,
-                res.changes.unauthenticated,
-                installed_version,
-                conffile_conflicts,
-            ),
-            Verdict::Uninstallable(failure) => (
+    // 只读免授权:先校验并打开文件,再加载系统状态
+    let deb = open_item(path)?;
+    let sys = manager.sys_state(apt_opts).map_err(|e| e.to_string())?;
+    analyze_deb(&sys, &deb).map_err(|e| e.to_string())
+}
+
+/// 批量只读分析:一次加载系统状态,按批内依赖顺序求解,并把前面已判定
+/// 可安装的本地包作为后续包的已安装上下文(A 依赖同批 B 时 A 不再误判)。
+///
+/// 返回值与 `paths` 一一对应;单个文件打开失败只影响该项。
+pub fn analyze_batch(
+    manager: &Arc<Manager>,
+    paths: &[String],
+    apt_opts: &[String],
+) -> Result<Vec<fdebm_core::AnalyzeItem>, String> {
+    let sys = manager.sys_state(apt_opts).map_err(|e| e.to_string())?;
+    let broken = broken_snapshot();
+
+    // 先打开全部文件:打开失败逐项报告,不阻塞其余包的批内求解
+    let opened: Vec<Result<DebFile, String>> = paths.iter().map(|p| open_item(p)).collect();
+    let debs: Vec<&DebFile> = opened.iter().filter_map(|r| r.as_ref().ok()).collect();
+    let mut verdicts = solver::resolve_batch(&sys, &debs).into_iter();
+
+    let mut out: Vec<fdebm_core::AnalyzeItem> = Vec::with_capacity(paths.len());
+    for (path, opened) in paths.iter().zip(opened.iter()) {
+        let item = match opened {
+            Err(e) => (
+                path.clone(),
                 false,
-                failure,
+                e.clone(),
                 Vec::new(),
                 Vec::new(),
                 Vec::new(),
-                installed_version,
-                conffile_conflicts,
+                String::new(),
+                String::new(),
+                broken.clone(),
+                Vec::new(),
             ),
-        })
-    };
-    run().map_err(|e| e.to_string())
+            Ok(deb) => {
+                // 打开成功的项与 resolve_batch 输入顺序一致
+                let (
+                    installable,
+                    failure,
+                    install,
+                    remove,
+                    unauthenticated,
+                    installed_version,
+                    repo_version,
+                    item_broken,
+                    conflicts,
+                ) = match verdicts.next() {
+                    Some(Ok(v)) => result_from_verdict(&sys, deb, v, &broken),
+                    Some(Err(e)) => (
+                        false,
+                        e.to_string(),
+                        Vec::new(),
+                        Vec::new(),
+                        Vec::new(),
+                        installed_version_of(&sys, deb),
+                        repo_version_of(&sys, deb),
+                        broken.clone(),
+                        conffile_conflicts_of(&sys, deb),
+                    ),
+                    None => (
+                        false,
+                        gettext("internal error: missing analysis result"),
+                        Vec::new(),
+                        Vec::new(),
+                        Vec::new(),
+                        installed_version_of(&sys, deb),
+                        repo_version_of(&sys, deb),
+                        broken.clone(),
+                        conffile_conflicts_of(&sys, deb),
+                    ),
+                };
+                (
+                    path.clone(),
+                    installable,
+                    failure,
+                    install,
+                    remove,
+                    unauthenticated,
+                    installed_version,
+                    repo_version,
+                    item_broken,
+                    conflicts,
+                )
+            }
+        };
+        out.push(item);
+    }
+    Ok(out)
 }
 
 // ---------------------------------------------------------------------------
@@ -473,6 +611,9 @@ fn run_install(
 
     let mut installed = 0usize;
     let mut failures: Vec<String> = Vec::new();
+    // 安装前健康快照:装后只报告本次事务新增的异常包(避免把用户
+    // 本来就存在的未配置包算到 fdebm 头上)
+    let broken_before = broken_snapshot();
 
     for (step, &idx) in order.iter().enumerate() {
         if txn.cancel.is_cancelled() {
@@ -651,7 +792,22 @@ fn run_install(
         }
     }
 
-    // 4. 汇总:失败包逐条列在 Finished detail(前端原样呈现,失败项在前)
+    // 4. 装后健康检查:dpkg 退出码为 0 也可能留下未配置的依赖方
+    //    (例如 Provides 丢失或 Postinst 依赖未满足)。只报告新增问题。
+    let broken_after = broken_snapshot();
+    let new_broken: Vec<&str> = broken_after
+        .iter()
+        .filter(|p| !broken_before.contains(p))
+        .map(String::as_str)
+        .collect();
+    if !new_broken.is_empty() {
+        failures.push(tf(
+            "The installation left the system in an inconsistent state: {0}. Run 'sudo apt-get install -f' to repair.",
+            &[&new_broken.join(", ")],
+        ));
+    }
+
+    // 5. 汇总:失败包逐条列在 Finished detail(前端原样呈现,失败项在前)
     if failures.is_empty() {
         finalize(conn, txn, DONE, "", id, true);
     } else {

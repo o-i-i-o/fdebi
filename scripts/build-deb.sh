@@ -72,7 +72,7 @@ Section: admin
 Priority: optional
 Architecture: $ARCH
 Maintainer: fdebm maintainers <fdebm@localhost>
-Depends: libgtk-4-1, dbus, polkitd | policykit-1, apt, shared-mime-info
+Depends: libgtk-4-1, dbus, polkitd | policykit-1, apt, file, shared-mime-info
 Installed-Size: $INSTALLED_SIZE
 Description: 本地 .deb 安装管理器(fdebm)
  特权分离架构:D-Bus 守护进程执行解析/下载/dpkg 安装,GTK4 瘦客户端

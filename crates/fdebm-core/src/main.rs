@@ -23,6 +23,7 @@ use fdebm_core::aptmark;
 use fdebm_core::batch::{self, LocalMeta};
 use fdebm_core::conffile;
 use fdebm_core::download::{self, DownloadProgress};
+use fdebm_core::health;
 use fdebm_core::i18n::{gettext, ngettext, tf};
 use fdebm_core::install::{self, CancelHandle, ConfPolicy, FileStamp, InstallBatch};
 use fdebm_core::lock;
@@ -111,6 +112,21 @@ fn run(args: &Args, conf_policy: ConfPolicy, cancel: &CancelHandle) -> i32 {
     };
     let mut analysis_failed = false;
     let mut unauthenticated: Vec<String> = Vec::new();
+    // 系统已有未完成操作时先提示(gdebi 用 apt broken_count 拒绝继续;
+    // 这里只警告,用户仍可尝试安装/修复)
+    if let Ok(broken) = health::broken_packages()
+        && !broken.is_empty()
+    {
+        eprintln!(
+            "{}: {}",
+            gettext("Warning: some packages are not fully installed"),
+            broken.join(", ")
+        );
+        eprintln!(
+            "    {}",
+            gettext("Run 'sudo apt-get install -f' to repair.")
+        );
+    }
     for item in &items {
         match analyze_item(&sys, item) {
             Ok(res) => unauthenticated.extend(res.changes.unauthenticated.iter().cloned()),
@@ -200,6 +216,9 @@ fn analyze_item(sys: &SysState, item: &Item) -> Result<Resolution, String> {
         .unwrap_or_else(|| gettext("not installed"));
     println!("    {}: {name} {version} [{arch}]", gettext("Package"));
     println!("    {}: {installed}", gettext("Installed version"));
+    if let Some(repo) = sys.candidate_version(&key) {
+        println!("    {}: {repo}", gettext("Repository version"));
+    }
 
     let conflicts = conffile::conflicts(deb, sys);
     match solver::resolve(sys, deb) {
@@ -294,6 +313,7 @@ fn install_phase(
     let total = items.len();
     let mut installed = 0usize;
     let mut failures: Vec<String> = Vec::new();
+    let broken_before = health::broken_packages().unwrap_or_default();
 
     for (step, &idx) in order.iter().enumerate() {
         if cancel.is_cancelled() {
@@ -408,6 +428,20 @@ fn install_phase(
             }
             Err(e) => return flow_aborted(e, total, installed),
         }
+    }
+
+    // 装后健康检查:只报告本次事务新增的异常包(与守护进程同语义)
+    let broken_after = health::broken_packages().unwrap_or_default();
+    let new_broken: Vec<&str> = broken_after
+        .iter()
+        .filter(|p| !broken_before.contains(p))
+        .map(String::as_str)
+        .collect();
+    if !new_broken.is_empty() {
+        failures.push(tf(
+            "The installation left the system in an inconsistent state: {0}. Run 'sudo apt-get install -f' to repair.",
+            &[&new_broken.join(", ")],
+        ));
     }
 
     if failures.is_empty() {

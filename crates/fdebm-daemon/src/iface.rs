@@ -3,7 +3,11 @@
 //! 方法:
 //! - AnalyzeLocalFile(s path, as apt_opts) → (b installable, s failure,
 //!   as install, as remove, as unauthenticated, s installed_version,
-//!   a(ss) conffile_conflicts)
+//!   s repo_version, as broken_packages, a(ss) conffile_conflicts)
+//! - AnalyzeLocalFiles(as paths, as apt_opts) → 逐文件结果数组
+//!   (路径, 可安装, 错误信息, install[], remove[], unauthenticated[],
+//!   已安装版本, 软件源候选版本, 异常状态包[], conffile 冲突;按输入顺序;
+//!   批内前序可安装包作为后续包的已装上下文)
 //! - InstallLocalFiles(as paths, as apt_opts, s conf_policy) → u id
 //! - RemovePackage(s name) → u id
 //! - Cancel(u id) → b accepted(仅事务发起者)
@@ -52,6 +56,23 @@ impl FdebmIface {
             // send 是 async 方法,同步线程内必须用 send_blocking:
             // let _ = tx.send(..) 只创建 future 即丢弃,消息永远不会入队
             let _ = tx.send_blocking(txn::analyze(&manager, &path, &apt_opts));
+        });
+        rx.recv()
+            .await
+            .map_err(|e| zbus::fdo::Error::Failed(e.to_string()))?
+            .map_err(zbus::fdo::Error::Failed)
+    }
+
+    /// 批量分析:一次加载系统状态并按批内依赖顺序求解,供 GUI 多选安装使用
+    async fn analyze_local_files(
+        &self,
+        paths: Vec<String>,
+        apt_opts: Vec<String>,
+    ) -> zbus::fdo::Result<Vec<fdebm_core::AnalyzeItem>> {
+        let manager = self.manager.clone();
+        let (tx, rx) = async_channel::bounded(1);
+        std::thread::spawn(move || {
+            let _ = tx.send_blocking(txn::analyze_batch(&manager, &paths, &apt_opts));
         });
         rx.recv()
             .await

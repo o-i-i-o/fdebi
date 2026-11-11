@@ -218,6 +218,17 @@ impl SysState {
             .find(|p| p.key == key_or_name || format!("{}:{}", p.name, p.arch) == key_or_name)
             .map(|p| p.version.as_str())
     }
+
+    /// 软件源中的最高候选版本(不含本地 deb);仓库里没有该包时返回 None。
+    /// candidates 列表按版本降序,取第一个非本地条目即可。
+    pub fn candidate_version(&self, key: &str) -> Option<&str> {
+        self.candidates
+            .get(key)?
+            .iter()
+            .map(|&i| &self.all_candidates[i])
+            .find(|c| !c.is_local())
+            .map(|c| c.pkg.version.as_str())
+    }
 }
 
 /// 从 control 段落字段构建 Pkg(键派生需 native_arch)
@@ -704,5 +715,33 @@ mod tests {
         let first = &st.all_candidates[list[0]];
         assert_eq!(first.pkg.version, "1.0");
         assert!(first.repo.as_ref().unwrap().trusted);
+    }
+
+    /// 仓库版本提示:候选按版本降序,取最高非本地候选;无候选返回 None
+    #[test]
+    fn candidate_version_is_highest_repo_version() {
+        let mut st = SysState::default();
+        let mk = |ver: &str, local: bool| Candidate {
+            pkg: Pkg {
+                key: "jq".into(),
+                name: "jq".into(),
+                arch: "all".into(),
+                version: ver.into(),
+                ..Default::default()
+            },
+            repo: if local {
+                None
+            } else {
+                Some(Repo {
+                    trusted: true,
+                    ..Default::default()
+                })
+            },
+            local_path: local.then(|| PathBuf::from("/tmp/jq.deb")),
+            ..Default::default()
+        };
+        st.add_candidates(vec![mk("1.0", false), mk("2.0", true), mk("1.5", false)]);
+        assert_eq!(st.candidate_version("jq"), Some("1.5"));
+        assert_eq!(st.candidate_version("missing"), None);
     }
 }

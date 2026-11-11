@@ -137,6 +137,10 @@ struct Analysis {
     failure: String,
     changes: Changes,
     installed_version: String,
+    /// 软件源中的最高候选版本(空串 = 源中没有该包)
+    repo_version: String,
+    /// 当前系统处于异常状态(未配置/半安装等)的包
+    broken: Vec<String>,
     /// conffile 冲突列表(包名, 路径)
     conflicts: Vec<(String, String)>,
 }
@@ -153,6 +157,13 @@ trait Fdebm {
         path: &str,
         apt_opts: &[&str],
     ) -> zbus::Result<fdebm_core::AnalyzeResult>;
+
+    /// 批量只读依赖分析(按输入顺序返回;批内前序包作为后续包的已装上下文)
+    fn analyze_local_files(
+        &self,
+        paths: &[&str],
+        apt_opts: &[&str],
+    ) -> zbus::Result<Vec<fdebm_core::AnalyzeItem>>;
 
     /// 安装事务(授权/下载/dpkg 在守护进程内执行;多个包逐包执行)→ 事务 id;
     /// conf_policy: conffile 预检决策("" / "keep" / "replace")
@@ -178,20 +189,20 @@ async fn daemon() -> Result<zbus::Connection, String> {
     zbus::Connection::system().await.map_err(|e| e.to_string())
 }
 
-/// 守护进程侧依赖分析(重活在守护进程线程执行,客户端只等结果)
-async fn analyze_via_daemon(opts: &[String], file: &Path) -> Result<Analysis, String> {
-    let conn = daemon().await?;
-    let client = FdebmProxy::builder(&conn)
-        .build()
-        .await
-        .map_err(|e| e.to_string())?;
-    let opts: Vec<&str> = opts.iter().map(String::as_str).collect();
-    let (installable, failure, install, remove, unauthenticated, installed_version, conflicts) =
-        client
-            .analyze_local_file(&file.to_string_lossy(), &opts)
-            .await
-            .map_err(|e| e.to_string())?;
-    Ok(Analysis {
+/// D-Bus 分析结果 → GUI 内部结构
+fn analysis_from_result(result: fdebm_core::AnalyzeResult) -> Analysis {
+    let (
+        installable,
+        failure,
+        install,
+        remove,
+        unauthenticated,
+        installed_version,
+        repo_version,
+        broken,
+        conflicts,
+    ) = result;
+    Analysis {
         installable,
         failure,
         changes: Changes {
@@ -200,8 +211,77 @@ async fn analyze_via_daemon(opts: &[String], file: &Path) -> Result<Analysis, St
             unauthenticated,
         },
         installed_version,
+        repo_version,
+        broken,
         conflicts,
-    })
+    }
+}
+
+/// 守护进程侧依赖分析(重活在守护进程线程执行,客户端只等结果)
+async fn analyze_via_daemon(opts: &[String], file: &Path) -> Result<Analysis, String> {
+    let conn = daemon().await?;
+    let client = FdebmProxy::builder(&conn)
+        .build()
+        .await
+        .map_err(|e| e.to_string())?;
+    let opts: Vec<&str> = opts.iter().map(String::as_str).collect();
+    let result = client
+        .analyze_local_file(&file.to_string_lossy(), &opts)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(analysis_from_result(result))
+}
+
+/// 批量分析(一次 D-Bus 调用,守护进程按批内依赖顺序求解并让前序包可见)
+async fn analyze_batch_via_daemon(
+    opts: &[String],
+    files: &[PathBuf],
+) -> Result<Vec<Analysis>, String> {
+    let conn = daemon().await?;
+    let client = FdebmProxy::builder(&conn)
+        .build()
+        .await
+        .map_err(|e| e.to_string())?;
+    let paths: Vec<String> = files
+        .iter()
+        .map(|f| f.to_string_lossy().into_owned())
+        .collect();
+    let path_refs: Vec<&str> = paths.iter().map(String::as_str).collect();
+    let opts: Vec<&str> = opts.iter().map(String::as_str).collect();
+    let items = client
+        .analyze_local_files(&path_refs, &opts)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(items
+        .into_iter()
+        .map(
+            |(
+                path,
+                installable,
+                failure,
+                install,
+                remove,
+                unauthenticated,
+                installed_version,
+                repo_version,
+                broken,
+                conflicts,
+            )| {
+                let _ = path; // 结果顺序与输入一致;路径仅用于诊断
+                analysis_from_result((
+                    installable,
+                    failure,
+                    install,
+                    remove,
+                    unauthenticated,
+                    installed_version,
+                    repo_version,
+                    broken,
+                    conflicts,
+                ))
+            },
+        )
+        .collect())
 }
 
 // ---------------------------------------------------------------------------
@@ -234,6 +314,8 @@ struct MainWindow {
     details_priority: gtk::Label,
     details_section: gtk::Label,
     details_size: gtk::Label,
+    /// Details 页签中的变更包名列表(To be installed / removed)
+    details_changes: gtk::Label,
     tree_files: gtk::TreeView,
     file_content: gtk::TextView,
     lintian_output: gtk::TextView,
@@ -376,10 +458,6 @@ fn build_window(window: &gtk::ApplicationWindow, apt_opts: Vec<String>) -> Rc<Ma
     let details_grid = gtk::Grid::builder()
         .column_spacing(12)
         .row_spacing(8)
-        .margin_top(12)
-        .margin_start(12)
-        .margin_end(12)
-        .margin_bottom(12)
         .valign(gtk::Align::Start)
         .build();
     let details = [
@@ -398,11 +476,31 @@ fn build_window(window: &gtk::ApplicationWindow, apt_opts: Vec<String>) -> Rc<Ma
         val.set_selectable(true);
         details_grid.attach(val, 1, row, 1, 1);
     }
+    // 变更明细:具体包名(而不仅是数量),卸载项标红
+    let details_changes = gtk::Label::default();
+    details_changes.set_halign(gtk::Align::Start);
+    details_changes.set_valign(gtk::Align::Start);
+    details_changes.set_xalign(0.0);
+    details_changes.set_wrap(true);
+    details_changes.set_use_markup(true);
+    details_changes.set_selectable(true);
+    details_changes.set_visible(false);
+    let details_body = gtk::Box::builder()
+        .orientation(gtk::Orientation::Vertical)
+        .spacing(16)
+        .margin_top(12)
+        .margin_start(12)
+        .margin_end(12)
+        .margin_bottom(12)
+        .valign(gtk::Align::Start)
+        .build();
+    details_body.append(&details_grid);
+    details_body.append(&details_changes);
     let tab_details = gtk::Label::new(Some(gettext("Details").as_str()));
     let notebook = gtk::Notebook::new();
     notebook.set_vexpand(true);
     notebook.append_page(&scroll(&textview_description), Some(&tab_desc));
-    notebook.append_page(&details_grid, Some(&tab_details));
+    notebook.append_page(&scroll(&details_body), Some(&tab_details));
 
     // Included files:左文件树,右内容文本(等宽)
     let tree_files = gtk::TreeView::new();
@@ -487,6 +585,7 @@ fn build_window(window: &gtk::ApplicationWindow, apt_opts: Vec<String>) -> Rc<Ma
         details_priority,
         details_section,
         details_size,
+        details_changes,
         tree_files,
         file_content,
         lintian_output,
@@ -959,48 +1058,63 @@ fn load_files(gui: &Rc<MainWindow>, files: Vec<PathBuf>) {
     gui.label_status
         .set_text(&gettext("Checking dependencies..."));
 
-    // 逐包分析(顺序执行;每完成一个刷新行文案与汇总)
+    // 一次批量分析:守护进程按批内依赖顺序求解,前序可安装包对后续包可见
+    // (A 依赖同批 B 时 A 不再被误判为不可安装)
     let gui_all = gui.clone();
     let opts = gui.apt_opts.clone();
     glib::spawn_future_local(async move {
-        for (i, file) in files.iter().enumerate() {
-            // 包名/版本来自本地 control(轻量);分析结论来自守护进程
-            if let Ok(deb) = DebFile::open(file) {
-                let info = flow::describe_deb(&deb);
-                if gui_all.analysis_gen.get() != generation {
-                    return;
-                }
-                let mut items = gui_all.batch.borrow_mut();
-                if let Some(item) = items.get_mut(i) {
-                    item.name = info.package;
-                    item.version = info.version;
-                    update_row_label(item);
-                }
-                drop(items);
-            }
-
-            let analysis = analyze_via_daemon(&opts, file).await;
+        // 包名/版本来自本地 control(轻量);先填充行文案
+        for file in &files {
+            let Ok(deb) = DebFile::open(file) else {
+                continue;
+            };
+            let info = flow::describe_deb(&deb);
             if gui_all.analysis_gen.get() != generation {
-                return; // 过期结果:期间已打开别的文件
+                return;
             }
+            let mut items = gui_all.batch.borrow_mut();
+            if let Some(item) = items
+                .iter_mut()
+                .find(|item| item.path.as_path() == file.as_path())
             {
-                let mut items = gui_all.batch.borrow_mut();
-                let Some(item) = items.get_mut(i) else { return };
-                match analysis {
-                    Ok(a) => {
+                item.name = info.package;
+                item.version = info.version;
+                update_row_label(item);
+            }
+        }
+
+        let analysis = analyze_batch_via_daemon(&opts, &files).await;
+        if gui_all.analysis_gen.get() != generation {
+            return; // 过期结果:期间已打开别的文件
+        }
+        {
+            let mut items = gui_all.batch.borrow_mut();
+            match analysis {
+                Ok(results) if results.len() == items.len() => {
+                    for (item, a) in items.iter_mut().zip(results) {
                         item.installable = a.installable;
                         item.failure = a.failure;
                         item.changes = a.changes;
                         item.conflicts = a.conflicts;
-                    }
-                    Err(e) => {
-                        item.installable = false;
-                        item.failure = e;
+                        update_row_label(item);
                     }
                 }
-                update_row_label(item);
+                Ok(_) => {
+                    let msg = gettext("Unexpected reply from the daemon");
+                    for item in items.iter_mut() {
+                        item.installable = false;
+                        item.failure = msg.clone();
+                        update_row_label(item);
+                    }
+                }
+                Err(e) => {
+                    for item in items.iter_mut() {
+                        item.installable = false;
+                        item.failure = e.clone();
+                        update_row_label(item);
+                    }
+                }
             }
-            update_batch_summary(&gui_all);
         }
         update_batch_summary(&gui_all);
         let any = gui_all.batch.borrow().iter().any(|b| b.installable);
@@ -1098,6 +1212,7 @@ fn apply_verdict(gui: &Rc<MainWindow>, version: &str, analysis: Result<Analysis,
                 "<span foreground=\"red\" weight=\"bold\">Error: {0}</span>",
                 &[&glib::markup_escape_text(&e)],
             ));
+            gui.details_changes.set_visible(false);
             return;
         }
     };
@@ -1106,6 +1221,7 @@ fn apply_verdict(gui: &Rc<MainWindow>, version: &str, analysis: Result<Analysis,
 
     if !analysis.installable {
         // 检查失败:红色错误 + install 禁用
+        gui.details_changes.set_visible(false);
         gui.label_status.set_markup(&tf(
             "<span foreground=\"red\" weight=\"bold\">Error: {0}</span>",
             &[&glib::markup_escape_text(&analysis.failure)],
@@ -1117,6 +1233,9 @@ fn apply_verdict(gui: &Rc<MainWindow>, version: &str, analysis: Result<Analysis,
 
     let changes = analysis.changes;
     let (inst, rm) = (&changes.install, &changes.remove);
+    // Details 页签:变更的具体包名(状态区只显示数量)
+    fill_changes_details(gui, inst, rm);
+
     // 依赖变更摘要 markup(ngettext 处理复数)
     let mut deps = String::new();
     if !rm.is_empty() {
@@ -1142,37 +1261,137 @@ fn apply_verdict(gui: &Rc<MainWindow>, version: &str, analysis: Result<Analysis,
         deps.push('\n');
     }
 
+    // 状态区附加提示:软件源版本 + 系统已有未完成操作(琥珀色,不阻断安装)
+    let mut notes: Vec<String> = Vec::new();
+    if let Some(hint) = version_hint(version, &analysis.repo_version) {
+        notes.push(hint);
+    }
+    if !analysis.broken.is_empty() {
+        notes.push(tf(
+            "The system has unfinished package operations ({0}); run 'sudo apt-get install -f' to repair first.",
+            &[&join_capped(&analysis.broken)],
+        ));
+    }
+
     let same_installed =
         !analysis.installed_version.is_empty() && analysis.installed_version == version;
 
+    let mut status = if same_installed {
+        glib::markup_escape_text(&gettext("Same version is already installed")).to_string()
+    } else if !rm.is_empty() || !inst.is_empty() {
+        deps
+    } else {
+        glib::markup_escape_text(&gettext("All dependencies are satisfied")).to_string()
+    };
+    if !notes.is_empty() {
+        status.push('\n');
+        status.push_str(&format!(
+            "<span foreground=\"#b87500\">{}</span>",
+            glib::markup_escape_text(&notes.join("\n"))
+        ));
+    }
+    gui.label_status.set_markup(&status);
+
     if same_installed {
         // 同版本已装:状态文案 + Reinstall + Remove 显示
-        gui.label_status
-            .set_text(&gettext("Same version is already installed"));
         gui.button_install.set_label(&gettext("_Reinstall Package"));
         gui.button_remove.set_visible(true);
         gui.button_remove.set_sensitive(true);
     } else {
         gui.button_install.set_label(&gettext("_Install Package"));
         gui.button_remove.hide();
-        if !rm.is_empty() || !inst.is_empty() {
-            gui.label_status.set_markup(&deps);
-        } else {
-            gui.label_status
-                .set_text(&gettext("All dependencies are satisfied"));
-        }
     }
     gui.button_install.set_sensitive(true);
     *gui.changes.borrow_mut() = Some(changes);
+}
+
+/// 软件源版本提示:源中同版本/更新/更旧(空串表示源中没有该包)
+fn version_hint(local: &str, repo: &str) -> Option<String> {
+    if local.is_empty() || repo.is_empty() {
+        return None;
+    }
+    Some(match fdebm_core::cmp_version(repo, local) {
+        std::cmp::Ordering::Equal => {
+            gettext("The same version is available in the software repositories")
+        }
+        std::cmp::Ordering::Greater => tf(
+            "A newer version ({0}) is available in the software repositories",
+            &[repo],
+        ),
+        std::cmp::Ordering::Less => tf(
+            "This local package is newer than the version in the software repositories ({0})",
+            &[repo],
+        ),
+    })
+}
+
+/// 列表过长时截断,避免一次异常状态把状态区撑爆
+fn join_capped(items: &[String]) -> String {
+    const MAX: usize = 8;
+    let mut s = items
+        .iter()
+        .take(MAX)
+        .cloned()
+        .collect::<Vec<_>>()
+        .join(", ");
+    if items.len() > MAX {
+        s.push_str(&tf(" and {0} more", &[&(items.len() - MAX).to_string()]));
+    }
+    s
+}
+
+/// Details 页签的变更包名列表(To be installed / To be removed)
+fn fill_changes_details(gui: &MainWindow, install: &[String], remove: &[String]) {
+    if install.is_empty() && remove.is_empty() {
+        gui.details_changes.set_visible(false);
+        return;
+    }
+    let mut parts: Vec<String> = Vec::new();
+    if !install.is_empty() {
+        parts.push(format!(
+            "<b>{}</b>\n{}",
+            glib::markup_escape_text(&gettext("To be installed:")),
+            glib::markup_escape_text(&install.join(", ")),
+        ));
+    }
+    if !remove.is_empty() {
+        parts.push(format!(
+            "<b>{}</b>\n<span foreground=\"red\">{}</span>",
+            glib::markup_escape_text(&gettext("To be removed:")),
+            glib::markup_escape_text(&remove.join(", ")),
+        ));
+    }
+    gui.details_changes.set_markup(&parts.join("\n\n"));
+    gui.details_changes.set_visible(true);
 }
 
 /// Details 页签与描述的静态填充
 fn fill_static(gui: &MainWindow, info: &PackageInfo, deb: &DebFile) {
     gui.label_name
         .set_markup(&format!("<b><big>{}</big></b>", info.package));
-    gui.textview_description
-        .buffer()
-        .set_text(&info.description);
+
+    // Debian long description:摘要加粗,正文按段落/项目符号排版
+    let (summary, body) = flow::description_parts(&info.description);
+    let full = if body.is_empty() {
+        summary.clone()
+    } else {
+        format!("{summary}\n\n{body}")
+    };
+    let buf = gui.textview_description.buffer();
+    buf.set_text(&full);
+    if !summary.is_empty() {
+        let tag = buf
+            .create_tag(Some("summary"), &[("weight", &gtk::pango::Weight::Bold)])
+            .expect("text tag");
+        let start = buf.start_iter();
+        let mut end = buf.start_iter();
+        end.forward_line();
+        buf.apply_tag(&tag, &start, &end);
+    }
+
+    // 上一次分析的变更明细不适用于新文件
+    gui.details_changes.set_visible(false);
+    gui.details_changes.set_text("");
 
     let set = |l: &gtk::Label, v: Option<String>| l.set_text(&v.unwrap_or_default());
     set(&gui.details_version, Some(info.version.clone()));
@@ -1734,9 +1953,9 @@ fn on_install_clicked(gui: &Rc<MainWindow>) {
 
 /// 批量安装:仅提交可安装项;未认证包与 conffile 覆盖策略合并到一次确认,
 /// 整个批次只发起一次 Polkit 认证(守护进程逐包执行,单包失败不中断)。
-/// 已知取舍:每项按当前系统状态独立预检,批内互相依赖的包会因对方尚未安装
-/// 被判不可安装而跳过;不为此提交未经预检的包,以免绕过未认证包与
-/// conffile 的确认。
+/// 依赖分析已按批内拓扑序进行:前序可安装的本地包作为后续包的已装上下文,
+/// 因此批内互相依赖的包不会被误判。守护进程安装时仍逐包重新求解,
+/// 单包失败隔离保持不变。
 fn on_batch_install_clicked(gui: &Rc<MainWindow>) {
     let (files, unauthenticated, conflicts) = {
         let items = gui.batch.borrow();

@@ -12,6 +12,7 @@
 //! - [`solver`]:varisat CDCL 编码的依赖求解
 //! - [`batch`]:批量本地 deb 的安装顺序(批内依赖拓扑排序)
 //! - [`conffile`]:安装前 conffile 冲突预检
+//! - [`health`]:系统包管理健康检查(dpkg-query 异常状态,装前提示/装后复查)
 //! - [`download`]:ureq(rustls)下载 + sha256 校验
 //! - [`lock`]:包管理前端占锁探测与等待(ps comm 列,含 apt 系交互前端)
 //! - [`aptmark`]:安装后 apt 标记补齐(依赖 auto / 本地包 manual)
@@ -30,6 +31,7 @@ pub mod debfile;
 pub mod download;
 pub mod error;
 pub mod flow;
+pub mod health;
 pub mod i18n;
 pub mod install;
 pub mod lock;
@@ -45,7 +47,7 @@ pub use error::FdebmError;
 /// D-Bus `AnalyzeLocalFile` 返回契约(daemon/gtk 共用,类型别名仅消解
 /// clippy::type_complexity,线型不变):
 /// (可安装, 错误信息, install[], remove[], unauthenticated[], 已安装版本,
-///  conffile 冲突 [(包名, 路径)])
+///  软件源候选版本, 异常状态包[], conffile 冲突 [(包名, 路径)])
 pub type AnalyzeResult = (
     bool,
     String,
@@ -53,6 +55,24 @@ pub type AnalyzeResult = (
     Vec<String>,
     Vec<String>,
     String,
+    String,
+    Vec<String>,
+    Vec<(String, String)>,
+);
+
+/// D-Bus `AnalyzeLocalFiles` 的单文件结果(按输入顺序返回):
+/// (路径, 可安装, 错误信息, install[], remove[], unauthenticated[],
+///  已安装版本, 软件源候选版本, 异常状态包[], conffile 冲突 [(包名, 路径)])
+pub type AnalyzeItem = (
+    String,
+    bool,
+    String,
+    Vec<String>,
+    Vec<String>,
+    Vec<String>,
+    String,
+    String,
+    Vec<String>,
     Vec<(String, String)>,
 );
 pub use version::cmp_version;

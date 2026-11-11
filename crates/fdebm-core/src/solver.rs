@@ -1,6 +1,8 @@
 //! varisat(CDCL SAT)编码的依赖求解器。
 //!
-//! 求解域:已安装库(可卸载)∪ 仓库候选 ∪ 本地 deb(强制)。
+//! 求解域:已安装库(可卸载)∪ 仓库候选 ∪ 本地 deb(强制)∪ 批量上下文。
+//! 批量上下文是同批前序已判定可安装的本地包:它们按“已安装且必须保持”
+//! 参与本包求解,使 A 依赖同批 B 时 A 也能通过预分析。
 //! 编码:
 //! - 变量 = 选择单元:已安装包"保持安装"或某候选版本"被选中"
 //! - 同名二进制包(键)单元两两互斥(AMO)
@@ -20,6 +22,7 @@ use std::path::PathBuf;
 
 use varisat::{ExtendFormula, Lit, Solver};
 
+use crate::batch::{self, LocalMeta};
 use crate::debfile::DebFile;
 use crate::error::FdebmError;
 use crate::i18n::{gettext, tf};
@@ -76,6 +79,16 @@ struct Encoding<'a> {
     /// 借用而非持有:索引键可直接借用 sys/local 中的字符串,避免为数万
     /// 单元逐个 clone 包名/键。
     local: Option<&'a crate::sysstate::Candidate>,
+    /// 有效已装包 = 系统已装 + 批量上下文。批量分析时,同批前序已判定
+    /// 可安装的本地包作为后续包的“已安装”上下文,使 A 依赖同批 B 时
+    /// A 也能被判定可安装。
+    installed: Vec<&'a Pkg>,
+    /// installed 前 n_sys_installed 项为真实已装;其后为批量上下文。
+    /// 真实已装可被卸载,批量上下文在本包求解中强制保持(前端整批提交,
+    /// 若本包要求卸载批内包,逐包安装必然失败)。
+    n_sys_installed: usize,
+    /// 批量上下文包键(用于跳过同键旧已装单元的 keep-all 假设与卸载上报)
+    extra_keys: HashSet<&'a str>,
     n_installed: usize,
     n_cands: usize,
     /// 虚拟名 → 提供者单元;HashMap 仅做点查(不迭代),比 BTreeMap
@@ -88,8 +101,32 @@ struct Encoding<'a> {
 }
 
 impl<'a> Encoding<'a> {
-    fn new(sys: &'a SysState, local: Option<&'a crate::sysstate::Candidate>) -> Self {
-        let n_installed = sys.installed.len();
+    fn new(
+        sys: &'a SysState,
+        local: Option<&'a crate::sysstate::Candidate>,
+        extra: &'a [Pkg],
+    ) -> Self {
+        let n_sys_installed = sys.installed.len();
+        let local_key = local.map(|l| l.pkg.key.as_str());
+        let mut installed: Vec<&'a Pkg> = sys.installed.iter().collect();
+        let mut extra_keys: HashSet<&'a str> = HashSet::new();
+        for pkg in extra {
+            // 与本次本地包同键的上下文包会被本次安装替换,不进入编码;
+            // 同键重复上下文保留最后一个(批内后续版本覆盖前序版本)。
+            if Some(pkg.key.as_str()) == local_key {
+                continue;
+            }
+            if let Some(pos) = installed[n_sys_installed..]
+                .iter()
+                .position(|p| p.key == pkg.key)
+            {
+                installed[n_sys_installed + pos] = pkg;
+            } else {
+                extra_keys.insert(pkg.key.as_str());
+                installed.push(pkg);
+            }
+        }
+        let n_installed = installed.len();
         let n_cands = sys.all_candidates.len();
         let cap = n_installed + n_cands + usize::from(local.is_some());
         let mut providers: HashMap<&str, Vec<Unit>> = HashMap::with_capacity(cap);
@@ -102,7 +139,7 @@ impl<'a> Encoding<'a> {
             }
             groups.entry(pkg.key.as_str()).or_default().push(u);
         };
-        for (i, pkg) in sys.installed.iter().enumerate() {
+        for (i, pkg) in installed.iter().enumerate() {
             push(Unit::Installed(i), pkg);
         }
         for (c, cand) in sys.all_candidates.iter().enumerate() {
@@ -114,6 +151,9 @@ impl<'a> Encoding<'a> {
         Self {
             sys,
             local,
+            installed,
+            n_sys_installed,
+            extra_keys,
             n_installed,
             n_cands,
             providers,
@@ -148,7 +188,7 @@ impl<'a> Encoding<'a> {
 
     fn meta(&self, u: Unit) -> &Pkg {
         match u {
-            Unit::Installed(i) => &self.sys.installed[i],
+            Unit::Installed(i) => self.installed[i],
             Unit::Candidate(c) => {
                 if c >= self.n_cands {
                     &self.local.expect("local unit present").pkg
@@ -366,8 +406,137 @@ fn ver_matches(v: &str, oper: &str, w: &str) -> bool {
     }
 }
 
+/// 单个包是否满足依赖表达式(直接同名或虚拟提供,含架构/版本约束)
+fn pkg_satisfies(pkg: &Pkg, d: &Dep, depender_arch: &str, native_arch: &str) -> bool {
+    if dep_name_matches(&d.name, pkg, depender_arch, native_arch)
+        && ver_matches(&pkg.version, &d.oper, &d.ver)
+    {
+        return true;
+    }
+    if !dep_arch_matches(&d.name, pkg, depender_arch, native_arch) {
+        return false;
+    }
+    pkg.provides.iter().any(|(n, pv)| {
+        n == base_name(&d.name)
+            && (d.ver.is_empty()
+                || d.oper.is_empty()
+                || pv
+                    .as_ref()
+                    .is_some_and(|pv| ver_matches(pv, &d.oper, &d.ver)))
+    })
+}
+
+/// “新版本不再提供某虚拟包”的反向依赖预检(对应 gdebi `compareProvides`)。
+///
+/// 只在求解结果确实要卸载某个真实已装包时触发:若该包的某个依赖组在
+/// 安装前只由旧版本的 Provides 满足,而新本地 deb 不再提供、其余保留的
+/// 已装包也提供不了,这次卸载就不是用户预期的冲突解决,而是新版本静默
+/// 破坏反向依赖(dpkg 会把依赖方停在未配置状态)。返回 (依赖方, 虚拟名)。
+fn lost_provides_breakage(sys: &SysState, local: &Pkg, changes: &Changes) -> Vec<(String, String)> {
+    let Some(old) = sys.installed.iter().find(|p| p.key == local.key) else {
+        return Vec::new();
+    };
+    let new_provides: HashSet<&str> = local.provides.iter().map(|(n, _)| n.as_str()).collect();
+    let lost: Vec<&str> = old
+        .provides
+        .iter()
+        .map(|(n, _)| n.as_str())
+        .filter(|n| !new_provides.contains(n))
+        .collect();
+    if lost.is_empty() {
+        return Vec::new();
+    }
+
+    let removed: HashSet<&str> = changes.remove.iter().map(String::as_str).collect();
+    let remaining: Vec<&Pkg> = sys
+        .installed
+        .iter()
+        .filter(|p| p.key != old.key && !removed.contains(p.key.as_str()))
+        .collect();
+    // 本次求解计划新装的仓库候选(可能补上丢失的虚拟包)
+    let planned: Vec<&Pkg> = changes
+        .install
+        .iter()
+        .filter(|k| *k != &local.key)
+        .flat_map(|k| sys.candidates.get(k).into_iter().flatten())
+        .map(|&i| &sys.all_candidates[i].pkg)
+        .collect();
+    let mut out: Vec<(String, String)> = Vec::new();
+    for key in &changes.remove {
+        if key == &local.key {
+            continue;
+        }
+        let Some(dep_pkg) = sys.installed.iter().find(|p| &p.key == key) else {
+            continue;
+        };
+        // 新包声明了 Conflicts/Breaks 的卸载是用户预期的冲突解决,
+        // 不应误报成 provides 丢失
+        let explicitly_removed = local
+            .conflicts
+            .iter()
+            .chain(local.breaks.iter())
+            .flatten()
+            .any(|c| {
+                relation_covers(&c.name, dep_pkg, &sys.native_arch)
+                    && (c.ver.is_empty() || ver_matches(&dep_pkg.version, &c.oper, &c.ver))
+            });
+        if explicitly_removed {
+            continue;
+        }
+        for group in dep_pkg.depends.iter().chain(dep_pkg.pre_depends.iter()) {
+            // 组里是否引用了丢失的虚拟名(只报这条线索,避免无关卸载误报)
+            let Some(lost_name) = group
+                .iter()
+                .map(|d| base_name(&d.name))
+                .find(|n| lost.contains(n))
+            else {
+                continue;
+            };
+            // 安装前该组必须只由旧包满足;若还有别的已装包满足,卸载与
+            // provides 丢失无关(冲突解决等),交给求解器正常处理。
+            let solely_old = group.iter().all(|d| {
+                !sys.installed.iter().any(|p| {
+                    p.key != old.key && pkg_satisfies(p, d, &dep_pkg.arch, &sys.native_arch)
+                })
+            });
+            if !solely_old {
+                continue;
+            }
+            // 安装后能否由新 deb、计划新装的包或保留的已装包满足
+            let still_satisfied = group.iter().any(|d| {
+                pkg_satisfies(local, d, &dep_pkg.arch, &sys.native_arch)
+                    || planned
+                        .iter()
+                        .any(|p| pkg_satisfies(p, d, &dep_pkg.arch, &sys.native_arch))
+                    || remaining
+                        .iter()
+                        .any(|p| pkg_satisfies(p, d, &dep_pkg.arch, &sys.native_arch))
+            });
+            if !still_satisfied {
+                out.push((dep_pkg.key.clone(), lost_name.to_string()));
+            }
+        }
+    }
+    out.sort();
+    out.dedup();
+    out
+}
+
 /// 主入口:在给定系统状态上求解安装 deb(不修改 sys)。
 pub fn resolve(sys: &SysState, deb: &DebFile) -> Result<Verdict, FdebmError> {
+    resolve_with_installed(sys, deb, &[])
+}
+
+/// 求解安装 deb,并把 `extra` 作为额外已安装包(批量分析上下文)。
+///
+/// 批量分析时,同批前序已判定可安装的本地包进入 `extra`:后续包依赖它们
+/// 时无需再要求从仓库安装。`extra` 在本包求解中强制保持安装,因此本包
+/// 若与批内包冲突会判定不可安装(逐包安装时该冲突同样会失败)。
+pub fn resolve_with_installed(
+    sys: &SysState,
+    deb: &DebFile,
+    extra: &[Pkg],
+) -> Result<Verdict, FdebmError> {
     let name = deb.field_trimmed("Package").unwrap_or("").to_string();
     let version = deb.field_trimmed("Version").unwrap_or("").to_string();
     let arch = deb
@@ -394,14 +563,26 @@ pub fn resolve(sys: &SysState, deb: &DebFile) -> Result<Verdict, FdebmError> {
         )));
     }
 
-    // 降级拒绝(dpkg 语义;重装同版本放行)
+    // 降级拒绝(dpkg 语义;重装同版本放行)。批量上下文里同键包也算
+    // 已装:批内先装的新版本不得被后一个 deb 静默降级。
     let key = if arch == "all" || arch == sys.native_arch {
         name.clone()
     } else {
         format!("{}:{}", name, arch)
     };
-    if let Some(installed) = sys.installed_version(&key)
-        && cmp_version(installed, &version) == std::cmp::Ordering::Greater
+    let installed = sys
+        .installed_version(&key)
+        .map(str::to_string)
+        .into_iter()
+        .chain(
+            extra
+                .iter()
+                .filter(|p| p.key == key)
+                .map(|p| p.version.clone()),
+        )
+        .max_by(|a, b| cmp_version(a, b));
+    if let Some(installed) = installed
+        && cmp_version(&installed, &version) == std::cmp::Ordering::Greater
     {
         return Ok(Verdict::Uninstallable(gettext(
             "A later version is already installed",
@@ -409,7 +590,42 @@ pub fn resolve(sys: &SysState, deb: &DebFile) -> Result<Verdict, FdebmError> {
     }
 
     let local = local_candidate(deb, &sys.native_arch);
-    Ok(encode_and_solve(sys, &local))
+    Ok(encode_and_solve_with_extra(sys, &local, extra))
+}
+
+/// 批量分析:按批内 Depends/Pre-Depends 拓扑序逐包求解,并把前面已判定
+/// 可安装的本地包作为后续包的已安装上下文。
+///
+/// 返回值与输入一一对应。无法同时安装的批内包(版本冲突/Conflicts)会在
+/// 后求解的那一项上报不可安装,避免前端把整批提交后逐包安装才失败。
+pub fn resolve_batch(sys: &SysState, debs: &[&DebFile]) -> Vec<Result<Verdict, FdebmError>> {
+    let metas: Vec<LocalMeta<'_>> = debs
+        .iter()
+        .map(|deb| LocalMeta {
+            name: deb.field_trimmed("Package").unwrap_or(""),
+            depends: deb.field_trimmed("Depends").unwrap_or(""),
+            pre_depends: deb.field_trimmed("Pre-Depends").unwrap_or(""),
+            provides: deb.field_trimmed("Provides").unwrap_or(""),
+        })
+        .collect();
+    let order = batch::order_by_dependencies(&metas);
+
+    let mut results: Vec<Option<Result<Verdict, FdebmError>>> = debs.iter().map(|_| None).collect();
+    let mut extra: Vec<Pkg> = Vec::new();
+    for &i in &order {
+        let verdict = resolve_with_installed(sys, debs[i], &extra);
+        if let Ok(Verdict::Installable(_)) = &verdict {
+            let pkg = local_candidate(debs[i], &sys.native_arch).pkg;
+            // 批内同键包只保留最后一个(安装顺序上的后续版本覆盖前序版本)
+            extra.retain(|p| p.key != pkg.key);
+            extra.push(pkg);
+        }
+        results[i] = Some(verdict);
+    }
+    results
+        .into_iter()
+        .map(|r| r.expect("topological order covers every input"))
+        .collect()
 }
 
 /// 本地 deb → 候选元数据(键派生与 SysState::load 同规则)
@@ -533,8 +749,17 @@ fn solve_verified(
     }
 }
 
+#[cfg(test)]
 fn encode_and_solve(sys: &SysState, local: &crate::sysstate::Candidate) -> Verdict {
-    let enc = Encoding::new(sys, Some(local));
+    encode_and_solve_with_extra(sys, local, &[])
+}
+
+fn encode_and_solve_with_extra(
+    sys: &SysState,
+    local: &crate::sysstate::Candidate,
+    extra: &[Pkg],
+) -> Verdict {
+    let enc = Encoding::new(sys, Some(local), extra);
     let n_units = enc.n_installed + enc.n_cands + usize::from(enc.local.is_some());
     let local_idx = enc
         .local
@@ -550,13 +775,22 @@ fn encode_and_solve(sys: &SysState, local: &crate::sysstate::Candidate) -> Verdi
     lits.push(enc.plit(local_idx));
     add_clause(&mut solver, &mut lits);
 
+    // 批量上下文包强制保持安装:它们已由同批前序分析判定可安装,前端会
+    // 一并提交;本包若要求卸载其中某个,逐包安装时必然失败。真实已装包
+    // 仍可被卸载(keep-all 失败时按失败核放宽)。
+    for i in enc.n_sys_installed..enc.n_installed {
+        lits.clear();
+        lits.push(enc.plit(i));
+        add_clause(&mut solver, &mut lits);
+    }
+
     // Essential/Protected 包强制保持安装(保护性约束,dpkg 语义:
     // Essential 是 --force-remove-essential、Protected 是 --force-remove-protected
     // 的守门对象;Protected: yes 同样包括 dpkg 兼容的旧写法 Important: yes)。
     // 约束对象是“同 key 的包仍然存在”,而不是“这个已装单元必须为真”:
     // 升级/重装 Essential 包时本地 deb 与已装单元同 key 互斥,若强制旧单元
     // 为真会与本地强制选择 + AMO 直接 UNSAT(曾导致 bash/dpkg 升级误报不可安装)。
-    for (i, pkg) in sys.installed.iter().enumerate() {
+    for (i, pkg) in enc.installed.iter().enumerate() {
         if !(pkg.essential || pkg.protected) {
             continue;
         }
@@ -641,10 +875,14 @@ fn encode_and_solve(sys: &SysState, local: &crate::sysstate::Candidate) -> Verdi
                     if v == u {
                         continue;
                     }
-                    // 双方均已安装:存量态dpkg不会重新校验(apt 亦不重排),
+                    // 双方均为真实已装:存量态 dpkg 不会重新校验(apt 亦不重排),
                     // 本事务只需不新增违规,历史违规不回溯修复 —— 否则
-                    // 真实系统的存量冲突对会破坏 keep-all 快路径
-                    if matches!(u, Unit::Installed(_)) && matches!(v, Unit::Installed(_)) {
+                    // 真实系统的存量冲突对会破坏 keep-all 快路径。
+                    // 批量上下文单元不是真实已装(接口上仍用 Installed 编号),
+                    // 它与真实已装包的冲突必须编码,否则会误判可安装。
+                    if idx < enc.n_sys_installed
+                        && matches!(v, Unit::Installed(j) if j < enc.n_sys_installed)
+                    {
                         continue;
                     }
                     // 注意:Replaces 不豁免冲突子句。dpkg 对
@@ -683,22 +921,14 @@ fn encode_and_solve(sys: &SysState, local: &crate::sysstate::Candidate) -> Verdi
     // 重装/升级/降级场景下若把该已装单元一并保留,快路径必然 UNSAT 而
     // 跌入逐包试探(O(已装数) 次求解)。这些单元无论如何都得让位
     // (remove 组装同样视"被同键新候选替换"为非卸载),排除不影响任何可行解。
+    // 批量上下文同键的旧已装单元同理:extra 已由硬子句强制为真,旧单元
+    // 必然让位。extra 单元本身不进 keep-all 假设(已硬强制)。
     let local_key = enc.meta(enc.unit(local_idx)).key.as_str();
-    let same_key: HashSet<usize> = enc
-        .groups
-        .get(local_key)
-        .map(|units| {
-            units
-                .iter()
-                .filter_map(|u| match u {
-                    Unit::Installed(i) => Some(*i),
-                    Unit::Candidate(_) => None,
-                })
-                .collect()
-        })
-        .unwrap_or_default();
     let keeps: Vec<Lit> = (0..enc.n_installed)
-        .filter(|i| !same_key.contains(i))
+        .filter(|&i| {
+            let key = enc.installed[i].key.as_str();
+            key != local_key && !enc.extra_keys.contains(key)
+        })
         .map(|i| enc.plit(i))
         .collect();
     // keep-all 失败时,从 UNSAT 失败核中逐个放宽假设,而不是退化为
@@ -723,7 +953,7 @@ fn encode_and_solve(sys: &SysState, local: &crate::sysstate::Candidate) -> Verdi
             core.iter()
                 .filter(|lit| lit.is_positive())
                 .map(|lit| lit.index())
-                .find(|&i| i < enc.n_installed && !relaxed.contains(&i))
+                .find(|&i| i < enc.n_sys_installed && !relaxed.contains(&i))
         };
         let Some(i) = pick else {
             return Verdict::Uninstallable(gettext(
@@ -758,12 +988,12 @@ fn encode_and_solve(sys: &SysState, local: &crate::sysstate::Candidate) -> Verdi
     // 精化:优先最新版本 —— 仅对"新装入"的键尝试强制最新非本地候选。
     // 已装包保持安装时不升级(apt 语义);对无关键强制选择会把整个仓库
     // 拉进安装集,且在真实规模(数万键)下产生海量重复求解。
-    let kept_installed_keys: HashSet<String> = sys
+    let kept_installed_keys: HashSet<&str> = enc
         .installed
         .iter()
         .enumerate()
         .filter(|(i, _)| selected.contains(i))
-        .map(|(_, p)| p.key.clone())
+        .map(|(_, p)| p.key.as_str())
         .collect();
     let mut keys_touched: Vec<String> = selected
         .iter()
@@ -775,7 +1005,7 @@ fn encode_and_solve(sys: &SysState, local: &crate::sysstate::Candidate) -> Verdi
     keys_touched.sort();
     keys_touched.dedup();
     for key in keys_touched {
-        if kept_installed_keys.contains(&key) {
+        if kept_installed_keys.contains(key.as_str()) {
             continue;
         }
         let Some(cands) = sys.candidates.get(&key) else {
@@ -819,7 +1049,7 @@ fn encode_and_solve(sys: &SysState, local: &crate::sysstate::Candidate) -> Verdi
         if cand.is_local() {
             continue;
         }
-        if let Some(installed) = sys.installed.iter().find(|p| p.key == cand.pkg.key)
+        if let Some(installed) = enc.installed.iter().find(|p| p.key == cand.pkg.key)
             && cmp_version(&installed.version, &cand.pkg.version) == std::cmp::Ordering::Greater
         {
             return Verdict::Uninstallable(tf(
@@ -870,14 +1100,34 @@ fn encode_and_solve(sys: &SysState, local: &crate::sysstate::Candidate) -> Verdi
             });
         }
     }
-    for (i, pkg) in sys.installed.iter().enumerate() {
-        // 被新候选替换(升级/重装)不算卸载
-        if !selected.contains(&i) && !install_keys.contains(&pkg.key) {
+    // 只对真实已装包报告卸载:批量上下文尚未真正安装,且其同键旧版本
+    // 会被批内安装替换,不应出现在 remove 列表。
+    for i in 0..enc.n_sys_installed {
+        let pkg = enc.installed[i];
+        // 被新候选替换(升级/重装)或批内上下文覆盖不算卸载
+        if !selected.contains(&i)
+            && !install_keys.contains(&pkg.key)
+            && !enc.extra_keys.contains(pkg.key.as_str())
+        {
             changes.remove.push(pkg.key.clone());
         }
     }
     changes.unauthenticated.sort();
     changes.unauthenticated.dedup();
+
+    let local_pkg = enc.meta(enc.unit(local_idx));
+    let breakage = lost_provides_breakage(sys, local_pkg, &changes);
+    if !breakage.is_empty() {
+        let list = breakage
+            .iter()
+            .map(|(pkg, virt)| format!("{pkg} ({virt})"))
+            .collect::<Vec<_>>()
+            .join(", ");
+        return Verdict::Uninstallable(tf(
+            "Installing {0} would break installed packages that depend on virtual packages it no longer provides: {1}",
+            &[&local_pkg.key, &list],
+        ));
+    }
     Verdict::Installable(Resolution { changes, downloads })
 }
 
@@ -1235,6 +1485,49 @@ mod tests {
         assert_uninstallable(encode_and_solve(&st2, &l));
     }
 
+    /// 升级后不再提供依赖方所需的虚拟包:必须在分析阶段报不可安装,
+    /// 而不是把依赖方静默放进 changes.remove(对应 gdebi compareProvides)
+    #[test]
+    fn dropped_provide_blocks_dependent_removal() {
+        let mut old = pkg("editor", "1.0");
+        old.provides = vec![("vim".into(), None)];
+        let mut plugin = pkg("plugin", "1.0");
+        plugin.depends = dep("vim", "", "");
+        let st = sys_with(vec![old, plugin]);
+        let msg = assert_uninstallable(encode_and_solve(&st, &local("editor", "2.0")));
+        assert!(msg.contains("plugin"), "{msg}");
+        assert!(msg.contains("vim"), "{msg}");
+    }
+
+    /// 新版本仍提供该虚拟包:正常升级
+    #[test]
+    fn kept_provide_allows_upgrade() {
+        let mut old = pkg("editor", "1.0");
+        old.provides = vec![("vim".into(), None)];
+        let mut plugin = pkg("plugin", "1.0");
+        plugin.depends = dep("vim", "", "");
+        let st = sys_with(vec![old, plugin]);
+        let mut l = local("editor", "2.0");
+        l.pkg.provides = vec![("vim".into(), None)];
+        let r = verdict_ok(encode_and_solve(&st, &l));
+        assert!(r.changes.remove.is_empty());
+    }
+
+    /// 其他已装包仍提供该虚拟包:依赖方不受影响
+    #[test]
+    fn other_provider_keeps_dependent_installed() {
+        let mut old = pkg("editor", "1.0");
+        old.provides = vec![("vim".into(), None)];
+        let mut other = pkg("vim-tiny", "1.0");
+        other.provides = vec![("vim".into(), None)];
+        let mut plugin = pkg("plugin", "1.0");
+        plugin.depends = dep("vim", "", "");
+        let st = sys_with(vec![old, other, plugin]);
+        let r = verdict_ok(encode_and_solve(&st, &local("editor", "2.0")));
+        assert!(r.changes.remove.is_empty());
+        assert!(!r.changes.install.contains(&"plugin".to_string()));
+    }
+
     #[test]
     fn unauth_repos_tracked() {
         let mut st = sys_with(vec![]);
@@ -1451,5 +1744,70 @@ mod tests {
         st.add_candidates(cands);
         let r = verdict_ok(encode_and_solve(&st, &local("myapp", "1.0")));
         assert_eq!(r.changes.install, vec!["myapp".to_string()]);
+    }
+
+    /// 批量上下文(同批前序可安装的本地包)满足后续包依赖,且不进入
+    /// install 变更集(它由批内自己的分析负责安装)
+    #[test]
+    fn extra_installed_satisfies_dependency() {
+        let st = sys_with(vec![]);
+        let mut l = local("app", "1.0");
+        l.pkg.depends = dep("batch-b", ">=", "1.0");
+        assert_uninstallable(encode_and_solve_with_extra(&st, &l, &[]));
+
+        let r = verdict_ok(encode_and_solve_with_extra(
+            &st,
+            &l,
+            &[pkg("batch-b", "1.0")],
+        ));
+        assert_eq!(r.changes.install, vec!["app".to_string()]);
+        assert!(r.downloads.is_empty());
+        assert!(r.changes.remove.is_empty());
+    }
+
+    /// 批量上下文覆盖同键旧已装版本:旧版本不算被卸载(整批安装会替换它)
+    #[test]
+    fn extra_context_replaces_installed_same_key_without_remove() {
+        let st = sys_with(vec![pkg("batch-b", "0.9")]);
+        let mut l = local("app", "1.0");
+        l.pkg.depends = dep("batch-b", ">=", "1.0");
+        let r = verdict_ok(encode_and_solve_with_extra(
+            &st,
+            &l,
+            &[pkg("batch-b", "1.0")],
+        ));
+        assert_eq!(r.changes.install, vec!["app".to_string()]);
+        assert!(r.changes.remove.is_empty());
+    }
+
+    /// 批量上下文强制保持安装:本包与批内包冲突时不得静默卸载它,
+    /// 否则前端会提交一个逐包安装必然失败的批次
+    #[test]
+    fn extra_context_conflict_blocks_local_install() {
+        let st = sys_with(vec![]);
+        let mut l = local("app", "1.0");
+        l.pkg.conflicts = dep("batch-b", "", "");
+        assert_uninstallable(encode_and_solve_with_extra(
+            &st,
+            &l,
+            &[pkg("batch-b", "1.0")],
+        ));
+    }
+
+    /// 批量上下文与真实已装包的冲突必须编码(不能被“双方均已安装”的
+    /// 存量违规豁免吞掉):受害方应进入 remove
+    #[test]
+    fn extra_context_conflict_removes_real_installed_package() {
+        let st = sys_with(vec![pkg("oldtool", "1.0")]);
+        let extra = Pkg {
+            conflicts: dep("oldtool", "", ""),
+            ..pkg("batch-new", "1.0")
+        };
+        let r = verdict_ok(encode_and_solve_with_extra(
+            &st,
+            &local("app", "1.0"),
+            &[extra],
+        ));
+        assert!(r.changes.remove.contains(&"oldtool".to_string()));
     }
 }

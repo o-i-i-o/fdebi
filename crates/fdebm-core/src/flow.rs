@@ -35,6 +35,47 @@ pub fn describe_deb(deb: &DebFile) -> PackageInfo {
     }
 }
 
+/// Debian long description → (摘要, 正文)。
+///
+/// 按 Debian Policy 5.6.13 的格式约定处理(GUI 只负责加粗摘要):
+/// - 首行是摘要,单独显示;
+/// - 续行前导的一个空格是格式空格,去掉;更深的缩进属于 verbatim 块,保留;
+/// - 单独的 "." 行表示段落分隔,转为空行;
+/// - `* `/`- ` 项目符号统一为 "• "(避免 GTK 文本视图里星号看起来像
+///   强调标记),条目内的相对缩进保留。
+///
+/// 与 gdebi 的实现不同:不把换行折叠成空格再按双空格切段 —— 那样会
+/// 破坏段落边界、代码块与嵌套列表。
+pub fn description_parts(raw: &str) -> (String, String) {
+    let mut lines = raw.split('\n');
+    let summary = lines.next().unwrap_or("").trim().to_string();
+    let mut body: Vec<String> = Vec::new();
+    for line in lines {
+        let line = line.strip_prefix(' ').unwrap_or(line);
+        let trimmed = line.trim_end();
+        if trimmed.trim() == "." {
+            body.push(String::new());
+            continue;
+        }
+        let content = trimmed.trim_start();
+        if let Some(rest) = content
+            .strip_prefix("* ")
+            .or_else(|| content.strip_prefix("- "))
+        {
+            body.push(format!("• {rest}"));
+        } else {
+            body.push(trimmed.to_string());
+        }
+    }
+    while body.first().is_some_and(String::is_empty) {
+        body.remove(0);
+    }
+    while body.last().is_some_and(String::is_empty) {
+        body.pop();
+    }
+    (summary, body.join("\n"))
+}
+
 /// 探测二进制所需的魔数通常位于文件头部,64 KiB 足够且避免大成员全量写入
 const MIME_PROBE_LEN: usize = 64 * 1024;
 
@@ -82,6 +123,38 @@ fn mime_type(bytes: &[u8]) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn description_first_line_is_summary() {
+        let (summary, body) = description_parts("summary line\n long text\n");
+        assert_eq!(summary, "summary line");
+        assert_eq!(body, "long text");
+    }
+
+    #[test]
+    fn description_dot_is_paragraph_break() {
+        let (_, body) = description_parts("s\n first\n .\n second\n");
+        assert_eq!(body, "first\n\nsecond");
+    }
+
+    #[test]
+    fn description_bullets_are_normalized() {
+        let (_, body) = description_parts("s\n  * one\n  - two\n");
+        assert_eq!(body, "• one\n• two");
+    }
+
+    #[test]
+    fn description_preserves_verbatim_indent() {
+        let (_, body) = description_parts("s\n     indented code\n");
+        assert_eq!(body, "    indented code");
+    }
+
+    #[test]
+    fn description_without_body() {
+        let (summary, body) = description_parts("only summary");
+        assert_eq!(summary, "only summary");
+        assert!(body.is_empty());
+    }
 
     #[test]
     fn text_content_shown_verbatim() {
