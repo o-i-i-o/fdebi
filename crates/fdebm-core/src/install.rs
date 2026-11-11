@@ -29,6 +29,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
 
 use crate::aptmark;
+use crate::batch::{self, LocalMeta};
+use crate::debfile::DebFile;
 use crate::error::FdebmError;
 use crate::i18n::{gettext, tf};
 use crate::lock;
@@ -295,9 +297,12 @@ pub fn install(
     if let Some(arg) = batch.conf_policy.dpkg_arg() {
         cmd.arg(arg);
     }
-    cmd.arg(std::path::absolute(&batch.local)?);
-    for deb in &batch.dep_debs {
-        cmd.arg(deb);
+    // 安装顺序按关系拓扑排序(被依赖者在前)。dpkg 会先解包全部归档
+    // 再统一配置,普通 Depends 不要求顺序;但 Pre-Depends 必须在解包前
+    // 满足 —— 旧实现固定“本地 deb 在前、依赖 deb 在后”,本地包带
+    // Pre-Depends 时必然失败(dpkg: 预依赖问题)。
+    for deb in ordered_paths(batch) {
+        cmd.arg(std::path::absolute(&deb)?);
     }
     // 交互式:readline 前端把 debconf 问题转成行式问答(PTY 提供终端语义);
     // 其余情况(noninteractive)问题按默认策略静默处理
@@ -324,6 +329,55 @@ pub fn install(
         mark_installed(progress, cancel, batch);
     }
     Ok(report)
+}
+
+/// dpkg -i 的归档顺序:按 Depends/Pre-Depends 拓扑排序,被依赖者在前。
+/// 读取 control 失败时保留空元数据参与排序(仍会传给 dpkg,由 dpkg 报错),
+/// 不会因单个文件无法解析而中断安装。
+fn ordered_paths(batch: &InstallBatch) -> Vec<PathBuf> {
+    struct Item {
+        path: PathBuf,
+        name: String,
+        depends: String,
+        pre_depends: String,
+        provides: String,
+    }
+    let mut items: Vec<Item> = Vec::with_capacity(batch.dep_debs.len() + 1);
+    for path in batch.dep_debs.iter().chain(std::iter::once(&batch.local)) {
+        let item = match DebFile::open(path) {
+            Ok(deb) => {
+                let field = |n: &str| deb.field_trimmed(n).unwrap_or("").to_string();
+                Item {
+                    path: path.clone(),
+                    name: field("Package"),
+                    depends: field("Depends"),
+                    pre_depends: field("Pre-Depends"),
+                    provides: field("Provides"),
+                }
+            }
+            Err(_) => Item {
+                path: path.clone(),
+                name: String::new(),
+                depends: String::new(),
+                pre_depends: String::new(),
+                provides: String::new(),
+            },
+        };
+        items.push(item);
+    }
+    let metas: Vec<LocalMeta<'_>> = items
+        .iter()
+        .map(|it| LocalMeta {
+            name: &it.name,
+            depends: &it.depends,
+            pre_depends: &it.pre_depends,
+            provides: &it.provides,
+        })
+        .collect();
+    batch::order_by_dependencies(&metas)
+        .into_iter()
+        .map(|i| items[i].path.clone())
+        .collect()
 }
 
 /// 成功后补齐 apt 标记;失败降级为输出警告(包已装好,只是 autoremove 语义退化)

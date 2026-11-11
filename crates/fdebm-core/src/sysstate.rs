@@ -51,6 +51,10 @@ pub struct Pkg {
     /// 与 Essential 同级的保护性约束:不得在事务中被自动卸载(Debian Policy 5.6.11,
     /// 对应 dpkg --force-remove-protected 的守门对象)
     pub protected: bool,
+    /// Multi-Arch 字段原值:no/same/foreign/allowed(缺省为空串)。
+    /// 依赖架构匹配必须据此判断:":any" 只接受 allowed,无限定依赖
+    /// 仅接受同架构/all 或 foreign(Debian Multi-Arch 规范)
+    pub multi_arch: String,
     /// 已安装版本登记的 conffiles:(绝对路径, 装包时的 md5);
     /// 仅 status 有此字段,仓库索引条目为空表
     pub conffiles: Vec<(String, String)>,
@@ -205,10 +209,14 @@ impl SysState {
         }
     }
 
-    /// 已安装包的当前版本(GUI 的同版本判定用)
+    /// 已安装包的当前版本。只按 key(或 name:arch)精确匹配,不退化为
+    /// 裸包名扫描:多架构系统上 foo:i386 已装而 native foo 未装时,
+    /// 裸名回退会把 i386 的版本误报成 native foo 的版本(降级门/GUI 均受影响)。
     pub fn installed_version(&self, key_or_name: &str) -> Option<&str> {
-        let &i = self.index.get(key_or_name)?;
-        Some(self.installed[i].version.as_str())
+        self.installed
+            .iter()
+            .find(|p| p.key == key_or_name || format!("{}:{}", p.name, p.arch) == key_or_name)
+            .map(|p| p.version.as_str())
     }
 }
 
@@ -239,6 +247,7 @@ pub fn pkg_from_fields<'a>(
         essential: get("Essential").map(str::trim) == Some("yes"),
         protected: get("Protected").map(str::trim) == Some("yes")
             || get("Important").map(str::trim) == Some("yes"),
+        multi_arch: get("Multi-Arch").map(str::trim).unwrap_or("").to_string(),
         conffiles: parse_conffiles(get("Conffiles").unwrap_or("")),
     })
 }
@@ -408,6 +417,21 @@ fn decompress_to_string(path: &Path) -> Result<String, FdebmError> {
     Ok(String::from_utf8_lossy(&bytes).into_owned())
 }
 
+/// 拆分关系子句中的 "(op version)"。
+///
+/// dpkg 接受操作符与版本之间没有空白的写法(`foo(>=2.0)`、`foo (>=2.0)`),
+/// dpkg-deb -f 输出也会规范化为 `foo (>= 2.0)`。因此不能假设空白分隔:
+/// 先取括号内文本,再按前导比较运算符切分。
+fn split_relation(inner: &str) -> (String, String) {
+    let inner = inner.trim().trim_end_matches(')').trim();
+    let op_len = inner
+        .bytes()
+        .take_while(|b| matches!(b, b'<' | b'>' | b'='))
+        .count();
+    let (oper, ver) = inner.split_at(op_len);
+    (oper.trim().to_string(), ver.trim().to_string())
+}
+
 /// control 依赖字段 → or 组列表
 pub fn parse_depends(s: &str) -> Vec<Vec<Dep>> {
     s.split(',')
@@ -420,10 +444,7 @@ pub fn parse_depends(s: &str) -> Vec<Vec<Dep>> {
                     match d.find('(') {
                         Some(i) => {
                             let name = d[..i].trim().to_string();
-                            let inner = d[i + 1..].trim_end_matches(')').trim();
-                            let mut it = inner.splitn(2, char::is_whitespace);
-                            let oper = it.next().unwrap_or("").to_string();
-                            let ver = it.next().unwrap_or("").trim().to_string();
+                            let (oper, ver) = split_relation(&d[i + 1..]);
                             Dep { name, ver, oper }
                         }
                         None => Dep {
@@ -450,11 +471,8 @@ pub fn provided_names(field: &str) -> Vec<(String, Option<String>)> {
             }
             let (name, ver) = match e.find('(') {
                 Some(i) => {
-                    let inner = e[i..].trim_start_matches('(').trim_end_matches(')').trim();
-                    let mut it = inner.splitn(2, char::is_whitespace);
-                    let op = it.next().unwrap_or("").trim();
-                    let v = it.next().unwrap_or("").trim();
-                    let v = (op == "=" && !v.is_empty()).then(|| v.to_string());
+                    let (op, v) = split_relation(&e[i + 1..]);
+                    let v = (op == "=" && !v.is_empty()).then_some(v);
                     (e[..i].trim(), v)
                 }
                 None => (e, None),
@@ -534,6 +552,54 @@ mod tests {
         assert!(p.protected);
         let p = pkg_from("Package: x\nVersion: 1\nProtected: no\n").unwrap();
         assert!(!p.protected);
+    }
+
+    /// Multi-Arch 字段保留原值,供依赖架构匹配判断
+    #[test]
+    fn multi_arch_field_parsed() {
+        let p =
+            pkg_from("Package: libx\nVersion: 1\nArchitecture: i386\nMulti-Arch: same\n").unwrap();
+        assert_eq!(p.multi_arch, "same");
+        let p = pkg_from("Package: liby\nVersion: 1\n").unwrap();
+        assert_eq!(p.multi_arch, "");
+    }
+
+    /// dpkg 接受操作符与版本间无空白的写法并规范化输出,解析器不能
+    /// 依赖空白分隔(曾把 "foo(>=2.0)" 解析成空约束,静默放宽依赖)
+    #[test]
+    fn relation_without_space_parsed() {
+        let groups = parse_depends("foo(>=2.0), bar ( << 3 ), baz");
+        assert_eq!(groups[0][0].name, "foo");
+        assert_eq!(groups[0][0].oper, ">=");
+        assert_eq!(groups[0][0].ver, "2.0");
+        assert_eq!(groups[1][0].oper, "<<");
+        assert_eq!(groups[1][0].ver, "3");
+        assert_eq!(groups[2][0].name, "baz");
+        assert!(groups[2][0].oper.is_empty());
+    }
+
+    /// Provides 的版本化提供同样支持无空白写法
+    #[test]
+    fn versioned_provides_without_space_parsed() {
+        let p = pkg_from("Package: w3m\nVersion: 1\nProvides: www-browser(=2.0)\n").unwrap();
+        assert_eq!(
+            p.provides,
+            vec![("www-browser".to_string(), Some("2.0".to_string()))]
+        );
+    }
+
+    /// installed_version 只精确匹配 key/name:arch,不能把异架构已装包
+    /// 的版本误报为 native 包的版本
+    #[test]
+    fn installed_version_requires_exact_arch() {
+        let foo_i386 = pkg_from("Package: foo\nVersion: 1.0\nArchitecture: i386\n").unwrap();
+        let st = SysState {
+            installed: vec![foo_i386],
+            native_arch: "amd64".into(),
+            ..Default::default()
+        };
+        assert_eq!(st.installed_version("foo:i386"), Some("1.0"));
+        assert_eq!(st.installed_version("foo"), None);
     }
 
     #[test]

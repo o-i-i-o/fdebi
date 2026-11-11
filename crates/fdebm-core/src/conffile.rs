@@ -32,10 +32,10 @@ pub fn conflicts(deb: &DebFile, sys: &SysState) -> Vec<ConffileConflict> {
     } else {
         format!("{pkg}:{arch}")
     };
-    let Some(&i) = sys.index.get(&key) else {
+    // 精确按 key 查找,避免多架构系统上裸名索引指向另一架构的已装包
+    let Some(installed) = sys.installed.iter().find(|p| p.key == key) else {
         return Vec::new();
     };
-    let installed = &sys.installed[i];
 
     let Ok(shipped) = deb.conffiles() else {
         return Vec::new();
