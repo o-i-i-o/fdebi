@@ -1,7 +1,7 @@
 //! GTK4 前端(gtk4 为硬依赖)—— 瘦客户端。
 //! 布局：菜单栏(File/Help)+ 左侧信息表(Package/Status)+
-//! 右侧动作按钮列 + Notebook(Description/Details)+ 底部自动关闭开关与状态栏 +
-//! 安装/移除进度对话框(Terminal expander)。
+//! 右侧动作按钮列 + Notebook(Description/Details)+ 单行页脚(自动关闭开关
+//! 与事务提示)+ 安装/移除进度对话框(Terminal expander)。
 //! 文案经 gettext 国际化。
 //!
 //! 本前端永不 root、不做依赖求解、不执行 dpkg —— 三者全部委托特权守护进程 org.fdebi
@@ -370,8 +370,8 @@ struct MainWindow {
     lintian_output: gtk::TextView,
     /// 预览页上的“自动关闭窗口”开关:成功安装后是否自动关闭全部窗口
     autoclose: gtk::CheckButton,
-    statusbar: gtk::Statusbar,
-    status_ctx: u32,
+    /// 页脚右侧的单行事务提示(替代占整行高度的 GtkStatusbar)
+    footer_status: gtk::Label,
     apt_opts: Vec<String>,
     current_file: Rc<RefCell<Option<PathBuf>>>,
     changes: Rc<RefCell<Option<Changes>>>,
@@ -441,8 +441,8 @@ fn ensure_window(
     let window = ApplicationWindow::builder()
         .application(app)
         .title(gettext("Package Installer").as_str())
-        .default_width(550)
-        .default_height(400)
+        .default_width(640)
+        .default_height(500)
         //GTK4 默认不渲染 app menubar
         .show_menubar(true)
         .build();
@@ -499,10 +499,12 @@ fn build_window(window: &gtk::ApplicationWindow, apt_opts: Vec<String>) -> Rc<Ma
     label_status.set_wrap(true);
     label_status.set_use_markup(true);
 
+    // 信息区只占自身高度:竖直方向的多余空间全部留给下方 Notebook,
+    // 否则 Package/Status 会抢走高度,描述区只剩一两行可见。
     let grid = gtk::Grid::builder()
         .column_spacing(12)
         .row_spacing(8)
-        .vexpand(true)
+        .hexpand(true)
         .valign(gtk::Align::Start)
         .build();
     let labels = [(0, gettext("Package:")), (1, gettext("Status:"))];
@@ -518,26 +520,32 @@ fn build_window(window: &gtk::ApplicationWindow, apt_opts: Vec<String>) -> Rc<Ma
     // 右侧动作按钮列:Install / Remove
     let button_install = gtk::Button::with_mnemonic(&gettext("_Install Package"));
     let button_remove = gtk::Button::with_mnemonic(&gettext("_Remove Package"));
+    button_install.add_css_class("suggested-action");
     for b in [&button_install, &button_remove] {
-        b.set_hexpand(true);
+        // 固定为内容所需的紧凑宽度,不再横向拉伸到半个窗口
+        b.set_width_request(168);
         b.set_sensitive(false);
     }
     button_remove.set_visible(false);
     let btn_col = gtk::Box::builder()
         .orientation(gtk::Orientation::Vertical)
         .spacing(6)
+        .halign(gtk::Align::End)
         .valign(gtk::Align::Start)
         .build();
     btn_col.append(&button_install);
     btn_col.append(&button_remove);
 
-    let hbox_main = gtk::Box::builder()
-        .orientation(gtk::Orientation::Horizontal)
-        .spacing(12)
-        .vexpand(true)
+    // 标题行:左侧包信息,右侧按钮列;两者都只占自然高度,
+    // 让 Notebook 独占剩余纵向空间。用 Grid 而非 Box:GtkBox 在带
+    // wrapping label 的 height-for-width 布局中会缓存过期的 natural height,
+    // 状态文案变短后仍留下一大块空白。
+    let hbox_main = gtk::Grid::builder()
+        .column_spacing(12)
+        .valign(gtk::Align::Start)
         .build();
-    hbox_main.append(&grid);
-    hbox_main.append(&btn_col);
+    hbox_main.attach(&grid, 0, 0, 1, 1);
+    hbox_main.attach(&btn_col, 1, 0, 1, 1);
 
     // Notebook:Description 全文 + Details 五项
     let textview_description = gtk::TextView::builder()
@@ -633,15 +641,22 @@ fn build_window(window: &gtk::ApplicationWindow, apt_opts: Vec<String>) -> Rc<Ma
     let tab_lintian = gtk::Label::new(Some(gettext("Lintian output").as_str()));
     notebook.append_page(&scroll(&lintian_output), Some(&tab_lintian));
 
-    // 底部:自动关闭开关 + statusbar_main(不再放从未使用过的空进度条)。
-    // 开关放在预览页:小包安装可能在用户来得及操作对话框前就结束,
-    // 必须在开始安装前就能决定是否保留窗口查看输出。
+    // 底部:自动关闭开关 + 单行事务提示。开关放在预览页:小包安装可能在
+    // 用户来得及操作对话框前就结束,必须在开始安装前就能决定是否保留窗口
+    // 查看输出。原先的 GtkStatusbar 在无消息时仍占一整行,且与状态区重复;
+    // 这里合并为一行页脚,避免底部出现大片空白。
     let autoclose = gtk::CheckButton::with_label(&gettext("Automatically close the window"));
     autoclose.set_active(true);
     autoclose.set_halign(gtk::Align::Start);
-    let statusbar = gtk::Statusbar::new();
-    statusbar.set_hexpand(true);
-    let status_ctx = statusbar.context_id("context_main_window");
+    let footer_status = gtk::Label::new(None);
+    footer_status.set_halign(gtk::Align::End);
+    footer_status.set_xalign(1.0);
+    footer_status.set_hexpand(true);
+    footer_status.set_ellipsize(gtk::pango::EllipsizeMode::End);
+    footer_status.add_css_class("dim-label");
+    let footer = gtk::Box::new(gtk::Orientation::Horizontal, 12);
+    footer.append(&autoclose);
+    footer.append(&footer_status);
 
     // 批量包列表:多文件时显示,选中行预览该包详情
     let batch_list = gtk::ListBox::new();
@@ -665,8 +680,7 @@ fn build_window(window: &gtk::ApplicationWindow, apt_opts: Vec<String>) -> Rc<Ma
     vbox.append(&batch_scroll);
     vbox.append(&hbox_main);
     vbox.append(&notebook);
-    vbox.append(&autoclose);
-    vbox.append(&statusbar);
+    vbox.append(&footer);
     window.set_child(Some(&vbox));
 
     let gui = Rc::new(MainWindow {
@@ -686,8 +700,7 @@ fn build_window(window: &gtk::ApplicationWindow, apt_opts: Vec<String>) -> Rc<Ma
         file_content,
         lintian_output,
         autoclose,
-        statusbar,
-        status_ctx,
+        footer_status,
         apt_opts,
         current_file: Rc::new(RefCell::new(None)),
         changes: Rc::new(RefCell::new(None)),
@@ -1039,11 +1052,11 @@ fn scroll(w: &impl IsA<gtk::Widget>) -> gtk::ScrolledWindow {
         .build()
 }
 
-/// 状态栏只保留一条消息:先清空上下文栈,避免多次操作后残留旧文案
+/// 页脚只保留最新一条事务提示,避免多次操作后残留旧文案
 /// (例如安装完成后页脚仍显示上一次的“正在载入…”)
-fn set_statusbar(statusbar: &gtk::Statusbar, ctx: u32, text: &str) {
-    statusbar.remove_all(ctx);
-    statusbar.push(ctx, text);
+fn set_footer_status(label: &gtk::Label, text: &str) {
+    label.set_text(text);
+    label.set_tooltip_text(if text.is_empty() { None } else { Some(text) });
 }
 
 /// 退出整个应用:同时关闭安装进度对话框与包预览主窗口。
@@ -1059,6 +1072,7 @@ fn quit_app(window: &gtk::Window) {
 /// 单文件模式:清空批量状态后加载并分析该文件
 fn load_deb(gui: &Rc<MainWindow>, file: &Path) {
     clear_batch(gui);
+    set_footer_status(&gui.footer_status, "");
     // 新代际:使在途的旧分析结果失效
     let generation = gui.analysis_gen.get() + 1;
     gui.analysis_gen.set(generation);
@@ -1139,6 +1153,7 @@ fn load_files(gui: &Rc<MainWindow>, files: Vec<PathBuf>) {
     }
 
     clear_batch(gui);
+    set_footer_status(&gui.footer_status, "");
     let generation = gui.analysis_gen.get() + 1;
     gui.analysis_gen.set(generation);
     *gui.changes.borrow_mut() = None;
@@ -1329,6 +1344,7 @@ fn reset_empty_ui(gui: &MainWindow) {
     *gui.current_file.borrow_mut() = None;
     *gui.changes.borrow_mut() = None;
     gui.conffiles.borrow_mut().clear();
+    set_footer_status(&gui.footer_status, "");
     gui.label_name.set_markup("<b><big>   </big></b>");
     gui.label_status
         .set_text(&gettext("Open a Debian package to inspect it"));
@@ -1872,8 +1888,7 @@ fn run_txn_dialog(
     });
     dialog.present();
 
-    let statusbar = gui.statusbar.clone();
-    let ctx = gui.status_ctx;
+    let footer_status = gui.footer_status.clone();
     let window = gui.window.clone();
     let gui_reload = gui.clone();
     let apt_opts = gui.apt_opts.clone();
@@ -1929,7 +1944,7 @@ fn run_txn_dialog(
                 }
                 bar.set_fraction(1.0);
                 window.set_sensitive(true);
-                set_statusbar(&statusbar, ctx, &failed);
+                set_footer_status(&footer_status, &failed);
                 show_alert(&window, AlertKind::Error, &gettext("fdebi error"), Some(&e));
                 return;
             }
@@ -2074,9 +2089,9 @@ fn run_txn_dialog(
                                     }
                                 }
                                 if ok {
-                                    set_statusbar(&statusbar, ctx, &complete);
+                                    set_footer_status(&footer_status, &complete);
                                 } else {
-                                    set_statusbar(&statusbar, ctx, &failed);
+                                    set_footer_status(&footer_status, &failed);
                                     let body = match friendly_error(&detail) {
                                         Some(summary) => format!("{summary}\n\n{detail}"),
                                         None => detail.clone(),
@@ -2123,7 +2138,7 @@ fn run_txn_dialog(
                 pid.remove();
             }
             window.set_sensitive(true);
-            set_statusbar(&statusbar, ctx, gettext("operation cancelled").as_str());
+            set_footer_status(&footer_status, gettext("operation cancelled").as_str());
             return;
         }
 
@@ -2134,7 +2149,7 @@ fn run_txn_dialog(
             }
             window.set_sensitive(true);
             if !ok {
-                set_statusbar(&statusbar, ctx, &failed);
+                set_footer_status(&footer_status, &failed);
             }
             return;
         }
