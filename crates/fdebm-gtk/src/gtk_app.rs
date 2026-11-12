@@ -33,7 +33,7 @@ use gtk4::{
 use fdebm_core::flow::{self, PackageInfo};
 use fdebm_core::i18n;
 use fdebm_core::i18n::{gettext, ngettext, tf};
-use fdebm_core::solver::Changes;
+use fdebm_core::solver::{ChangeKind, Changes, InstallChange};
 use fdebm_core::ui::{AlertKind, Ui};
 use fdebm_core::{DebFile, FdebmError};
 use zbus::{MatchRule, MessageStream};
@@ -116,14 +116,33 @@ fn show_alert<W: IsA<gtk::Window>>(parent: &W, kind: AlertKind, header: &str, bo
         Some(b) => format!("{header}\n\n{b}"),
         None => header.to_string(),
     };
+    // 错误详情可复制(deepin 用专门的错误通知对话框;这里给标准对话框
+    // 加一个复制按钮,便于把 dpkg 输出贴到报告里)
+    let copyable = matches!(kind, AlertKind::Error) && body.is_some();
     let dlg = MessageDialog::builder()
         .transient_for(parent)
         .modal(true)
         .message_type(ty)
-        .buttons(ButtonsType::Close)
+        .buttons(if copyable {
+            ButtonsType::None
+        } else {
+            ButtonsType::Close
+        })
         .text(text)
         .build();
-    dlg.connect_response(|d, _| d.destroy());
+    if copyable {
+        dlg.add_button(&gettext("_Copy details"), ResponseType::Other(1));
+        dlg.add_button(&gettext("_Close"), ResponseType::Close);
+    }
+    let details = body.unwrap_or_default().to_string();
+    dlg.connect_response(move |d, r| {
+        if r == ResponseType::Other(1)
+            && let Some(display) = gtk::gdk::Display::default()
+        {
+            display.clipboard().set_text(&details);
+        }
+        d.destroy();
+    });
     dlg.present();
 }
 
@@ -143,6 +162,8 @@ struct Analysis {
     broken: Vec<String>,
     /// conffile 冲突列表(包名, 路径)
     conflicts: Vec<(String, String)>,
+    /// apt 索引可能落后于软件源配置(只提示,不阻断)
+    apt_stale: bool,
 }
 
 #[zbus::proxy(
@@ -182,6 +203,9 @@ trait Fdebm {
 
     /// 卸载事务 → 事务 id
     fn remove_package(&self, name: &str) -> zbus::Result<u32>;
+
+    /// 卸载前反向依赖预检(只读):[(受影响包, 依赖组)]
+    fn check_removal(&self, name: &str) -> zbus::Result<Vec<(String, String)>>;
 }
 
 /// 系统总线连接(事务与信号须在同一连接上:信号按唯一名投递)
@@ -201,12 +225,23 @@ fn analysis_from_result(result: fdebm_core::AnalyzeResult) -> Analysis {
         repo_version,
         broken,
         conflicts,
+        apt_stale,
     ) = result;
+    let install_details: Vec<InstallChange> = install
+        .iter()
+        .map(|(name, kind, old, new)| InstallChange {
+            name: name.clone(),
+            kind: ChangeKind::from_arg(kind),
+            old_version: old.clone(),
+            new_version: new.clone(),
+        })
+        .collect();
     Analysis {
         installable,
         failure,
         changes: Changes {
-            install,
+            install: install.into_iter().map(|(name, _, _, _)| name).collect(),
+            install_details,
             remove,
             unauthenticated,
         },
@@ -214,6 +249,7 @@ fn analysis_from_result(result: fdebm_core::AnalyzeResult) -> Analysis {
         repo_version,
         broken,
         conflicts,
+        apt_stale,
     }
 }
 
@@ -266,6 +302,7 @@ async fn analyze_batch_via_daemon(
                 repo_version,
                 broken,
                 conflicts,
+                apt_stale,
             )| {
                 let _ = path; // 结果顺序与输入一致;路径仅用于诊断
                 analysis_from_result((
@@ -278,10 +315,21 @@ async fn analyze_batch_via_daemon(
                     repo_version,
                     broken,
                     conflicts,
+                    apt_stale,
                 ))
             },
         )
         .collect())
+}
+
+/// 卸载前反向依赖预检(只读;失败按“无告警”处理,不阻断卸载)
+async fn check_removal_via_daemon(name: &str) -> Result<Vec<(String, String)>, String> {
+    let conn = daemon().await?;
+    let client = FdebmProxy::builder(&conn)
+        .build()
+        .await
+        .map_err(|e| e.to_string())?;
+    client.check_removal(name).await.map_err(|e| e.to_string())
 }
 
 // ---------------------------------------------------------------------------
@@ -299,6 +347,7 @@ struct BatchItem {
     changes: Changes,
     conflicts: Vec<(String, String)>,
     label: gtk::Label,
+    row: gtk::ListBoxRow,
 }
 
 /// window_main 的控件集合(Rc 共享给菜单动作)
@@ -343,36 +392,52 @@ pub fn run() {
     let cmd = build_command();
     let matches = cmd.get_matches();
     let args = Args::from_arg_matches(&matches).unwrap_or_else(|e| e.exit());
+    let Args { apt_opts, files } = args;
+    let apt_opts = Rc::new(apt_opts);
+
+    // 单实例 + 文件转发:GApplication 的 HANDLES_OPEN 会把后续进程的文件
+    // 通过 org.freedesktop.Application.Open 转给已运行实例,不再需要
+    // deepin 那样自定义 session D-Bus;窗口始终只持有当前要打开的文件。
     let app = Application::builder()
         .application_id("org.fdebm.gtk")
-        // 单实例模式下,用 deb 关联启动的后续进程只会激活已有窗口,
-        // 而该窗口仍持有首次启动时的 LaunchAction,表现为一直显示旧包。
-        // 每次关联启动使用独立实例,确保打开的是命令行传入的文件。
-        .flags(gio::ApplicationFlags::NON_UNIQUE)
+        .flags(gio::ApplicationFlags::HANDLES_OPEN)
         .build();
-    let action = args.into_action();
-    app.connect_activate(move |app| activate(app, action.clone()));
-    // 参数已由 clap 解析,不交给 GApplication(位置参数会触发 GFile open 路径)
-    app.run_with_args(&["fdebm-gtk"]);
-}
+    let slot: Rc<RefCell<Option<Rc<MainWindow>>>> = Rc::new(RefCell::new(None));
 
-/// 启动动作上下文:命令行给的文件与 apt 选项
-#[derive(Debug, Clone)]
-struct LaunchAction {
-    files: Vec<PathBuf>,
-    apt_opts: Vec<String>,
-}
-
-impl Args {
-    fn into_action(self) -> LaunchAction {
-        LaunchAction {
-            files: self.files,
-            apt_opts: self.apt_opts,
-        }
+    {
+        let slot_a = slot.clone();
+        let opts = apt_opts.clone();
+        app.connect_activate(move |app| {
+            let gui = ensure_window(app, &slot_a, &opts);
+            gui.window.present();
+        });
     }
+    {
+        let slot_o = slot.clone();
+        let opts = apt_opts.clone();
+        app.connect_open(move |app, files, _hint| {
+            let paths: Vec<PathBuf> = files.iter().filter_map(|f| f.path()).collect();
+            let gui = ensure_window(app, &slot_o, &opts);
+            load_files(&gui, paths);
+            gui.window.present();
+        });
+    }
+
+    // clap 已处理选项;GApplication 只接收程序名 + 文件(位置参数触发 open)
+    let mut gio_args: Vec<String> = vec!["fdebm-gtk".to_string()];
+    gio_args.extend(files.iter().map(|p| p.to_string_lossy().into_owned()));
+    app.run_with_args(&gio_args);
 }
 
-fn activate(app: &Application, action: LaunchAction) {
+/// 惰性建窗:主实例首次 activate/open 时创建,GUI 控件集合只保留一份
+fn ensure_window(
+    app: &Application,
+    slot: &Rc<RefCell<Option<Rc<MainWindow>>>>,
+    apt_opts: &Rc<Vec<String>>,
+) -> Rc<MainWindow> {
+    if let Some(gui) = slot.borrow().as_ref() {
+        return gui.clone();
+    }
     let window = ApplicationWindow::builder()
         .application(app)
         .title(gettext("Package Installer").as_str())
@@ -381,14 +446,45 @@ fn activate(app: &Application, action: LaunchAction) {
         //GTK4 默认不渲染 app menubar
         .show_menubar(true)
         .build();
-
-    let gui = build_window(&window, action.apt_opts);
+    // GTK 已由 Application 初始化,此时 Display 可用
+    install_css();
+    let gui = build_window(&window, (**apt_opts).clone());
     setup_actions(app, &gui);
+    *slot.borrow_mut() = Some(gui.clone());
+    gui
+}
 
-    if !action.files.is_empty() {
-        load_files(&gui, action.files);
+/// 行状态配色:等待/可安装/安装中/成功/失败
+fn install_css() {
+    let Some(display) = gtk::gdk::Display::default() else {
+        return;
+    };
+    let css = gtk::CssProvider::new();
+    css.load_from_data(
+        ".batch-waiting { color: alpha(currentColor, 0.6); }\n\
+         .batch-installing { color: #1c71d8; font-weight: bold; }\n\
+         .batch-done { color: #26a269; }\n\
+         .batch-failed { color: #c01c28; }",
+    );
+    gtk::style_context_add_provider_for_display(
+        &display,
+        &css,
+        gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+    );
+}
+
+/// 切换行的状态样式(先移除其余状态类,避免叠加)
+fn set_row_state(row: &gtk::ListBoxRow, state: &str) {
+    for class in [
+        "batch-waiting",
+        "batch-ready",
+        "batch-installing",
+        "batch-done",
+        "batch-failed",
+    ] {
+        row.remove_css_class(class);
     }
-    window.present();
+    row.add_css_class(state);
 }
 
 fn build_window(window: &gtk::ApplicationWindow, apt_opts: Vec<String>) -> Rc<MainWindow> {
@@ -616,9 +712,10 @@ fn build_window(window: &gtk::ApplicationWindow, apt_opts: Vec<String>) -> Rc<Ma
     gui.button_remove.connect_clicked(move |_| {
         on_remove_clicked(&gui_rm);
     });
-    // 批量列表:选中行 → 详情预览(不重新分析)
+    // 批量列表:单击选中行 → 详情预览(不重新分析;deepin 同为单击预览)
     let gui_row = gui.clone();
-    gui.batch_list.connect_row_activated(move |_, row| {
+    gui.batch_list.connect_row_selected(move |_, row| {
+        let Some(row) = row else { return };
         let path = gui_row
             .batch
             .borrow()
@@ -628,6 +725,29 @@ fn build_window(window: &gtk::ApplicationWindow, apt_opts: Vec<String>) -> Rc<Ma
             preview_deb(&gui_row, &path);
         }
     });
+    // 拖放 .deb:主窗口级接收文件列表;已有文件时合并进批量列表
+    let gui_drop = gui.clone();
+    let drop = gtk::DropTarget::new(
+        gtk::gdk::FileList::static_type(),
+        gtk::gdk::DragAction::COPY,
+    );
+    drop.connect_drop(move |_, value, _, _| {
+        let Ok(list) = value.get::<gtk::gdk::FileList>() else {
+            return false;
+        };
+        let files: Vec<PathBuf> = list
+            .files()
+            .iter()
+            .filter_map(|f| f.path())
+            .filter(|p| is_deb_path(p))
+            .collect();
+        if files.is_empty() {
+            return false;
+        }
+        add_files(&gui_drop, files);
+        true
+    });
+    gui.window.add_controller(drop);
     // Included files:选中成员 → 右侧内容视图
     let gui_sel = gui.clone();
     gui.tree_files
@@ -1029,15 +1149,29 @@ fn load_files(gui: &Rc<MainWindow>, files: Vec<PathBuf>) {
         let fallback = display_name(f);
         let label = gtk::Label::new(Some(&fallback));
         label.set_halign(gtk::Align::Start);
+        label.set_hexpand(true);
         label.set_ellipsize(gtk::pango::EllipsizeMode::End);
         label.set_xalign(0.0);
-        label.set_margin_start(6);
-        label.set_margin_end(6);
-        label.set_margin_top(3);
-        label.set_margin_bottom(3);
+        let remove = gtk::Button::from_icon_name("window-close-symbolic");
+        remove.add_css_class("flat");
+        remove.set_tooltip_text(Some(&gettext("Remove from list")));
+        remove.set_valign(gtk::Align::Center);
+        let row_box = gtk::Box::new(gtk::Orientation::Horizontal, 6);
+        row_box.set_margin_start(6);
+        row_box.set_margin_end(6);
+        row_box.set_margin_top(3);
+        row_box.set_margin_bottom(3);
+        row_box.append(&label);
+        row_box.append(&remove);
         let row = gtk::ListBoxRow::new();
-        row.set_child(Some(&label));
+        row.set_child(Some(&row_box));
+        row.add_css_class("batch-waiting");
         gui.batch_list.append(&row);
+
+        let gui_rm = gui.clone();
+        let rm_path = f.clone();
+        remove.connect_clicked(move |_| remove_batch_item(&gui_rm, &rm_path));
+
         gui.batch.borrow_mut().push(BatchItem {
             path: f.clone(),
             name: fallback,
@@ -1047,6 +1181,7 @@ fn load_files(gui: &Rc<MainWindow>, files: Vec<PathBuf>) {
             changes: Changes::default(),
             conflicts: Vec::new(),
             label,
+            row,
         });
     }
 
@@ -1122,13 +1257,98 @@ fn load_files(gui: &Rc<MainWindow>, files: Vec<PathBuf>) {
     });
 }
 
-/// 去重并保持选择顺序
+/// 去重并保持选择顺序:先按路径,再按 (Package, Version, Architecture)
+/// 识别同一包的不同副本(deepin 按 deb MD5 去重;全量哈希对大包是额外 I/O,
+/// 用 control 元数据即可)。打不开/字段缺失的文件保留,交给后续错误提示。
 fn dedup_files(files: Vec<PathBuf>) -> Vec<PathBuf> {
-    let mut seen = std::collections::HashSet::new();
+    let mut seen_paths = std::collections::HashSet::new();
+    let mut seen_pkgs: std::collections::HashSet<(String, String, String)> =
+        std::collections::HashSet::new();
     files
         .into_iter()
-        .filter(|f| seen.insert(f.clone()))
+        .filter(|f| {
+            if !seen_paths.insert(f.clone()) {
+                return false;
+            }
+            let Ok(deb) = DebFile::open(f) else {
+                return true;
+            };
+            let field = |n: &str| deb.field_trimmed(n).unwrap_or("").to_string();
+            let key = (field("Package"), field("Version"), field("Architecture"));
+            key.0.is_empty() || seen_pkgs.insert(key)
+        })
         .collect()
+}
+
+fn is_deb_path(path: &Path) -> bool {
+    path.extension()
+        .and_then(|e| e.to_str())
+        .is_some_and(|e| e.eq_ignore_ascii_case("deb"))
+}
+
+/// 拖放/追加文件:已有预览或批量列表时合并,统一走 load_files
+fn add_files(gui: &Rc<MainWindow>, new_files: Vec<PathBuf>) {
+    let mut all: Vec<PathBuf> = if gui.batch.borrow().len() > 1 {
+        gui.batch.borrow().iter().map(|b| b.path.clone()).collect()
+    } else {
+        gui.current_file.borrow().iter().cloned().collect()
+    };
+    all.extend(new_files);
+    load_files(gui, all);
+}
+
+/// 从批量列表移除一项;只剩 1 个时回退单文件视图(deepin 同行为)
+fn remove_batch_item(gui: &Rc<MainWindow>, path: &Path) {
+    let idx = {
+        let items = gui.batch.borrow();
+        items.iter().position(|i| i.path == path)
+    };
+    let Some(idx) = idx else { return };
+    let remaining: Vec<PathBuf> = {
+        let mut items = gui.batch.borrow_mut();
+        items.remove(idx);
+        items.iter().map(|i| i.path.clone()).collect()
+    };
+    match remaining.len() {
+        0 => {
+            clear_batch(gui);
+            reset_empty_ui(gui);
+        }
+        1 => {
+            let only = remaining[0].clone();
+            clear_batch(gui);
+            load_deb(gui, &only);
+        }
+        // 重新走整批分析:同时丢弃可能仍在途的旧结论,避免结果数量不匹配
+        _ => load_files(gui, remaining),
+    }
+}
+
+/// 列表清空后的空状态(没有文件选择页,复位主要控件)
+fn reset_empty_ui(gui: &MainWindow) {
+    *gui.current_file.borrow_mut() = None;
+    *gui.changes.borrow_mut() = None;
+    gui.conffiles.borrow_mut().clear();
+    gui.label_name.set_markup("<b><big>   </big></b>");
+    gui.label_status
+        .set_text(&gettext("Open a Debian package to inspect it"));
+    gui.button_install.set_label(&gettext("_Install Package"));
+    gui.button_install.set_sensitive(false);
+    gui.button_remove.hide();
+    gui.textview_description.buffer().set_text("");
+    gui.lintian_output.buffer().set_text("");
+    gui.file_content.buffer().set_text("");
+    gui.tree_files.set_model(None::<&gtk::TreeModel>);
+    gui.details_changes.set_visible(false);
+    for label in [
+        &gui.details_version,
+        &gui.details_maintainer,
+        &gui.details_priority,
+        &gui.details_section,
+        &gui.details_size,
+    ] {
+        label.set_text("");
+    }
 }
 
 fn display_name(path: &Path) -> String {
@@ -1146,14 +1366,17 @@ fn clear_batch(gui: &MainWindow) {
     gui.batch_scroll.hide();
 }
 
-/// 批量列表行文案:包名 版本 — 状态
+/// 批量列表行文案:包名 版本 — 状态;并同步行状态颜色
 fn update_row_label(item: &BatchItem) {
-    let status = if !item.failure.is_empty() {
-        format!("{}: {}", gettext("Cannot install"), item.failure)
+    let (status, state) = if !item.failure.is_empty() {
+        (
+            format!("{}: {}", gettext("Cannot install"), item.failure),
+            "batch-failed",
+        )
     } else if item.installable {
-        gettext("Ready to install")
+        (gettext("Ready to install"), "batch-ready")
     } else {
-        gettext("Checking…")
+        (gettext("Checking…"), "batch-waiting")
     };
     let name = if item.version.is_empty() {
         item.name.clone()
@@ -1161,6 +1384,7 @@ fn update_row_label(item: &BatchItem) {
         format!("{} {}", item.name, item.version)
     };
     item.label.set_text(&format!("{name} — {status}"));
+    set_row_state(&item.row, state);
 }
 
 /// 批量汇总:有不可安装项时逐条列出(红色),否则报告可安装
@@ -1233,10 +1457,17 @@ fn apply_verdict(gui: &Rc<MainWindow>, version: &str, analysis: Result<Analysis,
 
     let changes = analysis.changes;
     let (inst, rm) = (&changes.install, &changes.remove);
-    // Details 页签:变更的具体包名(状态区只显示数量)
-    fill_changes_details(gui, inst, rm);
+    // Details 页签:按新装/升级/降级/重装分类列出具体包名
+    fill_changes_details(gui, &changes);
 
     // 依赖变更摘要 markup(ngettext 处理复数)
+    let count = |kind: ChangeKind| {
+        changes
+            .install_details
+            .iter()
+            .filter(|c| c.kind == kind)
+            .count()
+    };
     let mut deps = String::new();
     if !rm.is_empty() {
         deps.push_str(&tf(
@@ -1249,22 +1480,46 @@ fn apply_verdict(gui: &Rc<MainWindow>, version: &str, analysis: Result<Analysis,
         ));
         deps.push('\n');
     }
-    if !inst.is_empty() {
-        deps.push_str(&tf(
-            &ngettext(
-                "Requires the installation of {0} package",
-                "Requires the installation of {0} packages",
-                inst.len() as u32,
-            ),
-            &[&inst.len().to_string()],
-        ));
-        deps.push('\n');
+    for (n, singular, plural) in [
+        (
+            count(ChangeKind::New),
+            "Requires the <b>installation</b> of {0} package",
+            "Requires the <b>installation</b> of {0} packages",
+        ),
+        (
+            count(ChangeKind::Upgrade),
+            "Requires the <b>upgrade</b> of {0} package",
+            "Requires the <b>upgrade</b> of {0} packages",
+        ),
+        (
+            count(ChangeKind::Downgrade),
+            "Requires the <b>downgrade</b> of {0} package",
+            "Requires the <b>downgrade</b> of {0} packages",
+        ),
+        (
+            count(ChangeKind::Reinstall),
+            "Requires the <b>reinstallation</b> of {0} package",
+            "Requires the <b>reinstallation</b> of {0} packages",
+        ),
+    ] {
+        if n > 0 {
+            deps.push_str(&tf(
+                &ngettext(singular, plural, n as u32),
+                &[&n.to_string()],
+            ));
+            deps.push('\n');
+        }
     }
 
-    // 状态区附加提示:软件源版本 + 系统已有未完成操作(琥珀色,不阻断安装)
+    // 状态区附加提示:软件源版本 + apt 索引 + 系统已有未完成操作(琥珀色,不阻断)
     let mut notes: Vec<String> = Vec::new();
     if let Some(hint) = version_hint(version, &analysis.repo_version) {
         notes.push(hint);
+    }
+    if analysis.apt_stale {
+        notes.push(gettext(
+            "The package index may be out of date; run 'sudo apt update' to refresh it.",
+        ));
     }
     if !analysis.broken.is_empty() {
         notes.push(tf(
@@ -1340,25 +1595,44 @@ fn join_capped(items: &[String]) -> String {
     s
 }
 
-/// Details 页签的变更包名列表(To be installed / To be removed)
-fn fill_changes_details(gui: &MainWindow, install: &[String], remove: &[String]) {
-    if install.is_empty() && remove.is_empty() {
+/// Details 页签的变更明细:按变更类型分组(新装/升级/降级/重装/卸载)
+fn fill_changes_details(gui: &MainWindow, changes: &Changes) {
+    if changes.install_details.is_empty() && changes.remove.is_empty() {
         gui.details_changes.set_visible(false);
         return;
     }
     let mut parts: Vec<String> = Vec::new();
-    if !install.is_empty() {
+    let groups = [
+        (ChangeKind::New, gettext("To be installed:")),
+        (ChangeKind::Upgrade, gettext("To be upgraded:")),
+        (ChangeKind::Downgrade, gettext("To be downgraded:")),
+        (ChangeKind::Reinstall, gettext("To be reinstalled:")),
+    ];
+    for (kind, heading) in groups {
+        let items: Vec<String> = changes
+            .install_details
+            .iter()
+            .filter(|c| c.kind == kind)
+            .map(|c| match kind {
+                ChangeKind::New => format!("{} {}", c.name, c.new_version),
+                ChangeKind::Reinstall => format!("{} {}", c.name, c.new_version),
+                _ => format!("{} {} → {}", c.name, c.old_version, c.new_version),
+            })
+            .collect();
+        if items.is_empty() {
+            continue;
+        }
         parts.push(format!(
             "<b>{}</b>\n{}",
-            glib::markup_escape_text(&gettext("To be installed:")),
-            glib::markup_escape_text(&install.join(", ")),
+            glib::markup_escape_text(&heading),
+            glib::markup_escape_text(&items.join(", ")),
         ));
     }
-    if !remove.is_empty() {
+    if !changes.remove.is_empty() {
         parts.push(format!(
             "<b>{}</b>\n<span foreground=\"red\">{}</span>",
             glib::markup_escape_text(&gettext("To be removed:")),
-            glib::markup_escape_text(&remove.join(", ")),
+            glib::markup_escape_text(&changes.remove.join(", ")),
         ));
     }
     gui.details_changes.set_markup(&parts.join("\n\n"));
@@ -1380,8 +1654,10 @@ fn fill_static(gui: &MainWindow, info: &PackageInfo, deb: &DebFile) {
     let buf = gui.textview_description.buffer();
     buf.set_text(&full);
     if !summary.is_empty() {
+        // GtkTextTag 的 weight 属性是 gint(PangoWeight 数值),不能直接传
+        // pango::Weight 值类型,否则运行时报属性类型不匹配。700 = Bold。
         let tag = buf
-            .create_tag(Some("summary"), &[("weight", &gtk::pango::Weight::Bold)])
+            .create_tag(Some("summary"), &[("weight", &700i32)])
             .expect("text tag");
         let start = buf.start_iter();
         let mut end = buf.start_iter();
@@ -1513,6 +1789,7 @@ fn run_txn_dialog(
     // 批量模式:对话框内逐包状态列表(失败项在完成时置顶)
     let mut pkg_rows: HashMap<String, (gtk::ListBoxRow, gtk::Label)> = HashMap::new();
     let mut pkg_list: Option<gtk::ListBox> = None;
+    let mut pkg_scroll: Option<gtk::ScrolledWindow> = None;
     if let TxnRequest::Install { files, .. } = &req
         && files.len() > 1
     {
@@ -1532,6 +1809,7 @@ fn run_txn_dialog(
             row.set_child(Some(&label));
             row.set_activatable(false);
             row.set_selectable(false);
+            row.add_css_class("batch-waiting");
             list.append(&row);
             pkg_rows.insert(f.to_string_lossy().into_owned(), (row, label));
         }
@@ -1545,6 +1823,7 @@ fn run_txn_dialog(
             .build();
         box_.append(&list_scroll);
         pkg_list = Some(list);
+        pkg_scroll = Some(list_scroll);
     }
 
     box_.append(&bar);
@@ -1738,6 +2017,21 @@ fn run_txn_dialog(
                                     other => other.to_string(),
                                 };
                                 label.set_text(&format!("{name} — {status}"));
+                                set_row_state(
+                                    row,
+                                    match state.as_str() {
+                                        "installing" => "batch-installing",
+                                        "done" => "batch-done",
+                                        "failed" => "batch-failed",
+                                        _ => "batch-waiting",
+                                    },
+                                );
+                                // 自动滚动到当前安装行(deepin slotAutoScrollInstallList)
+                                if state == "installing"
+                                    && let Some(scroll) = &pkg_scroll
+                                {
+                                    scroll_row_into_view(scroll, row);
+                                }
                                 if state == "failed" {
                                     failed_rows.push(row.clone());
                                 }
@@ -1783,11 +2077,15 @@ fn run_txn_dialog(
                                     set_statusbar(&statusbar, ctx, &complete);
                                 } else {
                                     set_statusbar(&statusbar, ctx, &failed);
+                                    let body = match friendly_error(&detail) {
+                                        Some(summary) => format!("{summary}\n\n{detail}"),
+                                        None => detail.clone(),
+                                    };
                                     show_alert(
                                         &window,
                                         AlertKind::Error,
                                         &gettext("fdebm error"),
-                                        Some(&detail),
+                                        Some(&body),
                                     );
                                 }
                                 window.set_sensitive(true);
@@ -1854,6 +2152,64 @@ fn run_txn_dialog(
             load_deb(&gui_reload, &f);
         }
     });
+}
+
+/// 把批量状态行滚入可视区(行分配坐标相对列表,与滚动调整一致)
+fn scroll_row_into_view(scroll: &gtk::ScrolledWindow, row: &gtk::ListBoxRow) {
+    let adj = scroll.vadjustment();
+    let alloc = row.allocation();
+    if alloc.height() <= 0 {
+        // 尚未分配尺寸:退回焦点滚动
+        row.grab_focus();
+        return;
+    }
+    let top = f64::from(alloc.y());
+    let bottom = top + f64::from(alloc.height());
+    let view_top = adj.value();
+    let view_bottom = view_top + adj.page_size();
+    if top < view_top {
+        adj.set_value(top);
+    } else if bottom > view_bottom {
+        adj.set_value(bottom - adj.page_size());
+    }
+}
+
+/// 常见安装失败 → 一行可读摘要(对应 deepin netErrors/workerErrorString;
+/// 详情仍原样附在摘要后,避免吞掉 dpkg 输出)
+fn friendly_error(detail: &str) -> Option<String> {
+    let d = detail.to_ascii_lowercase();
+    if d.contains("could not get lock")
+        || d.contains("unable to acquire the dpkg frontend lock")
+        || d.contains("another process using it")
+    {
+        Some(gettext(
+            "Another package management program is running. Close it and try again.",
+        ))
+    } else if d.contains("no space left on device") {
+        Some(gettext(
+            "Not enough free disk space to install the package.",
+        ))
+    } else if d.contains("failed to fetch")
+        || d.contains("temporary failure resolving")
+        || d.contains("network is unreachable")
+        || d.contains("could not resolve")
+    {
+        Some(gettext(
+            "A network error occurred while downloading packages. Check your connection and try again.",
+        ))
+    } else if d.contains("unmet dependencies")
+        || d.contains("dependency problems prevent configuration")
+    {
+        Some(gettext(
+            "The package dependencies could not be satisfied. Run 'sudo apt-get install -f' to repair.",
+        ))
+    } else if d.contains("read-only file system") {
+        Some(gettext(
+            "The file system is read-only; the package cannot be installed.",
+        ))
+    } else {
+        None
+    }
 }
 
 /// 提交一行交互应答并清空输入框(空行 = 接受默认值)
@@ -2024,12 +2380,48 @@ fn on_remove_clicked(gui: &Rc<MainWindow>) {
     else {
         return;
     };
-    // dpkg -r 单包卸载;反向依赖会阻止卸载并报错(由输出呈现)
-    run_txn_dialog(
-        gui,
-        &gettext("Removing package..."),
-        gettext("Removal complete").to_string(),
-        gettext("Failed to remove package").to_string(),
-        TxnRequest::Remove { name: pkgname },
-    );
+    // 先做反向依赖只读预检(对应 deepin packageReverseDependsList):
+    // dpkg -r 会因反向依赖失败,提前列出受影响包供用户决定;预检失败不阻断
+    let gui_check = gui.clone();
+    glib::spawn_future_local(async move {
+        let affected = check_removal_via_daemon(&pkgname).await.unwrap_or_default();
+        if !affected.is_empty() {
+            let list = affected
+                .iter()
+                .take(20)
+                .map(|(pkg, requires)| format!("• {pkg}  ←  {requires}"))
+                .collect::<Vec<_>>()
+                .join("\n");
+            let more = if affected.len() > 20 {
+                format!(
+                    "\n{}",
+                    tf("… and {0} more", &[&(affected.len() - 20).to_string()])
+                )
+            } else {
+                String::new()
+            };
+            let body = format!(
+                "{}\n\n{list}{more}\n\n{}",
+                tf(
+                    "Removing {0} will break the dependencies of the following installed packages:",
+                    &[&pkgname],
+                ),
+                gettext("Remove it anyway?"),
+            );
+            let ui = GtkUi {
+                parent: gui_check.window.clone().upcast(),
+            };
+            match ui.confirm(&gettext("Reverse dependencies will break"), Some(&body)) {
+                Ok(true) => {}
+                _ => return,
+            }
+        }
+        run_txn_dialog(
+            &gui_check,
+            &gettext("Removing package..."),
+            gettext("Removal complete").to_string(),
+            gettext("Failed to remove package").to_string(),
+            TxnRequest::Remove { name: pkgname },
+        );
+    });
 }

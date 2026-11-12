@@ -2,12 +2,15 @@
 //!
 //! 方法:
 //! - AnalyzeLocalFile(s path, as apt_opts) → (b installable, s failure,
-//!   as install, as remove, as unauthenticated, s installed_version,
-//!   s repo_version, as broken_packages, a(ss) conffile_conflicts)
+//!   a(ssss) install[(包名,变更类型,旧版本,新版本)], as remove,
+//!   as unauthenticated, s installed_version, s repo_version,
+//!   as broken_packages, a(ss) conffile_conflicts, b apt_stale)
 //! - AnalyzeLocalFiles(as paths, as apt_opts) → 逐文件结果数组
-//!   (路径, 可安装, 错误信息, install[], remove[], unauthenticated[],
-//!   已安装版本, 软件源候选版本, 异常状态包[], conffile 冲突;按输入顺序;
+//!   (路径, 可安装, 错误信息, install[(包名,变更类型,旧版本,新版本)],
+//!   remove[], unauthenticated[], 已安装版本, 软件源候选版本,
+//!   异常状态包[], conffile 冲突, apt 索引过期;按输入顺序;
 //!   批内前序可安装包作为后续包的已装上下文)
+//! - CheckRemoval(s name) → a(ss)[(受影响包, 依赖组)](只读反向依赖预检)
 //! - InstallLocalFiles(as paths, as apt_opts, s conf_policy) → u id
 //! - RemovePackage(s name) → u id
 //! - Cancel(u id) → b accepted(仅事务发起者)
@@ -73,6 +76,19 @@ impl FdebmIface {
         let (tx, rx) = async_channel::bounded(1);
         std::thread::spawn(move || {
             let _ = tx.send_blocking(txn::analyze_batch(&manager, &paths, &apt_opts));
+        });
+        rx.recv()
+            .await
+            .map_err(|e| zbus::fdo::Error::Failed(e.to_string()))?
+            .map_err(zbus::fdo::Error::Failed)
+    }
+
+    /// 卸载前反向依赖预检(只读):返回 [(受影响包, 依赖组)]
+    async fn check_removal(&self, name: String) -> zbus::fdo::Result<Vec<(String, String)>> {
+        let manager = self.manager.clone();
+        let (tx, rx) = async_channel::bounded(1);
+        std::thread::spawn(move || {
+            let _ = tx.send_blocking(txn::check_removal(&manager, &name));
         });
         rx.recv()
             .await

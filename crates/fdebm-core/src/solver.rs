@@ -41,10 +41,54 @@ pub struct DownloadSpec {
     pub trusted: bool,
 }
 
-/// 求解结果中的变更集(名称列表,GUI 呈现用)
+/// 待安装包的变更类型(相对当前已装版本)
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ChangeKind {
+    New,
+    Upgrade,
+    Downgrade,
+    Reinstall,
+}
+
+impl ChangeKind {
+    /// D-Bus/AnalyzeResult 线型标签
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::New => "new",
+            Self::Upgrade => "upgrade",
+            Self::Downgrade => "downgrade",
+            Self::Reinstall => "reinstall",
+        }
+    }
+
+    /// 线型标签 → 枚举(未知标签按新装处理,保证旧客户端/新守护进程兼容)
+    pub fn from_arg(s: &str) -> Self {
+        match s {
+            "upgrade" => Self::Upgrade,
+            "downgrade" => Self::Downgrade,
+            "reinstall" => Self::Reinstall,
+            _ => Self::New,
+        }
+    }
+}
+
+/// 单个安装项的分类明细(GUI/CLI 呈现"新装/升级/降级/重装")
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct InstallChange {
+    pub name: String,
+    pub kind: ChangeKind,
+    /// 已装版本(新装为空串)
+    pub old_version: String,
+    /// 候选版本
+    pub new_version: String,
+}
+
+/// 求解结果中的变更集(名称列表 + 分类明细,GUI 呈现用)
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Changes {
     pub install: Vec<String>,
+    /// 与 `install` 同序的分类明细
+    pub install_details: Vec<InstallChange>,
     pub remove: Vec<String>,
     pub unauthenticated: Vec<String>,
 }
@@ -426,7 +470,77 @@ fn pkg_satisfies(pkg: &Pkg, d: &Dep, depender_arch: &str, native_arch: &str) -> 
     })
 }
 
-/// “新版本不再提供某虚拟包”的反向依赖预检(对应 gdebi `compareProvides`)。
+/// 一条反向依赖告警:卸载某包会破坏 `package` 的依赖组 `requires`
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReverseDepend {
+    pub package: String,
+    /// 依赖组原文(备选以 " | " 分隔)
+    pub requires: String,
+}
+
+/// 反向依赖预检(对应 deepin `packageReverseDependsList`,但只做只读告警)。
+///
+/// 仅检查 Depends/Pre-Depends(忽略 Recommends/Suggests,与 dpkg 阻止卸载的
+/// 关系一致)。只有"移除前由待卸载包满足、移除后其余已装包都无法满足"的
+/// 依赖组才算本次卸载引入的破坏;系统本来就未满足的依赖不报告。
+pub fn reverse_dependents(sys: &SysState, removed: &[String]) -> Vec<ReverseDepend> {
+    let removed_pkgs: Vec<&Pkg> = sys
+        .installed
+        .iter()
+        .filter(|p| {
+            removed
+                .iter()
+                .any(|r| r == &p.key || r == &p.name || r == &format!("{}:{}", p.name, p.arch))
+        })
+        .collect();
+    if removed_pkgs.is_empty() {
+        return Vec::new();
+    }
+    let removed_keys: HashSet<&str> = removed_pkgs.iter().map(|p| p.key.as_str()).collect();
+    let remaining: Vec<&Pkg> = sys
+        .installed
+        .iter()
+        .filter(|p| !removed_keys.contains(p.key.as_str()))
+        .collect();
+    let native = sys.native_arch.as_str();
+    let satisfied = |group: &[Dep], pool: &[&Pkg]| {
+        group
+            .iter()
+            .any(|d| pool.iter().any(|p| pkg_satisfies(p, d, &p.arch, native)))
+    };
+    let mut out: Vec<ReverseDepend> = Vec::new();
+    for pkg in &remaining {
+        for group in pkg.depends.iter().chain(pkg.pre_depends.iter()) {
+            if satisfied(group, &remaining) {
+                continue;
+            }
+            // 移除前该组只由待卸载包满足 → 本次卸载会把它变成未满足
+            let was_satisfied = group.iter().any(|d| {
+                removed_pkgs
+                    .iter()
+                    .any(|p| pkg_satisfies(p, d, &pkg.arch, native))
+            });
+            if was_satisfied {
+                out.push(ReverseDepend {
+                    package: pkg.name.clone(),
+                    requires: group
+                        .iter()
+                        .map(|d| d.name.clone())
+                        .collect::<Vec<_>>()
+                        .join(" | "),
+                });
+            }
+        }
+    }
+    out.sort_by(|a, b| {
+        a.package
+            .cmp(&b.package)
+            .then_with(|| a.requires.cmp(&b.requires))
+    });
+    out.dedup();
+    out
+}
+
 ///
 /// 只在求解结果确实要卸载某个真实已装包时触发:若该包的某个依赖组在
 /// 安装前只由旧版本的 Provides 满足,而新本地 deb 不再提供、其余保留的
@@ -1073,7 +1187,26 @@ fn encode_and_solve_with_extra(
             &sys.all_candidates[idx - enc.n_installed]
         };
         if install_keys.insert(cand_ref.pkg.key.clone()) {
+            let old_version = enc
+                .installed
+                .iter()
+                .find(|p| p.key == cand_ref.pkg.key)
+                .map(|p| p.version.clone());
+            let kind = match &old_version {
+                None => ChangeKind::New,
+                Some(old) => match cmp_version(&cand_ref.pkg.version, old) {
+                    std::cmp::Ordering::Greater => ChangeKind::Upgrade,
+                    std::cmp::Ordering::Less => ChangeKind::Downgrade,
+                    std::cmp::Ordering::Equal => ChangeKind::Reinstall,
+                },
+            };
             changes.install.push(cand_ref.pkg.key.clone());
+            changes.install_details.push(InstallChange {
+                name: cand_ref.pkg.key.clone(),
+                kind,
+                old_version: old_version.unwrap_or_default(),
+                new_version: cand_ref.pkg.version.clone(),
+            });
         }
         if let Some(repo) = &cand_ref.repo {
             let url = format!(
@@ -1809,5 +1942,84 @@ mod tests {
             &[extra],
         ));
         assert!(r.changes.remove.contains(&"oldtool".to_string()));
+    }
+
+    /// 安装项分类:新装 / 升级 / 重装(降级由前置检查拦截,不在此触发)
+    #[test]
+    fn install_change_kind_classification() {
+        let r = verdict_ok(encode_and_solve(&sys_with(vec![]), &local("app", "1.0")));
+        assert_eq!(r.changes.install_details[0].kind, ChangeKind::New);
+        assert!(r.changes.install_details[0].old_version.is_empty());
+        assert_eq!(r.changes.install_details[0].new_version, "1.0");
+
+        let r = verdict_ok(encode_and_solve(
+            &sys_with(vec![pkg("app", "1.0")]),
+            &local("app", "2.0"),
+        ));
+        let c = &r.changes.install_details[0];
+        assert_eq!(c.kind, ChangeKind::Upgrade);
+        assert_eq!(
+            (c.old_version.as_str(), c.new_version.as_str()),
+            ("1.0", "2.0")
+        );
+
+        let r = verdict_ok(encode_and_solve(
+            &sys_with(vec![pkg("app", "1.0")]),
+            &local("app", "1.0"),
+        ));
+        assert_eq!(r.changes.install_details[0].kind, ChangeKind::Reinstall);
+    }
+
+    /// 反向依赖预检:真实依赖被卸载才报告;备选仍满足时不误报
+    #[test]
+    fn reverse_dependents_reports_only_genuine_breakage() {
+        let mut app = pkg("app", "1.0");
+        app.depends = dep("libfoo", "", "");
+        let mut client = pkg("client", "1.0");
+        client.depends = vec![vec![
+            Dep {
+                name: "libfoo".into(),
+                ver: String::new(),
+                oper: String::new(),
+            },
+            Dep {
+                name: "libbar".into(),
+                ver: String::new(),
+                oper: String::new(),
+            },
+        ]];
+        let st = sys_with(vec![
+            app,
+            client,
+            pkg("libfoo", "1.0"),
+            pkg("libbar", "1.0"),
+        ]);
+        let rd = reverse_dependents(&st, &["libfoo".to_string()]);
+        assert_eq!(rd.len(), 1);
+        assert_eq!(rd[0].package, "app");
+        assert_eq!(rd[0].requires, "libfoo");
+    }
+
+    /// 系统本来就未满足的依赖不算本次卸载引入的破坏
+    #[test]
+    fn reverse_dependents_ignores_preexisting_breakage() {
+        let mut app = pkg("app", "1.0");
+        app.depends = dep("missing", "", "");
+        let st = sys_with(vec![app, pkg("libfoo", "1.0")]);
+        assert!(reverse_dependents(&st, &["libfoo".to_string()]).is_empty());
+    }
+
+    /// 虚拟提供同样计入反向依赖:卸载唯一提供者才报告
+    #[test]
+    fn reverse_dependents_uses_provides() {
+        let mut app = pkg("app", "1.0");
+        app.depends = dep("www-browser", "", "");
+        let mut browser = pkg("w3m", "1.0");
+        browser.provides = vec![("www-browser".to_string(), None)];
+        let st = sys_with(vec![app, browser, pkg("libfoo", "1.0")]);
+        let rd = reverse_dependents(&st, &["w3m".to_string()]);
+        assert_eq!(rd.len(), 1);
+        assert_eq!(rd[0].package, "app");
+        assert!(reverse_dependents(&st, &["libfoo".to_string()]).is_empty());
     }
 }

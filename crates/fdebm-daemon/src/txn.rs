@@ -312,6 +312,7 @@ fn result_from_verdict(
     deb: &DebFile,
     verdict: Verdict,
     broken: &[String],
+    apt_stale: bool,
 ) -> fdebm_core::AnalyzeResult {
     let installed_version = installed_version_of(sys, deb);
     let repo_version = repo_version_of(sys, deb);
@@ -321,13 +322,25 @@ fn result_from_verdict(
         Verdict::Installable(res) => (
             true,
             String::new(),
-            res.changes.install,
+            res.changes
+                .install_details
+                .into_iter()
+                .map(|c| {
+                    (
+                        c.name,
+                        c.kind.as_str().to_string(),
+                        c.old_version,
+                        c.new_version,
+                    )
+                })
+                .collect(),
             res.changes.remove,
             res.changes.unauthenticated,
             installed_version,
             repo_version,
             broken,
             conffile_conflicts,
+            apt_stale,
         ),
         Verdict::Uninstallable(failure) => (
             false,
@@ -339,6 +352,7 @@ fn result_from_verdict(
             repo_version,
             broken,
             conffile_conflicts,
+            apt_stale,
         ),
     }
 }
@@ -349,9 +363,19 @@ fn broken_snapshot() -> Vec<String> {
 }
 
 /// 单文件分析的结论组装
-fn analyze_deb(sys: &SysState, deb: &DebFile) -> Result<fdebm_core::AnalyzeResult, FdebmError> {
+fn analyze_deb(
+    sys: &SysState,
+    deb: &DebFile,
+    apt_stale: bool,
+) -> Result<fdebm_core::AnalyzeResult, FdebmError> {
     let verdict = solver::resolve(sys, deb)?;
-    Ok(result_from_verdict(sys, deb, verdict, &broken_snapshot()))
+    Ok(result_from_verdict(
+        sys,
+        deb,
+        verdict,
+        &broken_snapshot(),
+        apt_stale,
+    ))
 }
 
 /// 只读分析(D-Bus 方法内同步执行,重活放独立线程避免阻塞总线任务)
@@ -363,7 +387,17 @@ pub fn analyze(
     // 只读免授权:先校验并打开文件,再加载系统状态
     let deb = open_item(path)?;
     let sys = manager.sys_state(apt_opts).map_err(|e| e.to_string())?;
-    analyze_deb(&sys, &deb).map_err(|e| e.to_string())
+    let apt_stale = fdebm_core::sysstate::lists_stale(apt_opts);
+    analyze_deb(&sys, &deb, apt_stale).map_err(|e| e.to_string())
+}
+
+/// 卸载前反向依赖预检:返回 [(受影响包, 依赖组)];只读,无需授权
+pub fn check_removal(manager: &Arc<Manager>, name: &str) -> Result<Vec<(String, String)>, String> {
+    let sys = manager.sys_state(&[]).map_err(|e| e.to_string())?;
+    Ok(solver::reverse_dependents(&sys, &[name.to_string()])
+        .into_iter()
+        .map(|r| (r.package, r.requires))
+        .collect())
 }
 
 /// 批量只读分析:一次加载系统状态,按批内依赖顺序求解,并把前面已判定
@@ -377,6 +411,7 @@ pub fn analyze_batch(
 ) -> Result<Vec<fdebm_core::AnalyzeItem>, String> {
     let sys = manager.sys_state(apt_opts).map_err(|e| e.to_string())?;
     let broken = broken_snapshot();
+    let apt_stale = fdebm_core::sysstate::lists_stale(apt_opts);
 
     // 先打开全部文件:打开失败逐项报告,不阻塞其余包的批内求解
     let opened: Vec<Result<DebFile, String>> = paths.iter().map(|p| open_item(p)).collect();
@@ -397,6 +432,7 @@ pub fn analyze_batch(
                 String::new(),
                 broken.clone(),
                 Vec::new(),
+                apt_stale,
             ),
             Ok(deb) => {
                 // 打开成功的项与 resolve_batch 输入顺序一致
@@ -410,8 +446,9 @@ pub fn analyze_batch(
                     repo_version,
                     item_broken,
                     conflicts,
+                    item_apt_stale,
                 ) = match verdicts.next() {
-                    Some(Ok(v)) => result_from_verdict(&sys, deb, v, &broken),
+                    Some(Ok(v)) => result_from_verdict(&sys, deb, v, &broken, apt_stale),
                     Some(Err(e)) => (
                         false,
                         e.to_string(),
@@ -422,6 +459,7 @@ pub fn analyze_batch(
                         repo_version_of(&sys, deb),
                         broken.clone(),
                         conffile_conflicts_of(&sys, deb),
+                        apt_stale,
                     ),
                     None => (
                         false,
@@ -433,6 +471,7 @@ pub fn analyze_batch(
                         repo_version_of(&sys, deb),
                         broken.clone(),
                         conffile_conflicts_of(&sys, deb),
+                        apt_stale,
                     ),
                 };
                 (
@@ -446,6 +485,7 @@ pub fn analyze_batch(
                     repo_version,
                     item_broken,
                     conflicts,
+                    item_apt_stale,
                 )
             }
         };

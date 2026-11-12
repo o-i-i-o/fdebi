@@ -46,33 +46,40 @@ pub use error::FdebmError;
 
 /// D-Bus `AnalyzeLocalFile` 返回契约(daemon/gtk 共用,类型别名仅消解
 /// clippy::type_complexity,线型不变):
-/// (可安装, 错误信息, install[], remove[], unauthenticated[], 已安装版本,
-///  软件源候选版本, 异常状态包[], conffile 冲突 [(包名, 路径)])
+/// (可安装, 错误信息, install[(包名, 变更类型, 旧版本, 新版本)], remove[],
+///  unauthenticated[], 已安装版本, 软件源候选版本, 异常状态包[],
+///  conffile 冲突 [(包名, 路径)], apt 索引过期)
+///
+/// 变更类型:`new` / `upgrade` / `downgrade` / `reinstall`(见
+/// [`solver::ChangeKind`];未知标签按 new 处理)。
 pub type AnalyzeResult = (
     bool,
     String,
-    Vec<String>,
+    Vec<(String, String, String, String)>,
     Vec<String>,
     Vec<String>,
     String,
     String,
     Vec<String>,
     Vec<(String, String)>,
+    bool,
 );
 
 /// D-Bus `AnalyzeLocalFiles` 的单文件结果(按输入顺序返回):
-/// (路径, 可安装, 错误信息, install[], remove[], unauthenticated[],
-///  已安装版本, 软件源候选版本, 异常状态包[], conffile 冲突 [(包名, 路径)])
+/// (路径, 可安装, 错误信息, install[(包名, 变更类型, 旧版本, 新版本)],
+///  remove[], unauthenticated[], 已安装版本, 软件源候选版本,
+///  异常状态包[], conffile 冲突 [(包名, 路径)], apt 索引过期)
 pub type AnalyzeItem = (
     String,
     bool,
     String,
-    Vec<String>,
+    Vec<(String, String, String, String)>,
     Vec<String>,
     Vec<String>,
     String,
     String,
     Vec<String>,
     Vec<(String, String)>,
+    bool,
 );
 pub use version::cmp_version;

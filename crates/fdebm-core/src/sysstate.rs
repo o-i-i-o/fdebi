@@ -231,6 +231,66 @@ impl SysState {
     }
 }
 
+/// apt 索引是否可能落后于软件源配置(对应 deepin `shouldUpdateCache`,
+/// 但 fdebm 直接读 lists,只做提示不阻塞):
+/// - lists 目录没有 Packages 索引 → 需要 `apt update`;
+/// - sources.list / sources.list.d 的 mtime 晚于最新索引 → 配置改过但未更新。
+///
+/// 两侧都取不到时返回 false(容器/自定义布局下不误报)。
+pub fn lists_stale(apt_opts: &[String]) -> bool {
+    let lists_dir = apt_opts
+        .iter()
+        .find_map(|o| o.strip_prefix("Dir::State::lists="))
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from(LISTS_DIR));
+    let lists = newest_mtime(&lists_dir, |name| {
+        name.contains("Packages") && !name.contains("Translation")
+    });
+
+    let sources_list = apt_opts
+        .iter()
+        .find_map(|o| o.strip_prefix("Dir::Etc::sourcelist="))
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("/etc/apt/sources.list"));
+    let sources_parts = apt_opts
+        .iter()
+        .find_map(|o| o.strip_prefix("Dir::Etc::sourceparts="))
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("/etc/apt/sources.list.d"));
+    let sources = std::fs::metadata(&sources_list)
+        .and_then(|m| m.modified())
+        .ok()
+        .into_iter()
+        .chain(newest_mtime(&sources_parts, |name| {
+            name.ends_with(".list") || name.ends_with(".sources")
+        }))
+        .max();
+
+    stale_from(sources, lists)
+}
+
+/// 纯判定:无索引 → 过期;有配置且比索引新 → 过期;其余不算
+fn stale_from(
+    sources: Option<std::time::SystemTime>,
+    lists: Option<std::time::SystemTime>,
+) -> bool {
+    match (sources, lists) {
+        (_, None) => true,
+        (Some(s), Some(l)) => s > l,
+        (None, Some(_)) => false,
+    }
+}
+
+/// 目录下满足条件的最新 mtime(目录不存在/读取失败返回 None)
+fn newest_mtime(dir: &Path, accept: impl Fn(&str) -> bool) -> Option<std::time::SystemTime> {
+    let entries = std::fs::read_dir(dir).ok()?;
+    entries
+        .filter_map(Result::ok)
+        .filter(|e| e.file_name().to_str().is_some_and(&accept))
+        .filter_map(|e| e.metadata().and_then(|m| m.modified()).ok())
+        .max()
+}
+
 /// 从 control 段落字段构建 Pkg(键派生需 native_arch)
 pub fn pkg_from_fields<'a>(
     get: impl Fn(&str) -> Option<&'a str>,
@@ -611,6 +671,19 @@ mod tests {
         };
         assert_eq!(st.installed_version("foo:i386"), Some("1.0"));
         assert_eq!(st.installed_version("foo"), None);
+    }
+
+    /// apt 索引新鲜度:无索引算过期;配置比索引新算过期;配置缺失不误报
+    #[test]
+    fn apt_lists_staleness_classification() {
+        use std::time::{Duration, UNIX_EPOCH};
+        let t = |s| UNIX_EPOCH + Duration::from_secs(s);
+        assert!(stale_from(None, None));
+        assert!(stale_from(Some(t(10)), None));
+        assert!(stale_from(Some(t(20)), Some(t(10))));
+        assert!(!stale_from(Some(t(10)), Some(t(20))));
+        assert!(!stale_from(Some(t(10)), Some(t(10))));
+        assert!(!stale_from(None, Some(t(10))));
     }
 
     #[test]

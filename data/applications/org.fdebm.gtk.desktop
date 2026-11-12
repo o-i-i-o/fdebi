@@ -11,6 +11,6 @@ Icon=org.fdebm.gtk
 Terminal=false
 Categories=System;PackageManager;
 Keywords=deb;package;install;dpkg;apt;软件包;安装;
-MimeType=application/vnd.debian.binary-package;
+MimeType=application/vnd.debian.binary-package;application/x-deb;
 StartupNotify=true
 StartupWMClass=fdebm-gtk

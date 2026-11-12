@@ -12,7 +12,7 @@ path = "src/main.rs"
 [dependencies]
 fdebm-core.workspace = true
 clap.workspace = true
-gtk4 = "0.9"
+gtk4 = { version = "0.9", features = ["v4_6"] }
 
 # lintian 后台线程 → 主线程事件流(glib 0.20 无内置 channel)
 async-channel = "2"

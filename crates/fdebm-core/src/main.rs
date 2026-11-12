@@ -127,6 +127,14 @@ fn run(args: &Args, conf_policy: ConfPolicy, cancel: &CancelHandle) -> i32 {
             gettext("Run 'sudo apt-get install -f' to repair.")
         );
     }
+    if fdebm_core::sysstate::lists_stale(&args.apt_opt) {
+        eprintln!(
+            "{}",
+            gettext(
+                "Warning: the package index may be out of date; run 'sudo apt update' to refresh it."
+            )
+        );
+    }
     for item in &items {
         match analyze_item(&sys, item) {
             Ok(res) => unauthenticated.extend(res.changes.unauthenticated.iter().cloned()),
@@ -223,11 +231,31 @@ fn analyze_item(sys: &SysState, item: &Item) -> Result<Resolution, String> {
     let conflicts = conffile::conflicts(deb, sys);
     match solver::resolve(sys, deb) {
         Ok(Verdict::Installable(res)) => {
-            println!(
-                "    {}: {}",
-                gettext("Install"),
-                res.changes.install.join(", ")
-            );
+            let install = res
+                .changes
+                .install_details
+                .iter()
+                .map(|c| match c.kind {
+                    solver::ChangeKind::New => c.name.clone(),
+                    solver::ChangeKind::Upgrade => {
+                        format!("{} ({} → {})", c.name, c.old_version, c.new_version)
+                    }
+                    solver::ChangeKind::Downgrade => {
+                        format!(
+                            "{} ({} → {}, {})",
+                            c.name,
+                            c.old_version,
+                            c.new_version,
+                            gettext("downgrade")
+                        )
+                    }
+                    solver::ChangeKind::Reinstall => {
+                        format!("{} ({})", c.name, gettext("reinstall"))
+                    }
+                })
+                .collect::<Vec<_>>()
+                .join(", ");
+            println!("    {}: {install}", gettext("Install"));
             if !res.changes.remove.is_empty() {
                 println!(
                     "    {}: {}",

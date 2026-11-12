@@ -79,6 +79,7 @@ fn changes_lines_consistent() {
     }
     let c = Changes {
         install: vec!["a".into(), "b".into()],
+        install_details: vec![],
         remove: vec!["x".into()],
         unauthenticated: vec![],
     };
