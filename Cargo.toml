@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/fdebm-core", "crates/fdebm-gtk", "crates/fdebm-daemon"]
+members = ["crates/fdebi-core", "crates/fdebi-gtk", "crates/fdebi-daemon"]
 
 [workspace.package]
 version = "0.1.5"
@@ -8,7 +8,7 @@ edition = "2024"
 license = "GPL-3.0-or-later"
 
 [workspace.dependencies]
-fdebm-core = { path = "crates/fdebm-core" }
+fdebi-core = { path = "crates/fdebi-core" }
 # gettext-system:链接系统 libintl(glibc),走标准 bindtextdomain 流程
 gettext-rs = { version = "0.7", features = ["gettext-system"] }
 ar = "0.9"

@@ -518,7 +518,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "da7c62ceae207dd37ea5b845da6a0696c799f85e97da1ab5b7910be3c1c80223"
 
 [[package]]
-name = "fdebm-core"
+name = "fdebi-core"
 version = "0.1.5"
 dependencies = [
  "ar",
@@ -537,23 +537,23 @@ dependencies = [
 ]
 
 [[package]]
-name = "fdebm-daemon"
+name = "fdebi-daemon"
 version = "0.1.5"
 dependencies = [
  "async-channel",
  "async-io",
- "fdebm-core",
+ "fdebi-core",
  "serde",
  "zbus",
 ]
 
 [[package]]
-name = "fdebm-gtk"
+name = "fdebi-gtk"
 version = "0.1.5"
 dependencies = [
  "async-channel",
  "clap",
- "fdebm-core",
+ "fdebi-core",
  "futures-lite",
  "gtk4",
  "zbus",

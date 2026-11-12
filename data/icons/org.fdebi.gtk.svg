@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- fdebi 应用图标:红底圆角方块 + 包装箱 + 绿色安装箭头徽章 -->
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f4586c"/>
+      <stop offset="1" stop-color="#b90f42"/>
+    </linearGradient>
+    <linearGradient id="top" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd9a0"/>
+      <stop offset="1" stop-color="#f0b569"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 背景圆角方块 -->
+  <rect x="6" y="6" width="116" height="116" rx="26" fill="url(#bg)"/>
+
+  <!-- 包装箱:顶/左/右三面 -->
+  <polygon points="64,26 94,41 64,56 34,41" fill="url(#top)"/>
+  <polygon points="34,41 64,56 64,94 34,79" fill="#d99a4e"/>
+  <polygon points="94,41 64,56 64,94 94,79" fill="#b97f3c"/>
+
+  <!-- 顶部封箱带 -->
+  <polygon points="34,41 40,38 88,38 94,41 88,44 40,44" fill="#fbf3e4"/>
+
+  <!-- 箱面标签 -->
+  <polygon points="42,52 56,59 56,80 42,73" fill="#ffffff"/>
+  <path d="M45 58 L53 62 M45 64 L53 68" stroke="#c9c2b6" stroke-width="2" stroke-linecap="round" fill="none"/>
+
+  <!-- 安装箭头徽章 -->
+  <circle cx="90" cy="88" r="18" fill="#2fb46b"/>
+  <polygon points="90,78 99,87 93.5,87 93.5,96 86.5,96 86.5,87 81,87" fill="#ffffff"/>
+</svg>

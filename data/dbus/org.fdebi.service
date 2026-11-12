@@ -1,0 +1,9 @@
+[D-BUS Service]
+# D-Bus 系统总线激活文件(org.fdebi)
+# 部署: cp 到 /usr/share/dbus-1/system-services/org.fdebi.service
+#
+# GUI 瘦客户端首次调用 org.fdebi 方法时,dbus-daemon 以 root 拉起
+# fdebi-daemon;安装路径按部署方式调整(源码构建后 install 到 /usr/local/bin)。
+Name=org.fdebi
+Exec=/usr/local/bin/fdebi-daemon
+User=root

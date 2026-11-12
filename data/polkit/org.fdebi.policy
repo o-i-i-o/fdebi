@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Polkit 策略(org.fdebi)
+  部署: cp 到 /usr/share/polkit-1/actions/org.fdebi.policy
+
+  分析(AnalyzeLocalFile)免授权(只读);安装(InstallLocalFiles)/卸载各需
+  一次管理员认证,auth_admin_keep 在短时间内免重复认证,批量安装多个包
+  只需在事务开始时认证一次。
+-->
+<!DOCTYPE policyconfig PUBLIC
+ "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<policyconfig>
+
+  <action id="org.fdebi.install-local-package">
+    <description gettext-domain="fdebi">Install local package file</description>
+    <message gettext-domain="fdebi">Authentication is required to install a local package file</message>
+    <defaults>
+      <allow_any>auth_admin_keep</allow_any>
+      <allow_inactive>auth_admin_keep</allow_inactive>
+      <allow_active>auth_admin_keep</allow_active>
+    </defaults>
+  </action>
+
+  <action id="org.fdebi.remove-package">
+    <description gettext-domain="fdebi">Remove an installed package</description>
+    <message gettext-domain="fdebi">Authentication is required to remove a package</message>
+    <defaults>
+      <allow_any>auth_admin_keep</allow_any>
+      <allow_inactive>auth_admin_keep</allow_inactive>
+      <allow_active>auth_admin_keep</allow_active>
+    </defaults>
+  </action>
+
+</policyconfig>

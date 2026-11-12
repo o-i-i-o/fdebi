@@ -41,7 +41,7 @@ jobs:
       - name: 下载 CI 打包产物
         uses: actions/download-artifact@v4
         with:
-          name: fdebm-deb
+          name: fdebi-deb
           path: dist
 
       - name: 生成 SHA256SUMS
@@ -57,7 +57,7 @@ jobs:
             gh release upload "$GITHUB_REF_NAME" --clobber dist/*.deb dist/SHA256SUMS
           else
             gh release create "$GITHUB_REF_NAME" \
-              --title "fdebm $GITHUB_REF_NAME" \
+              --title "fdebi $GITHUB_REF_NAME" \
               --generate-notes \
               --verify-tag \
               dist/*.deb dist/SHA256SUMS

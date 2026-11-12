@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""fdebm 的 po 文件校验器。
+"""fdebi 的 po 文件校验器。
 
 用法::
 
@@ -10,11 +10,11 @@
 
 - gettext 自身语法:调用 ``msgfmt --check``(若系统存在 msgfmt)
 - 头部字段:Language 与文件名一致、Plural-Forms 与语言复数规则一致、
-  charset 为 UTF-8、Project-Id-Version 指向 fdebm、无翻译器占位符、
+  charset 为 UTF-8、Project-Id-Version 指向 fdebi、无翻译器占位符、
   无 Launchpad 遗留字段
 - 条目状态:不得残留 fuzzy 条目(运行期不生效)、不得残留 ``#~`` 废弃条目
 - 占位符:``{0}``/``{1}`` 编号集合必须与 msgid 完全一致(复数条目逐条比对);
-  译文不得出现 printf 风格 ``%s``/``%d``(fdebm 统一使用 Rust 风格占位符)
+  译文不得出现 printf 风格 ``%s``/``%d``(fdebi 统一使用 Rust 风格占位符)
 - 标记:HTML 标签集合必须与 msgid 一致(如 ``<b>``/``</b>``、``<span …>``)
 - 空白:译文与 msgid 的首尾空白、结尾换行符必须一致
 
@@ -352,8 +352,8 @@ def check_file(path: Path) -> tuple[list[str], list[str], dict[str, int]]:
         if header.get("Language", "") != lang:
             errors.append(f"头部 Language 应为 {lang!r}, 实际 {header.get('Language', '')!r}")
 
-    if not header.get("Project-Id-Version", "").startswith("fdebm"):
-        errors.append(f"Project-Id-Version 未指向 fdebm: {header.get('Project-Id-Version')!r}")
+    if not header.get("Project-Id-Version", "").startswith("fdebi"):
+        errors.append(f"Project-Id-Version 未指向 fdebi: {header.get('Project-Id-Version')!r}")
     if "UTF-8" not in header.get("Content-Type", ""):
         errors.append("Content-Type 必须声明 charset=UTF-8")
     if header.get("MIME-Version") != "1.0":

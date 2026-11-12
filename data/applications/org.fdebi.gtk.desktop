@@ -1,0 +1,16 @@
+[Desktop Entry]
+Type=Application
+Name=Fdebi
+Name[zh_CN]=Fdebi
+GenericName=Package Installer
+GenericName[zh_CN]=软件包安装器
+Comment=Install local .deb packages and resolve dependencies
+Comment[zh_CN]=安装本地 .deb 软件包并解析依赖
+Exec=fdebi-gtk %f
+Icon=org.fdebi.gtk
+Terminal=false
+Categories=System;PackageManager;
+Keywords=deb;package;install;dpkg;apt;软件包;安装;
+MimeType=application/vnd.debian.binary-package;application/x-deb;
+StartupNotify=true
+StartupWMClass=fdebi-gtk

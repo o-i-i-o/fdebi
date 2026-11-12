@@ -1,9 +1,9 @@
 [encoding: UTF-8]
-crates/fdebm-core/src/error.rs
-crates/fdebm-core/src/flow.rs
-crates/fdebm-core/src/install.rs
-crates/fdebm-core/src/lock.rs
-crates/fdebm-core/src/main.rs
-crates/fdebm-core/src/solver.rs
-crates/fdebm-daemon/src/txn.rs
-crates/fdebm-gtk/src/gtk_app.rs
+crates/fdebi-core/src/error.rs
+crates/fdebi-core/src/flow.rs
+crates/fdebi-core/src/install.rs
+crates/fdebi-core/src/lock.rs
+crates/fdebi-core/src/main.rs
+crates/fdebi-core/src/solver.rs
+crates/fdebi-daemon/src/txn.rs
+crates/fdebi-gtk/src/gtk_app.rs
