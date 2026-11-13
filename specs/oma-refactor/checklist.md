@@ -46,11 +46,12 @@
 
 - [x] `cargo check/test/build --release --workspace` 通过
 - [x] `scripts/build-deb.sh` 产物包含 `fdebi-apt-worker`
-- [x] 包 `Depends` 含 `libapt-pkg6.0 | libapt-pkg6.0t64`
+- [x] 包 `Depends` 按实际链接的 libapt-pkg SONAME 动态解析（`ldd` + `dpkg-query -S`；本机为 `libapt-pkg7.0`），`apt-get install --simulate` 无未满足依赖
 - [ ] 干净容器安装产物并验证 D-Bus/systemd 激活（本机未执行）
 
 ## 范围控制
 
-- [x] 旧 solver/CLI 模块保留未删除
+- [x] 旧管线已删除：`aptmark`/`batch`/`download`/`pty`/旧 `solver`/`install` 编排/开发 CLI；`reverse`、`types`、`ConfPolicy`+`CancelHandle` 保留
+- [x] GTK 展示类型（`Changes`/`ChangeKind`/`InstallChange`）已迁至 `fdebi_core::types`，不再依赖 `solver`
 - [x] 未提交 `main`，改动仅在 `oma` 分支
 - [ ] 与 `main` 旧求解器的分析结果对照及差异记录（本机未执行，差异见 spec §6.1）

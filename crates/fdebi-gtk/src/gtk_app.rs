@@ -32,7 +32,7 @@ use gtk4::{
 use fdebi_core::flow::{self, PackageInfo};
 use fdebi_core::i18n;
 use fdebi_core::i18n::{gettext, ngettext, tf};
-use fdebi_core::solver::{ChangeKind, Changes, InstallChange};
+use fdebi_core::types::{ChangeKind, Changes, InstallChange};
 use fdebi_core::ui::{AlertKind, Ui};
 use fdebi_core::{DebFile, FdebiError};
 use zbus::{MatchRule, MessageStream};

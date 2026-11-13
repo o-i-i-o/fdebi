@@ -30,7 +30,7 @@ pub fn apply(req: &Request, out: &Emitter) {
     // 前端是逐行文本视图,不需要 apt 的 fancy 进度条与颜色
     cfg.set("Dpkg::Progress-Fancy", "false");
     cfg.set("APT::Color", "false");
-    // 与旧 SAT 求解器保持一致:不装 Recommends/Suggests
+    // 与 fdebi 的既有约定一致:不装 Recommends/Suggests
     cfg.set("APT::Install-Recommends", "false");
     cfg.set("APT::Install-Suggests", "false");
     // do_install 阶段由 fdebi 自己决定交互,不让 apt 等待确认

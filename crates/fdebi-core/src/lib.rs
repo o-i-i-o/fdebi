@@ -1,43 +1,36 @@
-//! fdebi-core:本地 .deb 解析、纯 Rust 依赖求解与安装编排核心(独立项目 fdebi 的核心库)。
+//! fdebi-core:本地 .deb 解析与系统状态的共享库(fdebi 的公共底座)。
 //!
 //! 定位:轻量的可视化 .deb 安装器(双击 deb 文件或 GUI 内选择文件安装)。
-//! 分层:GUI 瘦客户端 → D-Bus 守护进程([`fdebi-daemon`]) → [`flow`] 摘要 →
-//! [`ui`] trait 回调 → 解析/求解等纯逻辑。
+//! 分层:GUI 瘦客户端 → D-Bus 守护进程(`fdebi-daemon`)→ `fdebi-apt-worker`
+//! (libapt-pkg);本库提供两侧共用的纯 Rust 逻辑,不做依赖求解与安装编排。
 //!
-//! 纯 Rust 管道(无 libapt-pkg FFI;系统能力仅经 dpkg/dpkg-deb/indextargets
-//! 子进程,索引解析与 HTTP 下载全 Rust 后端,见 crates/readme.md 路线二):
+//! 模块:
 //! - [`debfile`]:.deb 打开与 control 提取(原始字节保留,lossy 字段访问)
 //! - [`version`]:dpkg 版本号比较
 //! - [`sysstate`]:dpkg 状态 + apt 仓库索引的纯 Rust 读取
-//! - [`solver`]:varisat CDCL 编码的依赖求解
-//! - [`batch`]:批量本地 deb 的安装顺序(批内依赖拓扑排序)
+//! - [`reverse`]:卸载前的只读反向依赖检查
 //! - [`conffile`]:安装前 conffile 冲突预检
 //! - [`health`]:系统包管理健康检查(dpkg-query 异常状态,装前提示/装后复查)
-//! - [`download`]:ureq(rustls)下载 + sha256 校验
 //! - [`lock`]:包管理前端占锁探测与等待(ps comm 列,含 apt 系交互前端)
-//! - [`aptmark`]:安装后 apt 标记补齐(依赖 auto / 本地包 manual)
-//! - [`pty`]:debconf 交互式安装的伪终端执行(行式问答 + 应答注入)
-//! - [`install`]:dpkg 执行层(批量 -i + 取消句柄),进度经 [`ui::InstallProgress`]
-//!   转发
-//!
-//! [`fdebi-daemon`]: https://github.com/ 载荷分离说明见 crates/fdebi-daemon
+//! - [`install`]:事务共用原语(conffile 策略、取消句柄)
+//! - [`types`]:分析结果的展示模型(变更类型/变更集)
+//! - [`ui`]:前端回调 trait(`Ui`/`InstallProgress`)与告警类型
+//! - [`flow`]:deb 内容的摘要与预览(供 GUI 展示)
+//! - [`i18n`]:gettext 绑定
 
 mod control;
 
-pub mod aptmark;
-pub mod batch;
 pub mod conffile;
 pub mod debfile;
-pub mod download;
 pub mod error;
 pub mod flow;
 pub mod health;
 pub mod i18n;
 pub mod install;
 pub mod lock;
-pub mod pty;
-pub mod solver;
+pub mod reverse;
 pub mod sysstate;
+pub mod types;
 pub mod ui;
 pub mod version;
 
@@ -51,7 +44,7 @@ pub use error::FdebiError;
 ///  conffile 冲突 [(包名, 路径)], apt 索引过期)
 ///
 /// 变更类型:`new` / `upgrade` / `downgrade` / `reinstall`(见
-/// [`solver::ChangeKind`];未知标签按 new 处理)。
+/// [`types::ChangeKind`];未知标签按 new 处理)。
 pub type AnalyzeResult = (
     bool,
     String,

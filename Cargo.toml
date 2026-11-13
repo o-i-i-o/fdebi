@@ -31,16 +31,7 @@ flate2 = "1"
 clap = { version = "4", features = ["derive"] }
 libc = "0.2"
 
-# --- 纯 Rust 管道(无 libapt-pkg FFI,无 OpenSSL) ---
-# SAT 依赖求解器(CDCL,纯 Rust)
-varisat = "0.2"
-
-# HTTP 下载(默认 TLS 为 rustls,不引入系统 OpenSSL)
-ureq = { version = "2", default-features = true }
-
-# 下载完整性校验
-sha2 = "0.10"
-
+# --- 纯 Rust 支持库(无 libapt-pkg FFI,无 OpenSSL) ---
 # conffile 预检(dpkg status 记录的装包时 md5 比对)
 md-5 = "0.10"
 

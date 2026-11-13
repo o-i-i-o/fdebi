@@ -13,9 +13,6 @@
 #   usr/share/icons/hicolor/scalable/apps/ org.fdebi.gtk.svg(应用图标)
 #   usr/share/doc/fdebi/copyright        LICENSE
 #
-# 注:crates/fdebi-core 另产出同名测试 CLI(target/release/fdebi-core,
-#     命令行直跑 deb 安装管线,验证安装流程用),仅供开发,不装进包。
-#
 # 不引入 cargo-deb;依赖:cargo、dpkg-deb、msgfmt(gettext)、strip(binutils)。
 # 产物:dist/fdebi_<版本>_<架构>.deb
 set -euo pipefail
@@ -68,6 +65,16 @@ if command -v strip >/dev/null; then
 fi
 
 INSTALLED_SIZE=$(du -sk "$STAGE" | cut -f1)
+
+# worker 动态链接 libapt-pkg,其运行时包名随发行版变化(Debian/Ubuntu 24.04
+# 为 libapt-pkg6.0t64,22.04 为 libapt-pkg6.0,26.10 起为 libapt-pkg7.0)。
+# 写死任一名字都会在其它发行版上导致依赖不满足,因此按实际链接的 SONAME
+# 反查提供该文件的包。
+APT_PKG_LIB=$(ldd target/release/fdebi-apt-worker | awk '/libapt-pkg\.so/{print $3; exit}')
+APT_PKG_PKG=$(dpkg-query -S "$APT_PKG_LIB" 2>/dev/null | head -1 | cut -d: -f1 || true)
+[[ -n "$APT_PKG_PKG" ]] || { echo "错误:无法确定 $APT_PKG_LIB 所属的软件包" >&2; exit 1; }
+echo "==> libapt-pkg 运行时依赖: $APT_PKG_PKG"
+
 cat > "$STAGE/DEBIAN/control" <<EOF
 Package: $NAME
 Version: $VERSION
@@ -75,7 +82,7 @@ Section: admin
 Priority: optional
 Architecture: $ARCH
 Maintainer: fdebi maintainers <fdebi@localhost>
-Depends: libgtk-4-1, dbus, polkitd | policykit-1, apt, libapt-pkg , file, shared-mime-info
+Depends: libgtk-4-1, dbus, polkitd | policykit-1, apt, $APT_PKG_PKG, file, shared-mime-info
 Installed-Size: $INSTALLED_SIZE
 Description: 本地 .deb 安装器(fdebi)
  特权分离架构:D-Bus 守护进程经 Polkit 授权后启动 apt worker(PTY 交互),

@@ -28,7 +28,7 @@ use fdebi_core::health;
 use fdebi_core::i18n::{gettext, ngettext, tf};
 use fdebi_core::install::{CancelHandle, ConfPolicy};
 use fdebi_core::lock;
-use fdebi_core::solver;
+use fdebi_core::reverse;
 use fdebi_core::sysstate::SysState;
 use fdebi_core::ui::InstallProgress;
 use fdebi_core::{DebFile, FdebiError};
@@ -470,7 +470,7 @@ pub fn analyze(
 /// 卸载前反向依赖预检:返回 [(受影响包, 依赖组)];只读,无需授权
 pub fn check_removal(manager: &Arc<Manager>, name: &str) -> Result<Vec<(String, String)>, String> {
     let sys = manager.sys_state(&[]).map_err(|e| e.to_string())?;
-    Ok(solver::reverse_dependents(&sys, &[name.to_string()])
+    Ok(reverse::reverse_dependents(&sys, &[name.to_string()])
         .into_iter()
         .map(|r| (r.package, r.requires))
         .collect())

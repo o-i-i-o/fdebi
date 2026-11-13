@@ -1,12 +1,12 @@
-//! 系统状态层:dpkg 已安装库与 apt 仓库索引的纯 Rust 读取(纯 Rust 管道的数据面)。
+//! 系统状态层:dpkg 已安装库与 apt 仓库索引的纯 Rust 读取(只读数据面)。
 //!
 //! - 已安装状态:直接解析 `/var/lib/dpkg/status`(deb822,复用 control 解析器)
 //! - 仓库索引:`apt-get indextargets` 仅做元数据枚举(文件路径/来源/信任标记,
 //!   与 dpkg-query 同为"系统能力经子进程"),Packages 索引本体以纯 Rust 解压解析
 //!   (lz4/xz/zstd/gz 四种压缩,全部 Rust 后端,无 C 依赖)
-//! - 求解与安装不再调用 apt-get;下载层见 [`crate::download`]
+//! - 安装计划的求解由 `fdebi-apt-worker`(libapt-pkg)负责,本模块只提供数据。
 //!
-//! 数据结构对求解器([`crate::solver`])完全开放,可由测试直接构造。
+//! 数据结构完全公开,可由测试直接构造。
 
 use std::collections::BTreeMap;
 use std::io::Read;
@@ -118,7 +118,7 @@ pub struct SysState {
 
 impl SysState {
     /// 加载系统状态(dpkg 状态 + indextargets 枚举 + 列表解析)。
-    /// 本地 deb 不入缓存,由求解器作为独立单元注入(见 solver::resolve)。
+    /// 本地 deb 不入缓存;安装计划的求解由 `fdebi-apt-worker` 负责。
     pub fn load(apt_opts: &[String]) -> Result<Self, FdebiError> {
         let native_arch = run_line(Command::new("dpkg").arg("--print-architecture"))?;
         let foreign_arches = run_line(Command::new("dpkg").arg("--print-foreign-architectures"))?
