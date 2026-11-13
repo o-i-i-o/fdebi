@@ -6,7 +6,7 @@
 //!
 //! 本前端永不 root、不做依赖求解、不执行 dpkg —— 三者全部委托特权守护进程 org.fdebi
 //! (zbus 纯 Rust 客户端):
-//! - 分析(AnalyzeLocalFile):本地解析 deb 展示元数据/文件树/lintian,
+//! - 分析(AnalyzeLocalFile):本地解析 deb 展示元数据/文件树,
 //!   依赖结论异步取自守护进程(带代际号丢弃过期结果)
 //! - 安装/移除(InstallLocalFiles/RemovePackage):返回事务 id,界面订阅
 //!   OutputLine/ProgressChanged/PackageStatus/InputState/Finished 信号驱动进度
@@ -17,7 +17,6 @@
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 use std::rc::Rc;
 use std::sync::mpsc as std_mpsc;
 
@@ -367,7 +366,6 @@ struct MainWindow {
     details_changes: gtk::Label,
     tree_files: gtk::TreeView,
     file_content: gtk::TextView,
-    lintian_output: gtk::TextView,
     /// 预览页上的“自动关闭窗口”开关:成功安装后是否自动关闭全部窗口
     autoclose: gtk::CheckButton,
     /// 页脚右侧的单行事务提示(替代占整行高度的 GtkStatusbar)
@@ -631,16 +629,6 @@ fn build_window(window: &gtk::ApplicationWindow, apt_opts: Vec<String>) -> Rc<Ma
     let tab_files = gtk::Label::new(Some(gettext("Included files").as_str()));
     notebook.append_page(&files_paned, Some(&tab_files));
 
-    // Lintian output:等宽文本,后台线程填充
-    let lintian_output = gtk::TextView::builder()
-        .editable(false)
-        .cursor_visible(false)
-        .monospace(true)
-        .wrap_mode(gtk::WrapMode::None)
-        .build();
-    let tab_lintian = gtk::Label::new(Some(gettext("Lintian output").as_str()));
-    notebook.append_page(&scroll(&lintian_output), Some(&tab_lintian));
-
     // 底部:自动关闭开关 + 单行事务提示。开关放在预览页:小包安装可能在
     // 用户来得及操作对话框前就结束,必须在开始安装前就能决定是否保留窗口
     // 查看输出。原先的 GtkStatusbar 在无消息时仍占一整行,且与状态区重复;
@@ -698,7 +686,6 @@ fn build_window(window: &gtk::ApplicationWindow, apt_opts: Vec<String>) -> Rc<Ma
         details_changes,
         tree_files,
         file_content,
-        lintian_output,
         autoclose,
         footer_status,
         apt_opts,
@@ -851,93 +838,6 @@ fn fill_files(gui: &MainWindow, deb: &DebFile) {
     }
     gui.tree_files.set_model(Some(&store));
     gui.tree_files.expand_all();
-}
-
-/// 后台运行 lintian 并流式回填
-fn run_lintian(gui: &MainWindow, file: &Path) {
-    let buf = gui.lintian_output.buffer();
-    if !Path::new("/usr/bin/lintian").exists() {
-        buf.set_text(&gettext(
-            "No lintian available.\nPlease install using sudo apt-get install lintian",
-        ));
-        return;
-    }
-    buf.set_text(&gettext("Running lintian..."));
-
-    enum LintianEvent {
-        Line(String),
-        Finished(i32),
-    }
-    let (tx, rx) = async_channel::unbounded::<LintianEvent>();
-    let path = file.to_path_buf();
-    std::thread::spawn(move || {
-        let child = Command::new("/usr/bin/lintian")
-            .arg(&path)
-            .stdout(std::process::Stdio::piped())
-            .stderr(std::process::Stdio::piped())
-            .spawn();
-        let mut child = match child {
-            Ok(c) => c,
-            Err(e) => {
-                let _ = tx.send_blocking(LintianEvent::Line(tf(
-                    "Failed to run lintian: {0}",
-                    &[&e.to_string()],
-                )));
-                let _ = tx.send_blocking(LintianEvent::Finished(-1));
-                return;
-            }
-        };
-        let out = child.stdout.take().expect("piped stdout");
-        let err = child.stderr.take().expect("piped stderr");
-        let tx2 = tx.clone();
-        let t = std::thread::spawn(move || {
-            use std::io::BufRead;
-            for line in std::io::BufReader::new(out).lines().map_while(Result::ok) {
-                let _ = tx2.send_blocking(LintianEvent::Line(line));
-            }
-        });
-        use std::io::BufRead;
-        for line in std::io::BufReader::new(err).lines().map_while(Result::ok) {
-            let _ = tx.send_blocking(LintianEvent::Line(line));
-        }
-        let _ = t.join();
-        let code = child.wait().ok().and_then(|s| s.code()).unwrap_or(-1);
-        let _ = tx.send_blocking(LintianEvent::Finished(code));
-    });
-
-    // 回填:文件已切换则丢弃过期输出
-    let watch = gui.current_file.clone();
-    let watched = file.to_path_buf();
-    let view = gui.lintian_output.clone();
-    glib::spawn_future_local(async move {
-        while let Ok(ev) = rx.recv().await {
-            if watch.borrow().as_deref() != Some(watched.as_path()) {
-                break;
-            }
-            match ev {
-                LintianEvent::Line(line) => {
-                    let buf = view.buffer();
-                    let mut end = buf.end_iter();
-                    buf.insert(&mut end, &format!("{line}\n"));
-                }
-                LintianEvent::Finished(code) => {
-                    let buf = view.buffer();
-                    let mut end = buf.end_iter();
-                    buf.insert(
-                        &mut end,
-                        &format!(
-                            "\n{}",
-                            tf(
-                                "Lintian finished with exit status {0}",
-                                &[&code.to_string()]
-                            )
-                        ),
-                    );
-                    break;
-                }
-            }
-        }
-    });
 }
 
 fn setup_actions(app: &Application, gui: &Rc<MainWindow>) {
@@ -1103,7 +1003,7 @@ fn load_deb(gui: &Rc<MainWindow>, file: &Path) {
     });
 }
 
-/// 填充单个 deb 的静态信息(元数据/文件树/lintian),不做依赖分析
+/// 填充单个 deb 的静态信息(元数据/文件树),不做依赖分析
 fn preview_deb(gui: &Rc<MainWindow>, file: &Path) -> Option<PackageInfo> {
     *gui.current_file.borrow_mut() = Some(file.to_path_buf());
 
@@ -1136,9 +1036,7 @@ fn preview_deb(gui: &Rc<MainWindow>, file: &Path) -> Option<PackageInfo> {
     let info = flow::describe_deb(&deb);
     fill_static(gui, &info, &deb);
 
-    // 文件树与 lintian(顺序:文件树 → lintian → 依赖检查)
     fill_files(gui, &deb);
-    run_lintian(gui, file);
     Some(info)
 }
 
@@ -1352,7 +1250,6 @@ fn reset_empty_ui(gui: &MainWindow) {
     gui.button_install.set_sensitive(false);
     gui.button_remove.hide();
     gui.textview_description.buffer().set_text("");
-    gui.lintian_output.buffer().set_text("");
     gui.file_content.buffer().set_text("");
     gui.tree_files.set_model(None::<&gtk::TreeModel>);
     gui.details_changes.set_visible(false);
