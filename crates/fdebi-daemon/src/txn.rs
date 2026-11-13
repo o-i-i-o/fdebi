@@ -21,8 +21,8 @@ use std::sync::{Arc, Mutex};
 use std::time::SystemTime;
 
 use fdebi_apt_proto::{
-    Change, ConfPolicy as WorkerConfPolicy, Event, Item, ItemResult, Mode, PackageState, Phase,
-    Request, Stamp,
+    ConfPolicy as WorkerConfPolicy, Event, Item, ItemResult, Mode, PackageState, Phase, Request,
+    Stamp,
 };
 use fdebi_core::health;
 use fdebi_core::i18n::{gettext, ngettext, tf};
@@ -71,8 +71,8 @@ pub struct Manager {
     inner: Inner,
     /// 安装/卸载串行化:两个 worker 同时运行会争抢 apt/dpkg 全局锁
     install_gate: Mutex<()>,
-    /// SysState 缓存:(status mtime, lists mtime, state);apt_opts 非空时绕过
-    sys_cache: Mutex<Option<(SystemTime, SystemTime, Arc<SysState>)>>,
+    /// SysState 缓存:(status mtime, state)。仓库候选由 worker 提供,不在此解析。
+    sys_cache: Mutex<Option<(SystemTime, Arc<SysState>)>>,
 }
 
 impl Manager {
@@ -140,28 +140,20 @@ impl Manager {
         }
     }
 
-    /// 系统状态缓存:dpkg/status 与 lists 目录 mtime 不变时复用
-    fn sys_state(&self, apt_opts: &[String]) -> Result<Arc<SysState>, FdebiError> {
-        if apt_opts.is_empty() {
-            let st_mtime = std::fs::metadata(fdebi_core::sysstate::DPKG_STATUS)
-                .and_then(|m| m.modified())
-                .unwrap_or(SystemTime::UNIX_EPOCH);
-            let li_mtime = std::fs::metadata(fdebi_core::sysstate::LISTS_DIR)
-                .and_then(|m| m.modified())
-                .unwrap_or(SystemTime::UNIX_EPOCH);
-            let mut cache = self.sys_cache.lock().unwrap();
-            if let Some((st, li, state)) = cache.as_ref()
-                && *st == st_mtime
-                && *li == li_mtime
-            {
-                return Ok(state.clone());
-            }
-            let state = Arc::new(SysState::load(apt_opts)?);
-            *cache = Some((st_mtime, li_mtime, state.clone()));
-            Ok(state)
-        } else {
-            Ok(Arc::new(SysState::load(apt_opts)?))
+    /// 已安装状态缓存:dpkg/status 的 mtime 不变时复用(解析约 2500 个条目)
+    fn sys_state(&self) -> Result<Arc<SysState>, FdebiError> {
+        let st_mtime = std::fs::metadata(fdebi_core::sysstate::DPKG_STATUS)
+            .and_then(|m| m.modified())
+            .unwrap_or(SystemTime::UNIX_EPOCH);
+        let mut cache = self.sys_cache.lock().unwrap();
+        if let Some((st, state)) = cache.as_ref()
+            && *st == st_mtime
+        {
+            return Ok(state.clone());
         }
+        let state = Arc::new(SysState::load()?);
+        *cache = Some((st_mtime, state.clone()));
+        Ok(state)
     }
 }
 
@@ -307,40 +299,11 @@ fn installed_version_of(sys: &SysState, deb: &DebFile) -> String {
         .to_string()
 }
 
-/// deb 在软件源中的最高候选版本(源中没有该包为空串)
-fn repo_version_of(sys: &SysState, deb: &DebFile) -> String {
-    sys.candidate_version(&deb_key(sys, deb))
-        .unwrap_or_default()
-        .to_string()
-}
-
 fn conffile_conflicts_of(sys: &SysState, deb: &DebFile) -> Vec<(String, String)> {
     fdebi_core::conffile::conflicts(deb, sys)
         .into_iter()
         .map(|c| (c.package, c.path))
         .collect()
-}
-
-/// 变更计划中来自未信任仓库的同版本包(apt 需要认证确认)
-fn unauthenticated_for(sys: &SysState, changes: &[Change]) -> Vec<String> {
-    let mut out = Vec::new();
-    for change in changes {
-        let Some(indices) = sys.candidates.get(&change.name) else {
-            continue;
-        };
-        let untrusted = indices.iter().any(|&i| {
-            sys.all_candidates.get(i).is_some_and(|c| {
-                c.pkg.version == change.new_version
-                    && c.repo.as_ref().is_some_and(|repo| !repo.trusted)
-            })
-        });
-        if untrusted {
-            out.push(change.name.clone());
-        }
-    }
-    out.sort();
-    out.dedup();
-    out
 }
 
 /// worker 的逐项分析结果 + 本地系统状态 → D-Bus 分析结果
@@ -352,7 +315,7 @@ fn result_from_worker(
     apt_stale: bool,
 ) -> fdebi_core::AnalyzeResult {
     let installed_version = installed_version_of(sys, deb);
-    let repo_version = repo_version_of(sys, deb);
+    let repo_version = item.repo_version.clone();
     let conffile_conflicts = conffile_conflicts_of(sys, deb);
     if !item.installable {
         return (
@@ -380,7 +343,7 @@ fn result_from_worker(
             )
         })
         .collect();
-    let unauthenticated = unauthenticated_for(sys, &item.install);
+    let unauthenticated = item.unauthenticated.clone();
     (
         true,
         String::new(),
@@ -457,7 +420,7 @@ pub fn analyze(
 ) -> Result<fdebi_core::AnalyzeResult, String> {
     // 保留旧错误语义:文件无法打开或系统状态加载失败时返回 D-Bus 错误
     let deb = open_item(path)?;
-    let sys = manager.sys_state(apt_opts).map_err(|e| e.to_string())?;
+    let sys = manager.sys_state().map_err(|e| e.to_string())?;
     let broken = broken_snapshot();
     let apt_stale = fdebi_core::sysstate::lists_stale(apt_opts);
     let items = worker_analyze(&[path.to_string()], apt_opts)?;
@@ -469,15 +432,15 @@ pub fn analyze(
 
 /// 卸载前反向依赖预检:返回 [(受影响包, 依赖组)];只读,无需授权
 pub fn check_removal(manager: &Arc<Manager>, name: &str) -> Result<Vec<(String, String)>, String> {
-    let sys = manager.sys_state(&[]).map_err(|e| e.to_string())?;
+    let sys = manager.sys_state().map_err(|e| e.to_string())?;
     Ok(reverse::reverse_dependents(&sys, &[name.to_string()])
         .into_iter()
         .map(|r| (r.package, r.requires))
         .collect())
 }
 
-/// 批量只读分析:一次加载系统状态,由 apt worker 给出每项的安装计划,
-/// 再用本地 SysState 补充已安装/候选/认证/异常/conffile 信息。
+/// 批量只读分析:已安装状态与 apt worker 的计划合并为逐项结果。
+/// 仓库版本/认证信息由 worker 直接给出,daemon 不再扫描 Packages 索引。
 ///
 /// 返回值与 `paths` 一一对应;单个文件打开失败只影响该项。
 pub fn analyze_batch(
@@ -485,7 +448,7 @@ pub fn analyze_batch(
     paths: &[String],
     apt_opts: &[String],
 ) -> Result<Vec<fdebi_core::AnalyzeItem>, String> {
-    let sys = manager.sys_state(apt_opts).map_err(|e| e.to_string())?;
+    let sys = manager.sys_state().map_err(|e| e.to_string())?;
     let broken = broken_snapshot();
     let apt_stale = fdebi_core::sysstate::lists_stale(apt_opts);
 
@@ -553,7 +516,7 @@ pub fn analyze_batch(
                     Vec::new(),
                     Vec::new(),
                     installed_version_of(&sys, deb),
-                    repo_version_of(&sys, deb),
+                    String::new(),
                     broken.clone(),
                     conffile_conflicts_of(&sys, deb),
                     apt_stale,

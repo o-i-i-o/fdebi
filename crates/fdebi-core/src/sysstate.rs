@@ -1,21 +1,17 @@
-//! 系统状态层:dpkg 已安装库与 apt 仓库索引的纯 Rust 读取(只读数据面)。
+//! 系统状态层:dpkg 已安装库的纯 Rust 读取(只读数据面)。
 //!
 //! - 已安装状态:直接解析 `/var/lib/dpkg/status`(deb822,复用 control 解析器)
-//! - 仓库索引:`apt-get indextargets` 仅做元数据枚举(文件路径/来源/信任标记,
-//!   与 dpkg-query 同为"系统能力经子进程"),Packages 索引本体以纯 Rust 解压解析
-//!   (lz4/xz/zstd/gz 四种压缩,全部 Rust 后端,无 C 依赖)
-//! - 安装计划的求解由 `fdebi-apt-worker`(libapt-pkg)负责,本模块只提供数据。
+//! - 仓库候选/认证信息不在此解析:安装计划与仓库版本由 `fdebi-apt-worker`
+//!   (libapt-pkg)直接给出,避免在 daemon 侧重复扫描 Packages 索引。
 //!
 //! 数据结构完全公开,可由测试直接构造。
 
 use std::collections::BTreeMap;
-use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use crate::control::parse_control;
 use crate::error::FdebiError;
-use crate::version::cmp_version;
 
 /// dpkg status 的标准路径
 pub const DPKG_STATUS: &str = "/var/lib/dpkg/status";
@@ -60,48 +56,7 @@ pub struct Pkg {
     pub conffiles: Vec<(String, String)>,
 }
 
-/// 仓库来源信息(来自 indextargets)
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct Repo {
-    pub origin: String,
-    pub label: String,
-    pub suite: String,
-    pub codename: String,
-    pub component: String,
-    pub site: String,
-    /// 仓库根 URI(如 http://archive.ubuntu.com/ubuntu)
-    pub base_uri: String,
-    pub trusted: bool,
-}
-
-/// 一个可安装候选:仓库条目(带下载坐标)或本地 deb
-#[derive(Debug, Clone, Default)]
-pub struct Candidate {
-    pub pkg: Pkg,
-    /// 仓库来源;本地 deb 为 None
-    pub repo: Option<Repo>,
-    /// 仓库内相对路径(Filename 字段)
-    pub repo_filename: String,
-    pub sha256: String,
-    pub size: u64,
-    /// 本地 deb 的路径(仅本地候选)
-    pub local_path: Option<PathBuf>,
-}
-
-impl Candidate {
-    pub fn is_local(&self) -> bool {
-        self.local_path.is_some()
-    }
-}
-
-/// indextargets 条目
-#[derive(Debug, Clone, Default)]
-struct IndexTarget {
-    uri: String,
-    repo: Repo,
-}
-
-/// 系统状态快照:已安装库 + 全部仓库候选
+/// 系统状态快照:已安装库
 #[derive(Debug, Default)]
 pub struct SysState {
     pub native_arch: String,
@@ -110,16 +65,12 @@ pub struct SysState {
     pub installed: Vec<Pkg>,
     /// 包名 / 包名:架构 → installed 下标(仅已安装条目)
     pub index: BTreeMap<String, usize>,
-    /// key → 候选下标(全局扁平表,按版本降序)
-    pub candidates: BTreeMap<String, Vec<usize>>,
-    /// 全部候选(仓库 + 本地 deb)
-    pub all_candidates: Vec<Candidate>,
 }
 
 impl SysState {
-    /// 加载系统状态(dpkg 状态 + indextargets 枚举 + 列表解析)。
-    /// 本地 deb 不入缓存;安装计划的求解由 `fdebi-apt-worker` 负责。
-    pub fn load(apt_opts: &[String]) -> Result<Self, FdebiError> {
+    /// 加载已安装状态(dpkg status + 本机/外部架构)。
+    /// 仓库候选与安装计划由 `fdebi-apt-worker` 负责,本函数不触碰 apt 索引。
+    pub fn load() -> Result<Self, FdebiError> {
         let native_arch = run_line(Command::new("dpkg").arg("--print-architecture"))?;
         let foreign_arches = run_line(Command::new("dpkg").arg("--print-foreign-architectures"))?
             .lines()
@@ -138,75 +89,12 @@ impl SysState {
             index.entry(pkg.name.clone()).or_insert(i);
         }
 
-        let mut state = SysState {
+        Ok(SysState {
             native_arch,
             foreign_arches,
             installed,
             index,
-            ..Default::default()
-        };
-
-        // 仓库候选:indextargets 枚举 → 列表文件解析
-        let targets = indextargets(apt_opts)?;
-        let lists_dir = apt_opts
-            .iter()
-            .find_map(|o| o.strip_prefix("Dir::State::lists="))
-            .map(PathBuf::from)
-            .unwrap_or_else(|| PathBuf::from(LISTS_DIR));
-        let mut candidates = Vec::new();
-        if let Ok(entries) = std::fs::read_dir(&lists_dir) {
-            for entry in entries {
-                let path = match entry {
-                    Ok(e) => e.path(),
-                    Err(_) => continue,
-                };
-                let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
-                    continue;
-                };
-                // 只关心二进制包索引(arch:all 条目包含在各 binary-* 索引内)
-                if !name.contains("Packages") || name.contains("Translation") {
-                    continue;
-                }
-                let repo = target_for_lists_file(&targets, name).unwrap_or_default();
-                // 单个列表文件损坏/不可读时跳过(与 apt 容错行为一致),
-                // 不让整个 SysState::load 失败
-                let _ = parse_packages_file(&path, &state.native_arch, &repo, &mut candidates);
-            }
-        }
-        state.add_candidates(candidates);
-        Ok(state)
-    }
-
-    /// 批量加入候选并建立索引(同 key 同 version 去重,信任来源优先)
-    pub fn add_candidates(&mut self, mut cands: Vec<Candidate>) {
-        cands.sort_by(|a, b| {
-            a.pkg
-                .key
-                .cmp(&b.pkg.key)
-                .then_with(|| cmp_version(&b.pkg.version, &a.pkg.version))
-        });
-        for c in cands {
-            let key = c.pkg.key.clone();
-            let ver = c.pkg.version.clone();
-            let trusted = c.repo.as_ref().is_none_or(|r| r.trusted);
-            let list = self.candidates.entry(key).or_default();
-            if let Some(&i) = list
-                .iter()
-                .find(|&&i| self.all_candidates[i].pkg.version == ver)
-            {
-                // 同版本重复:仅当新条目可信而旧条目不可信时替换
-                let existing_trusted = self.all_candidates[i]
-                    .repo
-                    .as_ref()
-                    .is_none_or(|r| r.trusted);
-                if trusted && !existing_trusted && !self.all_candidates[i].is_local() {
-                    self.all_candidates[i] = c;
-                }
-                continue;
-            }
-            list.push(self.all_candidates.len());
-            self.all_candidates.push(c);
-        }
+        })
     }
 
     /// 已安装包的当前版本。只按 key(或 name:arch)精确匹配,不退化为
@@ -219,22 +107,18 @@ impl SysState {
             .map(|p| p.version.as_str())
     }
 
-    /// 软件源中的最高候选版本(不含本地 deb);仓库里没有该包时返回 None。
-    /// candidates 列表按版本降序,取第一个非本地条目即可。
-    pub fn candidate_version(&self, key: &str) -> Option<&str> {
-        self.candidates
-            .get(key)?
-            .iter()
-            .map(|&i| &self.all_candidates[i])
-            .find(|c| !c.is_local())
-            .map(|c| c.pkg.version.as_str())
-    }
 }
 
 /// apt 索引是否可能落后于软件源配置(对应 deepin `shouldUpdateCache`,
 /// 但 fdebi 直接读 lists,只做提示不阻塞):
 /// - lists 目录没有 Packages 索引 → 需要 `apt update`;
-/// - sources.list / sources.list.d 的 mtime 晚于最新索引 → 配置改过但未更新。
+/// - sources.list / sources.list.d 的 mtime 晚于最近一次更新 → 配置改过但未更新。
+///
+/// 不能拿索引文件的 mtime 当“最近更新时刻”:apt 会把服务器返回的
+/// `Last-Modified` 写回本地索引文件(`pkgAcqIndex` 的既有行为),该 mtime
+/// 反映的是仓库发布时间而非本机下载时间,与本地 sources 的 mtime 比较会在
+/// 配置改动后永远判为过期。改为用 lists 目录自身的 mtime:apt 每次更新都会
+/// 在目录内重命名/删除索引文件,目录 mtime 即最近一次成功更新的时刻。
 ///
 /// 两侧都取不到时返回 false(容器/自定义布局下不误报)。
 pub fn lists_stale(apt_opts: &[String]) -> bool {
@@ -243,9 +127,16 @@ pub fn lists_stale(apt_opts: &[String]) -> bool {
         .find_map(|o| o.strip_prefix("Dir::State::lists="))
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from(LISTS_DIR));
-    let lists = newest_mtime(&lists_dir, |name| {
+    let has_index = newest_mtime(&lists_dir, |name| {
         name.contains("Packages") && !name.contains("Translation")
-    });
+    })
+    .is_some();
+    if !has_index {
+        return true;
+    }
+    let last_update = std::fs::metadata(&lists_dir)
+        .and_then(|m| m.modified())
+        .ok();
 
     let sources_list = apt_opts
         .iter()
@@ -266,18 +157,17 @@ pub fn lists_stale(apt_opts: &[String]) -> bool {
         }))
         .max();
 
-    stale_from(sources, lists)
+    stale_from(sources, last_update)
 }
 
-/// 纯判定:无索引 → 过期;有配置且比索引新 → 过期;其余不算
+/// 纯判定:配置比最近一次更新新 → 过期;缺配置或更新时刻 → 不误报
 fn stale_from(
     sources: Option<std::time::SystemTime>,
-    lists: Option<std::time::SystemTime>,
+    last_update: Option<std::time::SystemTime>,
 ) -> bool {
-    match (sources, lists) {
-        (_, None) => true,
+    match (sources, last_update) {
         (Some(s), Some(l)) => s > l,
-        (None, Some(_)) => false,
+        _ => false,
     }
 }
 
@@ -365,127 +255,6 @@ fn status_installed(status: &str) -> bool {
             Some("installed")
         )
     )
-}
-
-/// `apt-get indextargets` 枚举(仅元数据;子进程输出按 C locale 解析)
-fn indextargets(apt_opts: &[String]) -> Result<Vec<IndexTarget>, FdebiError> {
-    let mut cmd = Command::new("apt-get");
-    cmd.arg("indextargets");
-    for o in apt_opts {
-        cmd.arg("-o").arg(o);
-    }
-    let out = run_captured(&mut cmd)?;
-    if !out.1 {
-        return Ok(Vec::new());
-    }
-    let mut targets = Vec::new();
-    let mut cur = IndexTarget::default();
-    let mut any = false;
-    for line in out.0.lines() {
-        if line.trim().is_empty() {
-            if any {
-                targets.push(std::mem::take(&mut cur));
-                any = false;
-            }
-            continue;
-        }
-        if let Some((k, v)) = line.split_once(": ") {
-            any = true;
-            match k {
-                "URI" => cur.uri = v.to_string(),
-                "Repo-URI" => cur.repo.base_uri = v.trim_end_matches('/').to_string(),
-                "Origin" => cur.repo.origin = v.to_string(),
-                "Label" => cur.repo.label = v.to_string(),
-                "Suite" => cur.repo.suite = v.to_string(),
-                "Codename" => cur.repo.codename = v.to_string(),
-                "Component" => cur.repo.component = v.to_string(),
-                "Site" => cur.repo.site = v.to_string(),
-                "Trusted" => cur.repo.trusted = v.trim() == "yes",
-                _ => {}
-            }
-        }
-    }
-    if any {
-        targets.push(cur);
-    }
-    Ok(targets)
-}
-
-/// 列表文件名 → 来源匹配:apt 以 "站点_路径(/→_)" 命名 lists 文件,
-/// 用目标 URI 做同款变换后按后缀匹配(端口 ':' 的 %3a 编码两种形态都尝试)
-fn target_for_lists_file(targets: &[IndexTarget], lists_name: &str) -> Option<Repo> {
-    for t in targets {
-        let rest = t.uri.split("://").nth(1).unwrap_or(&t.uri);
-        let key = rest.replace('/', "_");
-        if lists_name.ends_with(&key)
-            || lists_name.ends_with(&key.replace(':', "%3a"))
-            || lists_name.ends_with(&key.replace("%3a", ":"))
-        {
-            return Some(t.repo.clone());
-        }
-    }
-    None
-}
-
-/// 解析单个 Packages 索引文件(按扩展名解压)
-fn parse_packages_file(
-    path: &Path,
-    native_arch: &str,
-    repo: &Repo,
-    out: &mut Vec<Candidate>,
-) -> Result<(), FdebiError> {
-    let text = decompress_to_string(path)?;
-    for para in parse_control(&text) {
-        let Some(pkg) = pkg_from_fields(|n| para.get(n), native_arch) else {
-            continue;
-        };
-        out.push(Candidate {
-            pkg,
-            repo: Some(repo.clone()),
-            repo_filename: para.get("Filename").unwrap_or("").trim().to_string(),
-            sha256: para.get("SHA256").unwrap_or("").trim().to_string(),
-            size: para
-                .get("Size")
-                .and_then(|s| s.trim().parse().ok())
-                .unwrap_or(0),
-            local_path: None,
-        });
-    }
-    Ok(())
-}
-
-/// 按扩展名/魔数解压索引文件为文本(lz4/xz/zstd/gz/无压缩)
-fn decompress_to_string(path: &Path) -> Result<String, FdebiError> {
-    let raw = std::fs::read(path)?;
-    let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
-    let decomp_err = |e: String| FdebiError::ListDecompress(path.display().to_string(), e);
-    let bytes: Vec<u8> = if name.ends_with(".lz4") {
-        let mut out = Vec::new();
-        lz4_flex::frame::FrameDecoder::new(&raw[..])
-            .read_to_end(&mut out)
-            .map_err(|e| decomp_err(e.to_string()))?;
-        out
-    } else if name.ends_with(".xz") {
-        let mut out = Vec::new();
-        lzma_rs::xz_decompress(&mut &raw[..], &mut out).map_err(|e| decomp_err(e.to_string()))?;
-        out
-    } else if name.ends_with(".zst") {
-        let mut out = Vec::new();
-        ruzstd::StreamingDecoder::new(&raw[..])
-            .map_err(|e| decomp_err(e.to_string()))?
-            .read_to_end(&mut out)
-            .map_err(|e| decomp_err(e.to_string()))?;
-        out
-    } else if name.ends_with(".gz") || raw.starts_with(&[0x1f, 0x8b]) {
-        let mut out = Vec::new();
-        flate2::read::GzDecoder::new(&raw[..])
-            .read_to_end(&mut out)
-            .map_err(|e| decomp_err(e.to_string()))?;
-        out
-    } else {
-        raw
-    };
-    Ok(String::from_utf8_lossy(&bytes).into_owned())
 }
 
 /// 拆分关系子句中的 "(op version)"。
@@ -673,17 +442,17 @@ mod tests {
         assert_eq!(st.installed_version("foo"), None);
     }
 
-    /// apt 索引新鲜度:无索引算过期;配置比索引新算过期;配置缺失不误报
+    /// apt 索引新鲜度:配置比最近一次更新新才算过期;缺配置/缺更新时刻不误报
     #[test]
     fn apt_lists_staleness_classification() {
         use std::time::{Duration, UNIX_EPOCH};
         let t = |s| UNIX_EPOCH + Duration::from_secs(s);
-        assert!(stale_from(None, None));
-        assert!(stale_from(Some(t(10)), None));
         assert!(stale_from(Some(t(20)), Some(t(10))));
         assert!(!stale_from(Some(t(10)), Some(t(20))));
         assert!(!stale_from(Some(t(10)), Some(t(10))));
         assert!(!stale_from(None, Some(t(10))));
+        assert!(!stale_from(Some(t(10)), None));
+        assert!(!stale_from(None, None));
     }
 
     #[test]
@@ -702,119 +471,4 @@ mod tests {
         );
     }
 
-    #[test]
-    fn index_target_matching() {
-        let targets = vec![IndexTarget {
-            uri: "http://archive.ubuntu.com/ubuntu/dists/noble/main/binary-amd64/Packages.lz4"
-                .into(),
-            repo: Repo {
-                trusted: true,
-                ..Default::default()
-            },
-        }];
-        let repo = target_for_lists_file(
-            &targets,
-            "archive.ubuntu.com_ubuntu_dists_noble_main_binary-amd64_Packages.lz4",
-        )
-        .unwrap();
-        assert!(repo.trusted);
-        assert!(
-            target_for_lists_file(
-                &targets,
-                "evil.example_org_dists_sid_main_binary-amd64_Packages.xz"
-            )
-            .is_none()
-        );
-    }
-
-    #[test]
-    fn packages_stanza_to_candidate() {
-        // 未压缩 Packages 索引段落 → Candidate(Filename/SHA256/Size 提取)
-        let dir = std::env::temp_dir();
-        let path = dir.join(format!(
-            "fdebi-test_{}_dists_noble_main_binary-amd64_Packages",
-            std::process::id()
-        ));
-        std::fs::write(
-            &path,
-            "Package: jq\nArchitecture: all\nVersion: 1.7-1\n\
-             Filename: pool/main/j/jq/jq_1.7-1_all.deb\n\
-             SHA256: abc123\nSize: 65536\n",
-        )
-        .unwrap();
-        let mut out = Vec::new();
-        let r = parse_packages_file(
-            &path,
-            "amd64",
-            &Repo {
-                trusted: true,
-                base_uri: "http://archive.ubuntu.com/ubuntu".into(),
-                ..Default::default()
-            },
-            &mut out,
-        );
-        let _ = std::fs::remove_file(&path);
-        r.unwrap();
-        assert_eq!(out.len(), 1);
-        let c = &out[0];
-        assert_eq!(c.pkg.key, "jq"); // all → 裸名
-        assert_eq!(c.repo_filename, "pool/main/j/jq/jq_1.7-1_all.deb");
-        assert_eq!(c.sha256, "abc123");
-        assert_eq!(c.size, 65536);
-        assert!(c.repo.as_ref().unwrap().trusted);
-    }
-
-    #[test]
-    fn add_candidates_dedup_prefers_trusted() {
-        let mut st = SysState::default();
-        let mk = |trusted: bool, ver: &str| Candidate {
-            pkg: Pkg {
-                key: "jq".into(),
-                name: "jq".into(),
-                arch: "all".into(),
-                version: ver.into(),
-                ..Default::default()
-            },
-            repo: Some(Repo {
-                trusted,
-                ..Default::default()
-            }),
-            ..Default::default()
-        };
-        st.add_candidates(vec![mk(false, "1.0"), mk(true, "1.0"), mk(true, "0.9")]);
-        let list = &st.candidates["jq"];
-        assert_eq!(list.len(), 2);
-        // 1.0 应保留信任来源
-        let first = &st.all_candidates[list[0]];
-        assert_eq!(first.pkg.version, "1.0");
-        assert!(first.repo.as_ref().unwrap().trusted);
-    }
-
-    /// 仓库版本提示:候选按版本降序,取最高非本地候选;无候选返回 None
-    #[test]
-    fn candidate_version_is_highest_repo_version() {
-        let mut st = SysState::default();
-        let mk = |ver: &str, local: bool| Candidate {
-            pkg: Pkg {
-                key: "jq".into(),
-                name: "jq".into(),
-                arch: "all".into(),
-                version: ver.into(),
-                ..Default::default()
-            },
-            repo: if local {
-                None
-            } else {
-                Some(Repo {
-                    trusted: true,
-                    ..Default::default()
-                })
-            },
-            local_path: local.then(|| PathBuf::from("/tmp/jq.deb")),
-            ..Default::default()
-        };
-        st.add_candidates(vec![mk("1.0", false), mk("2.0", true), mk("1.5", false)]);
-        assert_eq!(st.candidate_version("jq"), Some("1.5"));
-        assert_eq!(st.candidate_version("missing"), None);
-    }
 }

@@ -30,6 +30,7 @@
 - [x] `SendInput` 写入 PTY，worker 侧可读到（假 worker 单测）
 - [x] `Cancel` 以 SIGTERM 终止整个 worker 进程组（假 worker 单测）
 - [x] analyze/analyze_batch 改用 worker，保留已安装版本、候选版本、conffile、broken、apt_stale 信息
+- [x] 源内候选版本与未认证标记改由 worker 从 libapt 缓存直接给出；daemon 的 SysState 只解析 dpkg status（约 30 ms，原全量 Packages 解析约 2 s）
 - [x] install/remove 通过 `install_gate` 串行化，状态机仍为 analyzing→waiting-auth→downloading/installing→done/failed/cancelled
 - [x] 安装后健康检查只报告本次新增异常包
 - [x] 事务仅对发起者可见/可取消/可应答

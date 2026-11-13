@@ -136,6 +136,12 @@ pub struct ItemResult {
     pub failure: String,
     pub install: Vec<Change>,
     pub remove: Vec<String>,
+    /// 软件源中的最高候选版本(不含本地 deb/已装条目);空串表示源里没有
+    #[serde(default)]
+    pub repo_version: String,
+    /// 计划中同版本来自未信任源的包名
+    #[serde(default)]
+    pub unauthenticated: Vec<String>,
 }
 
 impl ItemResult {
@@ -146,6 +152,8 @@ impl ItemResult {
             failure: failure.into(),
             install: Vec::new(),
             remove: Vec::new(),
+            repo_version: String::new(),
+            unauthenticated: Vec::new(),
         }
     }
 }
@@ -226,6 +234,8 @@ mod tests {
                         new_version: "1.0".into(),
                     }],
                     remove: Vec::new(),
+                    repo_version: "1.0".into(),
+                    unauthenticated: Vec::new(),
                 }],
             },
         ];
