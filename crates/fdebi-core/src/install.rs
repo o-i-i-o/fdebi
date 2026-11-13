@@ -94,11 +94,13 @@ impl CancelHandle {
         }
     }
 
-    pub(crate) fn register(&self, pid: u32) {
+    /// 登记运行中的 worker 进程组(daemon 的 PTY 驱动使用)
+    pub fn register(&self, pid: u32) {
         *self.pgid.lock().unwrap() = Some(pid);
     }
 
-    pub(crate) fn unregister(&self) {
+    /// 取消登记(子进程已回收)
+    pub fn unregister(&self) {
         *self.pgid.lock().unwrap() = None;
     }
 }

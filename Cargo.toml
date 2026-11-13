@@ -1,6 +1,12 @@
 [workspace]
 resolver = "2"
-members = ["crates/fdebi-core", "crates/fdebi-gtk", "crates/fdebi-daemon"]
+members = [
+    "crates/fdebi-core",
+    "crates/fdebi-gtk",
+    "crates/fdebi-daemon",
+    "crates/fdebi-apt-proto",
+    "crates/fdebi-apt-worker",
+]
 
 [workspace.package]
 version = "0.2.0"
@@ -9,6 +15,14 @@ license = "GPL-3.0-or-later"
 
 [workspace.dependencies]
 fdebi-core = { path = "crates/fdebi-core" }
+fdebi-apt-proto = { path = "crates/fdebi-apt-proto" }
+fdebi-apt-worker = { path = "crates/fdebi-apt-worker" }
+
+# libapt-pkg FFI:事务 worker 进程使用(daemon/GTK 不直接链接)
+oma-apt = "0.14"
+
+# worker 控制通道 JSON Lines
+serde_json = "1"
 # gettext-system:链接系统 libintl(glibc),走标准 bindtextdomain 流程
 gettext-rs = { version = "0.7", features = ["gettext-system"] }
 ar = "0.9"
@@ -38,8 +52,8 @@ ruzstd = "0.7"
 # D-Bus(纯 Rust 实现,不依赖 libdbus)
 zbus = "5"
 
-# 信号体序列化 trait(zbus/zvariant 生态标准)
-serde = "1"
+# 信号体与 worker 请求/事件序列化(zbus/zvariant 生态标准)
+serde = { version = "1", features = ["derive"] }
 async-channel = "2"
 
 # zbus 默认 async-io 运行时;守护进程工作线程用它 block_on 发信号

@@ -1,0 +1,12 @@
+[package]
+name = "fdebi-apt-proto"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "daemon 与 apt worker 之间的请求/事件协议(JSON Lines)"
+
+[dependencies]
+serde.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true

@@ -13,6 +13,7 @@
 mod iface;
 mod polkit;
 mod txn;
+mod worker;
 
 use zbus::connection::Builder;
 

@@ -11,8 +11,12 @@ path = "src/main.rs"
 
 [dependencies]
 fdebi-core.workspace = true
+fdebi-apt-proto.workspace = true
 zbus.workspace = true
 async-io.workspace = true
 async-channel.workspace = true
 # 信号体类型约束(Serialize + DynamicType);zvariant 已传递引入
 serde.workspace = true
+# worker 控制通道(JSON Lines)与 PTY/fd 操作
+serde_json.workspace = true
+libc.workspace = true

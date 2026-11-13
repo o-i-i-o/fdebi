@@ -3,6 +3,7 @@
 #
 # 布局(与 data/ 内各部署文件头部注释一致):
 #   usr/local/bin/fdebi-daemon           特权 D-Bus 守护进程
+#   usr/local/bin/fdebi-apt-worker       apt 事务 worker(daemon 按需启动)
 #   usr/local/bin/fdebi-gtk              GTK4 瘦客户端
 #   usr/share/dbus-1/system.d/           org.fdebi.conf(总线策略)
 #   usr/share/dbus-1/system-services/    org.fdebi.service(激活文件,Exec 指向 /usr/local/bin)
@@ -47,6 +48,7 @@ install -d "$STAGE/DEBIAN" \
     "$STAGE/usr/share/doc/$NAME"
 
 install -m755 target/release/fdebi-daemon      "$STAGE/usr/local/bin/"
+install -m755 target/release/fdebi-apt-worker  "$STAGE/usr/local/bin/"
 install -m755 target/release/fdebi-gtk         "$STAGE/usr/local/bin/"
 install -m644 data/dbus/org.fdebi.conf         "$STAGE/usr/share/dbus-1/system.d/"
 install -m644 data/dbus/org.fdebi.service      "$STAGE/usr/share/dbus-1/system-services/"
@@ -61,6 +63,7 @@ make -C po install "DESTDIR=$PWD/$STAGE"
 if command -v strip >/dev/null; then
     strip --strip-unneeded \
         "$STAGE/usr/local/bin/fdebi-daemon" \
+        "$STAGE/usr/local/bin/fdebi-apt-worker" \
         "$STAGE/usr/local/bin/fdebi-gtk"
 fi
 
@@ -72,11 +75,11 @@ Section: admin
 Priority: optional
 Architecture: $ARCH
 Maintainer: fdebi maintainers <fdebi@localhost>
-Depends: libgtk-4-1, dbus, polkitd | policykit-1, apt, file, shared-mime-info
+Depends: libgtk-4-1, dbus, polkitd | policykit-1, apt, libapt-pkg , file, shared-mime-info
 Installed-Size: $INSTALLED_SIZE
 Description: 本地 .deb 安装器(fdebi)
- 特权分离架构:D-Bus 守护进程执行解析/下载/dpkg 安装,GTK4 瘦客户端
- 无特权运行;依赖求解为纯 Rust SAT 实现。
+ 特权分离架构:D-Bus 守护进程经 Polkit 授权后启动 apt worker(PTY 交互),
+ 由 libapt-pkg 求解/下载/安装;GTK4 瘦客户端无特权运行。
 EOF
 
 echo "==> dpkg-deb --build"

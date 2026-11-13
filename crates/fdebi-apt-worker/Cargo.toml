@@ -1,0 +1,17 @@
+[package]
+name = "fdebi-apt-worker"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "fdebi 的 apt/dpkg 事务 worker(链接 libapt-pkg)"
+
+[[bin]]
+name = "fdebi-apt-worker"
+path = "src/main.rs"
+
+[dependencies]
+fdebi-core.workspace = true
+fdebi-apt-proto.workspace = true
+oma-apt.workspace = true
+serde_json.workspace = true
+libc.workspace = true
