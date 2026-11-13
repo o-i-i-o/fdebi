@@ -898,8 +898,13 @@ fn setup_actions(app: &Application, gui: &Rc<MainWindow>) {
             .collect();
         if paths.len() > 1 {
             load_files(&gui_ref, paths);
-        } else if let Some(f) = gui_ref.current_file.borrow().clone() {
-            load_deb(&gui_ref, &f);
+        } else {
+            // 先取出所有权再刷新:if-let 头部的 RefCell 守卫会存活到块尾,
+            // 直接 `borrow().clone()` 会让 preview_deb 的 borrow_mut panic
+            let f = gui_ref.current_file.borrow().clone();
+            if let Some(f) = f {
+                load_deb(&gui_ref, &f);
+            }
         }
     });
     app.add_action(&refresh);
@@ -2060,8 +2065,12 @@ fn run_txn_dialog(
             .collect();
         if paths.len() > 1 {
             load_files(&gui_reload, paths);
-        } else if let Some(f) = gui_reload.current_file.borrow().clone() {
-            load_deb(&gui_reload, &f);
+        } else {
+            // 同上:先取所有权,避免守卫存活到 load_deb → preview_deb 的 borrow_mut
+            let f = gui_reload.current_file.borrow().clone();
+            if let Some(f) = f {
+                load_deb(&gui_reload, &f);
+            }
         }
     });
 }
@@ -2176,10 +2185,16 @@ fn confirm_conffiles(parent: &gtk::Window, conflicts: &[(String, String)]) -> Op
 }
 
 fn on_install_clicked(gui: &Rc<MainWindow>) {
-    // 提权由守护进程侧 Polkit 发起(认证对话框自动弹出),客户端无需 root
-    if let Some(c) = gui.changes.borrow().as_ref()
-        && !c.unauthenticated.is_empty()
-    {
+    // 提权由守护进程侧 Polkit 发起(认证对话框自动弹出),客户端无需 root。
+    // 先克隆未认证列表再弹确认:confirm 用嵌套主循环等待响应,
+    // 若借用守卫跨嵌套循环存活,期间完成的 apply_verdict 会 borrow_mut panic。
+    let unauthenticated: Vec<String> = gui
+        .changes
+        .borrow()
+        .as_ref()
+        .map(|c| c.unauthenticated.clone())
+        .unwrap_or_default();
+    if !unauthenticated.is_empty() {
         // 未认证包安装前确认
         let ui = GtkUi {
             parent: gui.window.clone().upcast(),
@@ -2188,7 +2203,7 @@ fn on_install_clicked(gui: &Rc<MainWindow>) {
             &gettext("Install unauthenticated software?"),
             Some(&tf(
                 "The following packages are UNAUTHENTICATED: {0}",
-                &[&c.unauthenticated.join(" ")],
+                &[&unauthenticated.join(" ")],
             )),
         );
         match ok {
