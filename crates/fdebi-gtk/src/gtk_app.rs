@@ -540,12 +540,12 @@ fn build_window(window: &gtk::ApplicationWindow, apt_opts: Vec<String>) -> Rc<Ma
     // 让 Notebook 独占剩余纵向空间。用 Grid 而非 Box:GtkBox 在带
     // wrapping label 的 height-for-width 布局中会缓存过期的 natural height,
     // 状态文案变短后仍留下一大块空白。
-    let hbox_main = gtk::Grid::builder()
+    let header = gtk::Grid::builder()
         .column_spacing(12)
         .valign(gtk::Align::Start)
         .build();
-    hbox_main.attach(&grid, 0, 0, 1, 1);
-    hbox_main.attach(&btn_col, 1, 0, 1, 1);
+    header.attach(&grid, 0, 0, 1, 1);
+    header.attach(&btn_col, 1, 0, 1, 1);
 
     // Notebook:Description 全文 + Details 五项
     let textview_description = gtk::TextView::builder()
@@ -678,7 +678,7 @@ fn build_window(window: &gtk::ApplicationWindow, apt_opts: Vec<String>) -> Rc<Ma
         .margin_end(12)
         .build();
     vbox.append(&batch_scroll);
-    vbox.append(&hbox_main);
+    vbox.append(&header);
     vbox.append(&notebook);
     vbox.append(&footer);
     window.set_child(Some(&vbox));
