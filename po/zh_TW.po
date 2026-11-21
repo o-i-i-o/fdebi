@@ -310,10 +310,6 @@ msgstr "詳細資料"
 msgid "Included files"
 msgstr "包含的檔案"
 
-#: ../crates/fdebi-gtk/src/gtk_app.rs:439
-msgid "Lintian output"
-msgstr "Lintian 輸出"
-
 #: ../crates/fdebi-gtk/src/gtk_app.rs:445
 msgid "Automatically close the window"
 msgstr "自動關閉視窗"
@@ -342,28 +338,6 @@ msgstr "上游資料"
 #: ../crates/fdebi-gtk/src/gtk_app.rs:618
 msgid "Error reading filelist"
 msgstr "讀取檔案清單時發生錯誤"
-
-#: ../crates/fdebi-gtk/src/gtk_app.rs:629
-msgid ""
-"No lintian available.\n"
-"Please install using sudo apt-get install lintian"
-msgstr ""
-"找不到可用的 lintian。\n"
-"請使用 sudo apt-get install lintian 安裝"
-
-#: ../crates/fdebi-gtk/src/gtk_app.rs:633
-msgid "Running lintian..."
-msgstr "正在執行 lintian…"
-
-#: ../crates/fdebi-gtk/src/gtk_app.rs:651
-#, rust-format
-msgid "Failed to run lintian: {0}"
-msgstr "執行 lintian 失敗：{0}"
-
-#: ../crates/fdebi-gtk/src/gtk_app.rs:699
-#, rust-format
-msgid "Lintian finished with exit status {0}"
-msgstr "Lintian 已結束，結束狀態為 {0}"
 
 #: ../crates/fdebi-gtk/src/gtk_app.rs:714
 msgid "_Open…"

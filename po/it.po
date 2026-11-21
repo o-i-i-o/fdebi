@@ -311,10 +311,6 @@ msgstr "Dettagli"
 msgid "Included files"
 msgstr "File inclusi"
 
-#: ../crates/fdebi-gtk/src/gtk_app.rs:439
-msgid "Lintian output"
-msgstr "Output di Lintian"
-
 #: ../crates/fdebi-gtk/src/gtk_app.rs:445
 msgid "Automatically close the window"
 msgstr "Chiudere automaticamente una volta applicate con successo le modifiche"
@@ -343,28 +339,6 @@ msgstr "Dati upstream"
 #: ../crates/fdebi-gtk/src/gtk_app.rs:618
 msgid "Error reading filelist"
 msgstr "Errore nel leggere l'elenco file"
-
-#: ../crates/fdebi-gtk/src/gtk_app.rs:629
-msgid ""
-"No lintian available.\n"
-"Please install using sudo apt-get install lintian"
-msgstr ""
-"Lintian non è disponibile.\n"
-"Utilizzare sudo apt-get install lintian per installarlo"
-
-#: ../crates/fdebi-gtk/src/gtk_app.rs:633
-msgid "Running lintian..."
-msgstr "Lintian è in esecuzione..."
-
-#: ../crates/fdebi-gtk/src/gtk_app.rs:651
-#, rust-format
-msgid "Failed to run lintian: {0}"
-msgstr ""
-
-#: ../crates/fdebi-gtk/src/gtk_app.rs:699
-#, rust-format
-msgid "Lintian finished with exit status {0}"
-msgstr "Lintian terminato con codice di uscita {0}"
 
 #: ../crates/fdebi-gtk/src/gtk_app.rs:714
 msgid "_Open…"

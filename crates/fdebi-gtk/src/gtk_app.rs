@@ -6,7 +6,7 @@
 //!
 //! 本前端永不 root、不做依赖求解、不执行 dpkg —— 三者全部委托特权守护进程 org.fdebi
 //! (zbus 纯 Rust 客户端):
-//! - 分析(AnalyzeLocalFile):本地解析 deb 展示元数据/文件树/lintian,
+//! - 分析(AnalyzeLocalFile):本地解析 deb 展示元数据/文件树,
 //!   依赖结论异步取自守护进程(带代际号丢弃过期结果)
 //! - 安装/移除(InstallLocalFiles/RemovePackage):返回事务 id,界面订阅
 //!   OutputLine/ProgressChanged/PackageStatus/InputState/Finished 信号驱动进度
@@ -17,10 +17,8 @@
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::process::{Child, Command};
 use std::rc::Rc;
 use std::sync::mpsc as std_mpsc;
-use std::sync::{Arc, Mutex};
 
 use clap::{CommandFactory, FromArgMatches, Parser};
 use futures_lite::StreamExt;
@@ -368,9 +366,6 @@ struct BatchItem {
     row: gtk::ListBoxRow,
 }
 
-/// 存活的 lintian 子进程槽位:后台线程持有 Arc<Mutex<>>,主线程经 RefCell 取走并 kill
-type SharedLintianChild = Rc<RefCell<Option<Arc<Mutex<Option<Child>>>>>>;
-
 /// window_main 的控件集合(Rc 共享给菜单动作)
 struct MainWindow {
     window: gtk::ApplicationWindow,
@@ -388,7 +383,6 @@ struct MainWindow {
     details_changes: gtk::Label,
     tree_files: gtk::TreeView,
     file_content: gtk::TextView,
-    lintian_output: gtk::TextView,
     /// 预览页上的“自动关闭窗口”开关:成功安装后是否自动关闭全部窗口
     autoclose: gtk::CheckButton,
     /// 页脚右侧的单行事务提示(替代占整行高度的 GtkStatusbar)
@@ -400,11 +394,6 @@ struct MainWindow {
     analysis_gen: Cell<u64>,
     /// 内容提取代际号:后台读取成员内容后丢弃过期回填(快速连点防乱序)
     content_gen: Cell<u64>,
-    /// lintian 运行代际号:文件切换/行连选后丢弃过期回填
-    lintian_gen: Cell<u64>,
-    /// 存活的 lintian 子进程句柄:新一次运行前由主线程 kill 上一次,
-    /// 避免大包上 lintian 跑数分钟且无界 channel 持续积压输出
-    lintian_child: SharedLintianChild,
     /// 事务运行中:外部 GApplication Open 事件不受窗口 insensitive 保护,
     /// 此期间拒收新文件,避免与运行中的信号泵产生状态错位
     txn_active: Cell<bool>,
@@ -664,16 +653,6 @@ fn build_window(window: &gtk::ApplicationWindow, apt_opts: Vec<String>) -> Rc<Ma
     let tab_files = gtk::Label::new(Some(gettext("Included files").as_str()));
     notebook.append_page(&files_paned, Some(&tab_files));
 
-    // Lintian output:等宽文本,后台线程填充
-    let lintian_output = gtk::TextView::builder()
-        .editable(false)
-        .cursor_visible(false)
-        .monospace(true)
-        .wrap_mode(gtk::WrapMode::None)
-        .build();
-    let tab_lintian = gtk::Label::new(Some(gettext("Lintian output").as_str()));
-    notebook.append_page(&scroll(&lintian_output), Some(&tab_lintian));
-
     // 底部:自动关闭开关 + 单行事务提示。开关放在预览页:小包安装可能在
     // 用户来得及操作对话框前就结束,必须在开始安装前就能决定是否保留窗口
     // 查看输出。原先的 GtkStatusbar 在无消息时仍占一整行,且与状态区重复;
@@ -731,7 +710,6 @@ fn build_window(window: &gtk::ApplicationWindow, apt_opts: Vec<String>) -> Rc<Ma
         details_changes,
         tree_files,
         file_content,
-        lintian_output,
         autoclose,
         footer_status,
         apt_opts,
@@ -739,8 +717,6 @@ fn build_window(window: &gtk::ApplicationWindow, apt_opts: Vec<String>) -> Rc<Ma
         changes: Rc::new(RefCell::new(None)),
         analysis_gen: Cell::new(0),
         content_gen: Cell::new(0),
-        lintian_gen: Cell::new(0),
-        lintian_child: Rc::new(RefCell::new(None)),
         txn_active: Cell::new(false),
         bus: Rc::new(RefCell::new(None)),
         conffiles: Rc::new(RefCell::new(Vec::new())),
@@ -942,122 +918,6 @@ fn fill_files(gui: &MainWindow, deb: &DebFile) {
     });
 }
 
-/// kill 上一次 lintian 运行:子进程收尾后管道关闭,读取线程随之结束,
-/// 不会继续向无界 channel 积压输出(大包上 lintian 可能跑数分钟)
-fn kill_lintian(gui: &MainWindow) {
-    if let Some(slot) = gui.lintian_child.borrow_mut().take()
-        && let Ok(mut guard) = slot.lock()
-        && let Some(mut child) = guard.take()
-    {
-        let _ = child.kill();
-        let _ = child.wait();
-    }
-}
-
-/// 后台运行 lintian 并流式回填;每次调用都终止上一次运行
-/// (文件切换与行连选都经过 preview_deb → 此处,天然防抖)
-fn run_lintian(gui: &MainWindow, file: &Path) {
-    let buf = gui.lintian_output.buffer();
-    if !Path::new("/usr/bin/lintian").exists() {
-        buf.set_text(&gettext(
-            "No lintian available.\nPlease install using sudo apt-get install lintian",
-        ));
-        return;
-    }
-    kill_lintian(gui);
-    let generation = gui.lintian_gen.get() + 1;
-    gui.lintian_gen.set(generation);
-    buf.set_text(&gettext("Running lintian..."));
-
-    enum LintianEvent {
-        Line(String),
-        Finished(i32),
-    }
-    let (tx, rx) = async_channel::unbounded::<LintianEvent>();
-    let path = file.to_path_buf();
-    let child_slot = Arc::new(Mutex::new(None::<Child>));
-    *gui.lintian_child.borrow_mut() = Some(child_slot.clone());
-    std::thread::spawn(move || {
-        let child = Command::new("/usr/bin/lintian")
-            .arg(&path)
-            .stdout(std::process::Stdio::piped())
-            .stderr(std::process::Stdio::piped())
-            .spawn();
-        let mut child = match child {
-            Ok(c) => c,
-            Err(e) => {
-                let _ = tx.send_blocking(LintianEvent::Line(tf(
-                    "Failed to run lintian: {0}",
-                    &[&e.to_string()],
-                )));
-                let _ = tx.send_blocking(LintianEvent::Finished(-1));
-                return;
-            }
-        };
-        let out = child.stdout.take().expect("piped stdout");
-        let err = child.stderr.take().expect("piped stderr");
-        // 注册句柄供主线程在文件切换/新运行时 kill;主线程 wait 后槽位为空
-        *child_slot.lock().unwrap() = Some(child);
-        let tx2 = tx.clone();
-        let t = std::thread::spawn(move || {
-            use std::io::BufRead;
-            for line in std::io::BufReader::new(out).lines().map_while(Result::ok) {
-                let _ = tx2.send_blocking(LintianEvent::Line(line));
-            }
-        });
-        use std::io::BufRead;
-        for line in std::io::BufReader::new(err).lines().map_while(Result::ok) {
-            let _ = tx.send_blocking(LintianEvent::Line(line));
-        }
-        let _ = t.join();
-        // 若主线程已 kill 并 wait,这里槽位为空(返回 -1,过期回填被丢弃)
-        let code = child_slot
-            .lock()
-            .unwrap()
-            .take()
-            .and_then(|mut c| c.wait().ok())
-            .and_then(|s| s.code())
-            .unwrap_or(-1);
-        let _ = tx.send_blocking(LintianEvent::Finished(code));
-    });
-
-    // 回填:文件已切换或已有新运行则丢弃过期输出
-    let watch = gui.current_file.clone();
-    let watched = file.to_path_buf();
-    let view = gui.lintian_output.clone();
-    let gen_watch = gui.lintian_gen.clone();
-    glib::spawn_future_local(async move {
-        while let Ok(ev) = rx.recv().await {
-            if gen_watch.get() != generation || watch.borrow().as_deref() != Some(watched.as_path())
-            {
-                break;
-            }
-            match ev {
-                LintianEvent::Line(line) => {
-                    let buf = view.buffer();
-                    let mut end = buf.end_iter();
-                    buf.insert(&mut end, &format!("{line}\n"));
-                }
-                LintianEvent::Finished(code) => {
-                    let buf = view.buffer();
-                    let mut end = buf.end_iter();
-                    buf.insert(
-                        &mut end,
-                        &format!(
-                            "\n{}",
-                            tf(
-                                "Lintian finished with exit status {0}",
-                                &[&code.to_string()]
-                            )
-                        ),
-                    );
-                    break;
-                }
-            }
-        }
-    });
-}
-
 fn setup_actions(app: &Application, gui: &Rc<MainWindow>) {
     // 菜单栏:File: Open…/Refresh/Quit;Help: Keyboard Shortcuts/About
     let file_menu = gio::Menu::new();
@@ -1221,7 +1081,7 @@ fn load_deb(gui: &Rc<MainWindow>, file: &Path) {
     });
 }
 
-/// 填充单个 deb 的静态信息(元数据/文件树/lintian),不做依赖分析
+/// 填充单个 deb 的静态信息(元数据/文件树),不做依赖分析
 fn preview_deb(gui: &Rc<MainWindow>, file: &Path) -> Option<PackageInfo> {
     *gui.current_file.borrow_mut() = Some(file.to_path_buf());
 
@@ -1254,9 +1114,8 @@ fn preview_deb(gui: &Rc<MainWindow>, file: &Path) -> Option<PackageInfo> {
     let info = flow::describe_deb(&deb);
     fill_static(gui, &info, &deb);
 
-    // 文件树与 lintian(顺序:文件树 → lintian → 依赖检查)
+    // 文件树填充后异步取依赖检查
     fill_files(gui, &deb);
-    run_lintian(gui, file);
     Some(info)
 }
 
@@ -1470,9 +1329,8 @@ fn remove_batch_item(gui: &Rc<MainWindow>, path: &Path) {
 
 /// 列表清空后的空状态(没有文件选择页,复位主要控件)
 fn reset_empty_ui(gui: &MainWindow) {
-    // 递增代际号:丢弃可能在途的后台回填(成员内容/lintian 输出)
+    // 递增代际号:丢弃可能在途的后台回填(成员内容输出)
     gui.content_gen.set(gui.content_gen.get() + 1);
-    gui.lintian_gen.set(gui.lintian_gen.get() + 1);
     *gui.current_file.borrow_mut() = None;
     *gui.changes.borrow_mut() = None;
     gui.conffiles.borrow_mut().clear();
@@ -1484,7 +1342,6 @@ fn reset_empty_ui(gui: &MainWindow) {
     gui.button_install.set_sensitive(false);
     gui.button_remove.hide();
     gui.textview_description.buffer().set_text("");
-    gui.lintian_output.buffer().set_text("");
     gui.file_content.buffer().set_text("");
     gui.tree_files.set_model(None::<&gtk::TreeModel>);
     gui.details_changes.set_visible(false);

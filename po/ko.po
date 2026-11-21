@@ -310,10 +310,6 @@ msgstr "자세한 내용"
 msgid "Included files"
 msgstr "포함된 파일"
 
-#: ../crates/fdebi-gtk/src/gtk_app.rs:439
-msgid "Lintian output"
-msgstr ""
-
 #: ../crates/fdebi-gtk/src/gtk_app.rs:445
 msgid "Automatically close the window"
 msgstr "바뀐 내용을 적용하는 데 성공하면 자동으로 창 닫기"
@@ -342,26 +338,6 @@ msgstr "업스트림 데이터"
 #: ../crates/fdebi-gtk/src/gtk_app.rs:618
 msgid "Error reading filelist"
 msgstr "파일 목록을 읽는 중 오류 발생"
-
-#: ../crates/fdebi-gtk/src/gtk_app.rs:629
-msgid ""
-"No lintian available.\n"
-"Please install using sudo apt-get install lintian"
-msgstr ""
-
-#: ../crates/fdebi-gtk/src/gtk_app.rs:633
-msgid "Running lintian..."
-msgstr ""
-
-#: ../crates/fdebi-gtk/src/gtk_app.rs:651
-#, rust-format
-msgid "Failed to run lintian: {0}"
-msgstr ""
-
-#: ../crates/fdebi-gtk/src/gtk_app.rs:699
-#, rust-format
-msgid "Lintian finished with exit status {0}"
-msgstr ""
 
 #: ../crates/fdebi-gtk/src/gtk_app.rs:714
 msgid "_Open…"
