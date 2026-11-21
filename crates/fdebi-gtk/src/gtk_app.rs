@@ -976,8 +976,13 @@ fn setup_actions(app: &Application, gui: &Rc<MainWindow>) {
             .collect();
         if paths.len() > 1 {
             load_files(&gui_ref, paths);
-        } else if let Some(f) = gui_ref.current_file.borrow().clone() {
-            load_deb(&gui_ref, &f);
+        } else {
+            // 先取出所有权再刷新:if-let 头部的 RefCell 守卫会存活到块尾,
+            // 直接 `borrow().clone()` 会让 preview_deb 的 borrow_mut panic
+            let f = gui_ref.current_file.borrow().clone();
+            if let Some(f) = f {
+                load_deb(&gui_ref, &f);
+            }
         }
     });
     app.add_action(&refresh);
@@ -2196,8 +2201,12 @@ fn run_txn_dialog(
             .collect();
         if paths.len() > 1 {
             load_files(&gui_reload, paths);
-        } else if let Some(f) = gui_reload.current_file.borrow().clone() {
-            load_deb(&gui_reload, &f);
+        } else {
+            // 同上:先取所有权,避免守卫存活到 load_deb → preview_deb 的 borrow_mut
+            let f = gui_reload.current_file.borrow().clone();
+            if let Some(f) = f {
+                load_deb(&gui_reload, &f);
+            }
         }
     });
 }
