@@ -314,6 +314,7 @@ pub fn install(
     };
     cmd.env("DEBIAN_FRONTEND", frontend);
     let outcome = if batch.interactive {
+        ensure_spawn_env(&mut cmd);
         let (code, tail) = pty::run(cmd, progress, cancel, input)?;
         DpkgOutcome { code, tail }
     } else {
@@ -469,11 +470,23 @@ struct DpkgOutcome {
 }
 
 /// 启动(独立进程组)、注册取消句柄、转发输出、等待退出码
+/// dbus 激活的守护进程可能继承极简环境(无 PATH),而 dpkg 依赖 PATH
+/// 查找 dpkg-deb 等组件;缺失时补默认值,已设置时不覆盖
+fn ensure_spawn_env(cmd: &mut Command) {
+    if std::env::var_os("PATH").is_none() {
+        cmd.env(
+            "PATH",
+            "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        );
+    }
+}
+
 fn run_dpkg(
     mut cmd: Command,
     progress: &dyn InstallProgress,
     cancel: &CancelHandle,
 ) -> Result<DpkgOutcome, FdebiError> {
+    ensure_spawn_env(&mut cmd);
     use std::os::unix::process::CommandExt as _;
     // spawn 前设独立进程组:cancel() 可对整组 SIGTERM(含维护脚本子进程)
     cmd.process_group(0);

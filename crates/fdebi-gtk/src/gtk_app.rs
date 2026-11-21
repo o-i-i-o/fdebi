@@ -1808,9 +1808,14 @@ fn fill_static(gui: &MainWindow, info: &PackageInfo, deb: &DebFile) {
     if !summary.is_empty() {
         // GtkTextTag 的 weight 属性是 gint(PangoWeight 数值),不能直接传
         // pango::Weight 值类型,否则运行时报属性类型不匹配。700 = Bold。
-        let tag = buf
-            .create_tag(Some("summary"), &[("weight", &700i32)])
-            .expect("text tag");
+        // 描述缓冲区跨文件复用(批量模式逐行预览),同名 tag 已存在时
+        // 直接复用,重复 create_tag 会触发 GTK 断言并 panic
+        let tag = match buf.tag_table().lookup("summary") {
+            Some(t) => t,
+            None => buf
+                .create_tag(Some("summary"), &[("weight", &700i32)])
+                .expect("text tag"),
+        };
         let start = buf.start_iter();
         let mut end = buf.start_iter();
         end.forward_line();
