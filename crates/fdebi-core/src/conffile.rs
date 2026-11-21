@@ -9,9 +9,9 @@
 //! 2. 磁盘内容 ≠ 新包携带内容(内容一致时静默替换,无提示);
 //! 3. 磁盘内容 ≠ status 记录的装包时 md5(未修改时 dpkg 静默升级)。
 
-use crate::debfile::DebFile;
-use crate::sysstate::SysState;
 use md5::{Digest, Md5};
+
+use crate::debfile::DebFile;
 
 /// 一个需要用户决策的 conffile 冲突
 #[derive(Debug, Clone)]
@@ -20,22 +20,18 @@ pub struct ConffileConflict {
     pub path: String,
 }
 
-/// 预检 deb 的 conffile 冲突(包未安装时不产生冲突)
-pub fn conflicts(deb: &DebFile, sys: &SysState) -> Vec<ConffileConflict> {
+/// 预检 deb 的 conffile 冲突(包未安装时不产生冲突)。
+///
+/// `installed_conffiles` 为已装版本的 Conffiles 记录 `(path, md5)`,
+/// 来自 [`crate::apt::Apt::conffiles`](调用方按 deb 的 apt 键查询)。
+pub fn conflicts(
+    deb: &DebFile,
+    installed_conffiles: &[(String, String)],
+) -> Vec<ConffileConflict> {
     let pkg = deb.field_trimmed("Package").unwrap_or("").to_string();
-    if pkg.is_empty() {
+    if pkg.is_empty() || installed_conffiles.is_empty() {
         return Vec::new();
     }
-    let arch = deb.field_trimmed("Architecture").unwrap_or("all");
-    let key = if arch == "all" || arch == sys.native_arch {
-        pkg.clone()
-    } else {
-        format!("{pkg}:{arch}")
-    };
-    // 精确按 key 查找,避免多架构系统上裸名索引指向另一架构的已装包
-    let Some(installed) = sys.installed.iter().find(|p| p.key == key) else {
-        return Vec::new();
-    };
 
     let Ok(shipped) = deb.conffiles() else {
         return Vec::new();
@@ -47,8 +43,7 @@ pub fn conflicts(deb: &DebFile, sys: &SysState) -> Vec<ConffileConflict> {
             continue;
         };
         let disk = std::fs::read(&path).ok();
-        let recorded = installed
-            .conffiles
+        let recorded = installed_conffiles
             .iter()
             .find(|(p, _)| p == &path)
             .map(|(_, h)| h.as_str());

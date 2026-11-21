@@ -1,4 +1,4 @@
-//! dpkg 执行层(纯 Rust 管道的最后一段:实际写入仍由 dpkg 完成)。
+//! dpkg 执行层(实际写入由 dpkg 完成;求解/索引/下载由 libapt-pkg 完成)。
 //!
 //! 语义:
 //! - 需先卸载的冲突包:`dpkg --auto-deconfigure -r <names>`(源自求解器)
@@ -14,8 +14,9 @@
 //! - 互斥:执行前经 [`lock`] 探测包管理前端是否占锁(dpkg/apt-get/apt 等)
 //!   并等待其结束
 //! - 复核:dpkg 执行前用 [`FileStamp`] 确认本地 deb 未被替换
-//! - 标记:成功后经 [`aptmark`] 补齐 apt 标记(依赖 auto / 本地包 manual),
-//!   对齐 apt 的 autoremove 语义;标记失败仅告警,不影响安装结论
+//! - 标记:成功后经 [`crate::apt`] 重读 dpkg 状态并写入 extended_states
+//!   (依赖 auto / 本地包 manual),对齐 apt 的 autoremove 语义;
+//!   标记失败仅告警,不影响安装结论
 //! - 失败:保留输出尾部并归类([`FailureKind`]),返回 [`InstallReport`]
 //! - 取消:[`CancelHandle`] 标志位 + 对子进程组发 SIGTERM
 
@@ -28,8 +29,8 @@ use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
 
-use crate::aptmark;
-use crate::batch::{self, LocalMeta};
+use crate::apt::Apt;
+use crate::batch::{self, LocalMeta, base_name};
 use crate::debfile::DebFile;
 use crate::error::FdebiError;
 use crate::i18n::{gettext, tf};
@@ -380,7 +381,21 @@ fn ordered_paths(batch: &InstallBatch) -> Vec<PathBuf> {
         .collect()
 }
 
-/// 成功后补齐 apt 标记;失败降级为输出警告(包已装好,只是 autoremove 语义退化)
+/// 从求解器的 install 集筛出"随包依赖":去掉本地包自身(显式安装)
+pub fn dependency_names(install: &[String], local: &str) -> Vec<String> {
+    let local_base = base_name(local);
+    install
+        .iter()
+        .filter(|key| base_name(key) != local_base)
+        .cloned()
+        .collect()
+}
+
+/// 成功后补齐 apt 标记;失败降级为输出警告(包已装好,只是 autoremove 语义退化)。
+///
+/// 经 libapt-pkg 写 extended_states:dpkg 刚写完 status,这里新开一个
+/// apt 会话重读系统状态(旧会话的缓存还是安装前的快照),把依赖标 auto、
+/// 本地包标 manual,对齐 apt 显式安装语义。
 fn mark_installed(progress: &dyn InstallProgress, cancel: &CancelHandle, batch: &InstallBatch) {
     if batch.auto_mark.is_empty() && batch.local_package.is_empty() {
         return;
@@ -394,7 +409,9 @@ fn mark_installed(progress: &dyn InstallProgress, cancel: &CancelHandle, batch: 
             "Marking dependencies as automatically installed...",
         ));
     }
-    if let Err(e) = aptmark::apply(progress, cancel, &batch.auto_mark, &batch.local_package)
+    let result = Apt::open(&[])
+        .and_then(|mut apt| apt.build().and_then(|_| apt.mark(&batch.auto_mark, &batch.local_package)));
+    if let Err(e) = result
         && !matches!(e, FdebiError::Cancelled)
     {
         progress.output_line(&tf(
@@ -524,7 +541,30 @@ fn forward_output(child: &mut Child, progress: &dyn InstallProgress) -> Vec<Stri
 
 #[cfg(test)]
 mod tests {
-    use super::{FailureKind, FileStamp};
+    use super::{FailureKind, FileStamp, dependency_names};
+
+    #[test]
+    fn local_package_excluded_from_auto_marks() {
+        let install = vec![
+            "myapp".to_string(),
+            "libfoo".to_string(),
+            "libbar:amd64".to_string(),
+        ];
+        assert_eq!(
+            dependency_names(&install, "myapp"),
+            vec!["libfoo".to_string(), "libbar:amd64".to_string()]
+        );
+    }
+
+    #[test]
+    fn same_name_other_arch_stays_manual() {
+        // 本地包自身的键可能带架构后缀;按基名排除
+        let install = vec!["myapp:i386".to_string(), "libfoo".to_string()];
+        assert_eq!(
+            dependency_names(&install, "myapp"),
+            vec!["libfoo".to_string()]
+        );
+    }
 
     #[test]
     fn stamp_detects_replacement_and_removal() {

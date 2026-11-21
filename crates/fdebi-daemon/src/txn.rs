@@ -17,18 +17,15 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Arc, Mutex};
-use std::time::SystemTime;
 
-use fdebi_core::aptmark;
+use fdebi_core::apt::{self, Apt, Prior};
 use fdebi_core::batch::{self, LocalMeta};
-use fdebi_core::download::{self, DownloadProgress};
-use fdebi_core::health;
+use fdebi_core::conffile;
 use fdebi_core::i18n::{gettext, ngettext, tf};
 use fdebi_core::install::{self, CancelHandle, ConfPolicy, FileStamp, InstallBatch};
 use fdebi_core::lock;
 use fdebi_core::pty::InputHandle;
-use fdebi_core::solver::{self, Verdict};
-use fdebi_core::sysstate::SysState;
+use fdebi_core::solver::{ChangeKind, DownloadSpec, Verdict};
 use fdebi_core::ui::{AlertKind, InstallProgress, Ui};
 use fdebi_core::{DebFile, FdebiError};
 
@@ -67,8 +64,6 @@ struct Inner {
 
 pub struct Manager {
     inner: Inner,
-    /// SysState 缓存:(status mtime, lists mtime, state);apt_opts 非空时绕过
-    sys_cache: Mutex<Option<(SystemTime, SystemTime, Arc<SysState>)>>,
 }
 
 impl Manager {
@@ -78,7 +73,6 @@ impl Manager {
                 next_id: AtomicU32::new(1),
                 txns: Mutex::new(HashMap::new()),
             },
-            sys_cache: Mutex::new(None),
         })
     }
 
@@ -132,30 +126,6 @@ impl Manager {
         match txns.get(&id) {
             Some(txn) if txn.caller == caller => txn.input.send(line),
             _ => false,
-        }
-    }
-
-    /// 系统状态缓存:dpkg/status 与 lists 目录 mtime 不变时复用
-    fn sys_state(&self, apt_opts: &[String]) -> Result<Arc<SysState>, FdebiError> {
-        if apt_opts.is_empty() {
-            let st_mtime = std::fs::metadata(fdebi_core::sysstate::DPKG_STATUS)
-                .and_then(|m| m.modified())
-                .unwrap_or(SystemTime::UNIX_EPOCH);
-            let li_mtime = std::fs::metadata(fdebi_core::sysstate::LISTS_DIR)
-                .and_then(|m| m.modified())
-                .unwrap_or(SystemTime::UNIX_EPOCH);
-            let mut cache = self.sys_cache.lock().unwrap();
-            if let Some((st, li, state)) = cache.as_ref()
-                && *st == st_mtime
-                && *li == li_mtime
-            {
-                return Ok(state.clone());
-            }
-            let state = Arc::new(SysState::load(apt_opts)?);
-            *cache = Some((st_mtime, li_mtime, state.clone()));
-            Ok(state)
-        } else {
-            Ok(Arc::new(SysState::load(apt_opts)?))
         }
     }
 }
@@ -274,49 +244,44 @@ fn open_item(path: &str) -> Result<DebFile, String> {
     DebFile::open(path).map_err(|e| e.to_string())
 }
 
-/// deb 的 apt 键(键派生规则与 solver/conffile 一致)
-fn deb_key(sys: &SysState, deb: &DebFile) -> String {
-    let name = deb.field_trimmed("Package").unwrap_or("");
-    let arch = deb.field_trimmed("Architecture").unwrap_or("all");
-    if arch == "all" || arch == sys.native_arch {
-        name.to_string()
-    } else {
-        format!("{name}:{arch}")
-    }
+/// deb 的 apt 键(键派生规则与 conffile 一致:外部架构带 :arch)
+fn deb_key(apt: &Apt, deb: &DebFile) -> String {
+    apt.key_for(deb)
 }
 
 /// deb 的已安装版本(未安装为空串)
-fn installed_version_of(sys: &SysState, deb: &DebFile) -> String {
-    sys.installed_version(&deb_key(sys, deb))
+fn installed_version_of(apt: &Apt, deb: &DebFile) -> String {
+    apt.installed_version(&deb_key(apt, deb))
         .unwrap_or_default()
-        .to_string()
 }
 
 /// deb 在软件源中的最高候选版本(源中没有该包为空串)
-fn repo_version_of(sys: &SysState, deb: &DebFile) -> String {
-    sys.candidate_version(&deb_key(sys, deb))
+fn repo_version_of(apt: &Apt, deb: &DebFile) -> String {
+    apt.repo_version(&deb_key(apt, deb))
         .unwrap_or_default()
-        .to_string()
 }
 
-fn conffile_conflicts_of(sys: &SysState, deb: &DebFile) -> Vec<(String, String)> {
-    fdebi_core::conffile::conflicts(deb, sys)
+fn conffile_conflicts_of(apt: &Apt, deb: &DebFile) -> Vec<(String, String)> {
+    let records = apt
+        .conffiles(&deb_key(apt, deb))
+        .unwrap_or_default();
+    conffile::conflicts(deb, &records)
         .into_iter()
         .map(|c| (c.package, c.path))
         .collect()
 }
 
-/// 求解结论 → D-Bus 分析结果(批量路径直接复用 resolve_batch 的结论)
+/// 求解结论 → D-Bus 分析结果(批量路径直接复用逐包求解的结论)
 fn result_from_verdict(
-    sys: &SysState,
+    apt: &Apt,
     deb: &DebFile,
     verdict: Verdict,
     broken: &[String],
     apt_stale: bool,
 ) -> fdebi_core::AnalyzeResult {
-    let installed_version = installed_version_of(sys, deb);
-    let repo_version = repo_version_of(sys, deb);
-    let conffile_conflicts = conffile_conflicts_of(sys, deb);
+    let installed_version = installed_version_of(apt, deb);
+    let repo_version = repo_version_of(apt, deb);
+    let conffile_conflicts = conffile_conflicts_of(apt, deb);
     let broken = broken.to_vec();
     match verdict {
         Verdict::Installable(res) => (
@@ -357,25 +322,23 @@ fn result_from_verdict(
     }
 }
 
-/// 系统异常包快照;查询失败不阻断分析(按无异常处理)
-fn broken_snapshot() -> Vec<String> {
-    health::broken_packages().unwrap_or_default()
+/// 系统异常包快照;查询失败不阻断分析(按无异常处理)。
+/// 每次新建 apt 会话重读 dpkg 状态(旧会话缓存可能是安装前的快照)。
+fn broken_snapshot(apt_opts: &[String]) -> Vec<String> {
+    Apt::open(apt_opts)
+        .and_then(|mut apt| apt.build().and_then(|_| apt.broken()))
+        .unwrap_or_default()
 }
 
 /// 单文件分析的结论组装
 fn analyze_deb(
-    sys: &SysState,
+    apt: &mut Apt,
     deb: &DebFile,
     apt_stale: bool,
 ) -> Result<fdebi_core::AnalyzeResult, FdebiError> {
-    let verdict = solver::resolve(sys, deb)?;
-    Ok(result_from_verdict(
-        sys,
-        deb,
-        verdict,
-        &broken_snapshot(),
-        apt_stale,
-    ))
+    let broken = apt.broken()?;
+    let verdict = apt.solve(deb, &[])?;
+    Ok(result_from_verdict(apt, deb, verdict, &broken, apt_stale))
 }
 
 /// 只读分析(D-Bus 方法内同步执行,重活放独立线程避免阻塞总线任务)
@@ -384,24 +347,25 @@ pub fn analyze(
     path: &str,
     apt_opts: &[String],
 ) -> Result<fdebi_core::AnalyzeResult, String> {
-    // 只读免授权:先校验并打开文件,再加载系统状态
+    // 只读免授权:先校验并打开文件,再构建 apt 缓存
     let deb = open_item(path)?;
-    let sys = manager.sys_state(apt_opts).map_err(|e| e.to_string())?;
-    let apt_stale = fdebi_core::sysstate::lists_stale(apt_opts);
-    analyze_deb(&sys, &deb, apt_stale).map_err(|e| e.to_string())
+    let _ = manager;
+    let mut apt = Apt::with_debs(apt_opts, &[PathBuf::from(path)]).map_err(|e| e.to_string())?;
+    let apt_stale = apt::lists_stale(apt_opts);
+    analyze_deb(&mut apt, &deb, apt_stale).map_err(|e| e.to_string())
 }
 
 /// 卸载前反向依赖预检:返回 [(受影响包, 依赖组)];只读,无需授权
 pub fn check_removal(manager: &Arc<Manager>, name: &str) -> Result<Vec<(String, String)>, String> {
-    let sys = manager.sys_state(&[]).map_err(|e| e.to_string())?;
-    Ok(solver::reverse_dependents(&sys, &[name.to_string()])
-        .into_iter()
-        .map(|r| (r.package, r.requires))
-        .collect())
+    let _ = manager;
+    let mut apt = Apt::open(&[]).map_err(|e| e.to_string())?;
+    apt.build().map_err(|e| e.to_string())?;
+    apt.reverse_deps(name).map_err(|e| e.to_string())
 }
 
-/// 批量只读分析:一次加载系统状态,按批内依赖顺序求解,并把前面已判定
-/// 可安装的本地包作为后续包的已安装上下文(A 依赖同批 B 时 A 不再误判)。
+/// 批量只读分析:一次 apt 会话加载全部本地包(volatile 源),按批内依赖
+/// 顺序求解,并把前面已判定可安装的本地包作为后续包的求解上下文
+/// (A 依赖同批 B 时 A 不再误判)。
 ///
 /// 返回值与 `paths` 一一对应;单个文件打开失败只影响该项。
 pub fn analyze_batch(
@@ -409,14 +373,55 @@ pub fn analyze_batch(
     paths: &[String],
     apt_opts: &[String],
 ) -> Result<Vec<fdebi_core::AnalyzeItem>, String> {
-    let sys = manager.sys_state(apt_opts).map_err(|e| e.to_string())?;
-    let broken = broken_snapshot();
-    let apt_stale = fdebi_core::sysstate::lists_stale(apt_opts);
+    let _ = manager;
+    let broken = broken_snapshot(apt_opts);
+    let apt_stale = apt::lists_stale(apt_opts);
 
     // 先打开全部文件:打开失败逐项报告,不阻塞其余包的批内求解
     let opened: Vec<Result<DebFile, String>> = paths.iter().map(|p| open_item(p)).collect();
+    let opened_paths: Vec<PathBuf> = opened
+        .iter()
+        .filter_map(|r| r.as_ref().ok())
+        .map(|deb| deb.path().to_path_buf())
+        .collect();
+    let mut apt = Apt::with_debs(apt_opts, &opened_paths).map_err(|e| e.to_string())?;
+
+    // 按批内依赖顺序求解;前面已判定可安装的包进入后续包的求解上下文
     let debs: Vec<&DebFile> = opened.iter().filter_map(|r| r.as_ref().ok()).collect();
-    let mut verdicts = solver::resolve_batch(&sys, &debs).into_iter();
+    let metas: Vec<LocalMeta<'_>> = debs
+        .iter()
+        .map(|deb| {
+            let field = |name: &str| deb.field_trimmed(name).unwrap_or("");
+            LocalMeta {
+                name: field("Package"),
+                depends: field("Depends"),
+                pre_depends: field("Pre-Depends"),
+                provides: field("Provides"),
+            }
+        })
+        .collect();
+    let order = batch::order_by_dependencies(&metas);
+
+    let mut verdicts: Vec<Option<Result<Verdict, FdebiError>>> = vec![None; debs.len()];
+    let mut priors: Vec<Prior> = Vec::new();
+    for &idx in &order {
+        let deb = debs[idx];
+        match apt.solve(deb, &priors) {
+            Ok(v @ Verdict::Installable(_)) => {
+                // 打开成功的项与 opened_paths 顺序一致
+                priors.push(Prior {
+                    key: apt.key_for(deb),
+                    version: deb.field_trimmed("Version").unwrap_or("").to_string(),
+                    arch: deb.field_trimmed("Architecture").unwrap_or("all").to_string(),
+                    path: deb.path().to_string_lossy().into_owned(),
+                });
+                verdicts[idx] = Some(Ok(v));
+            }
+            Ok(v) => verdicts[idx] = Some(Ok(v)),
+            Err(e) => verdicts[idx] = Some(Err(e)),
+        }
+    }
+    let mut verdicts = verdicts.into_iter();
 
     let mut out: Vec<fdebi_core::AnalyzeItem> = Vec::with_capacity(paths.len());
     for (path, opened) in paths.iter().zip(opened.iter()) {
@@ -435,7 +440,7 @@ pub fn analyze_batch(
                 apt_stale,
             ),
             Ok(deb) => {
-                // 打开成功的项与 resolve_batch 输入顺序一致
+                // 打开成功的项与求解顺序一一对应
                 let (
                     installable,
                     failure,
@@ -448,29 +453,29 @@ pub fn analyze_batch(
                     conflicts,
                     item_apt_stale,
                 ) = match verdicts.next() {
-                    Some(Ok(v)) => result_from_verdict(&sys, deb, v, &broken, apt_stale),
-                    Some(Err(e)) => (
+                    Some(Some(Ok(v))) => result_from_verdict(&apt, deb, v, &broken, apt_stale),
+                    Some(Some(Err(e))) => (
                         false,
                         e.to_string(),
                         Vec::new(),
                         Vec::new(),
                         Vec::new(),
-                        installed_version_of(&sys, deb),
-                        repo_version_of(&sys, deb),
+                        installed_version_of(&apt, deb),
+                        repo_version_of(&apt, deb),
                         broken.clone(),
-                        conffile_conflicts_of(&sys, deb),
+                        conffile_conflicts_of(&apt, deb),
                         apt_stale,
                     ),
-                    None => (
+                    _ => (
                         false,
                         gettext("internal error: missing analysis result"),
                         Vec::new(),
                         Vec::new(),
                         Vec::new(),
-                        installed_version_of(&sys, deb),
-                        repo_version_of(&sys, deb),
+                        installed_version_of(&apt, deb),
+                        repo_version_of(&apt, deb),
                         broken.clone(),
-                        conffile_conflicts_of(&sys, deb),
+                        conffile_conflicts_of(&apt, deb),
                         apt_stale,
                     ),
                 };
@@ -548,7 +553,7 @@ fn installed_summary(installed: usize, total: usize) -> String {
 }
 
 fn run_install(
-    manager: &Arc<Manager>,
+    _manager: &Arc<Manager>,
     conn: &zbus::Connection,
     txn: &Arc<Txn>,
     id: u32,
@@ -653,7 +658,7 @@ fn run_install(
     let mut failures: Vec<String> = Vec::new();
     // 安装前健康快照:装后只报告本次事务新增的异常包(避免把用户
     // 本来就存在的未配置包算到 fdebi 头上)
-    let broken_before = broken_snapshot();
+    let broken_before = broken_snapshot(apt_opts);
 
     for (step, &idx) in order.iter().enumerate() {
         if txn.cancel.is_cancelled() {
@@ -710,15 +715,15 @@ fn run_install(
             return;
         }
 
-        // 每包重读系统状态:上一包可能改变了已装集合
-        let sys = match manager.sys_state(apt_opts) {
-            Ok(s) => s,
+        // 每包新建 apt 会话:上一包可能改变了已装集合,旧缓存已失效
+        let mut apt = match Apt::with_debs(apt_opts, &[item.path.clone()]) {
+            Ok(a) => a,
             Err(e) => {
                 finalize(conn, txn, FAILED, &e.to_string(), id, false);
                 return;
             }
         };
-        let resolution = match solver::resolve(&sys, deb) {
+        let resolution = match apt.solve(deb, &[]) {
             Ok(Verdict::Installable(r)) => r,
             Ok(Verdict::Uninstallable(failure)) => {
                 emit_package(conn, id, item, "failed", &failure);
@@ -733,64 +738,62 @@ fn run_install(
             }
         };
 
-        if !resolution.downloads.is_empty() {
+        let dep_debs = if !resolution.downloads.is_empty() {
             *txn.state.lock().unwrap() = (DOWNLOADING.to_string(), String::new());
             emit(conn, "TransactionEvent", &(id, DOWNLOADING.to_string()));
             let dp = TxnProgress {
                 id,
                 conn: conn.clone(),
             };
-            if let Err(e) = download::download_all(&resolution.downloads, &dp, &txn.cancel) {
-                if matches!(e, FdebiError::Cancelled) {
-                    finalize(
-                        conn,
-                        txn,
-                        CANCELLED,
-                        &installed_summary(installed, total),
-                        id,
-                        false,
-                    );
-                    return;
-                }
-                let detail = e.to_string();
-                emit_package(conn, id, item, "failed", &detail);
-                failures.push(format!("{}: {detail}", item.name));
-                continue;
-            }
+            let result = fetch_all(&mut apt, &resolution.downloads, &dp, &txn.cancel);
             *txn.state.lock().unwrap() = (INSTALLING.to_string(), String::new());
             emit(conn, "TransactionEvent", &(id, INSTALLING.to_string()));
-        }
+            match result {
+                Ok(paths) => paths,
+                Err(e) => {
+                    if matches!(e, FdebiError::Cancelled) {
+                        finalize(
+                            conn,
+                            txn,
+                            CANCELLED,
+                            &installed_summary(installed, total),
+                            id,
+                            false,
+                        );
+                        return;
+                    }
+                    let detail = e.to_string();
+                    emit_package(conn, id, item, "failed", &detail);
+                    failures.push(format!("{}: {detail}", item.name));
+                    continue;
+                }
+            }
+        } else {
+            Vec::new()
+        };
 
         // 本地包的 apt 键:外部架构带 :arch(与 extended_states 的键一致)
-        let local_key = {
-            let arch = deb.field_trimmed("Architecture").unwrap_or("");
-            if arch.is_empty() || arch == "all" || arch == sys.native_arch {
-                item.name.clone()
-            } else {
-                format!("{}:{}", item.name, arch)
-            }
-        };
+        let local_key = apt.key_for(deb);
         // debconf 模板检测:本地包或任一依赖携带 templates → 交互式(PTY)
         let interactive = deb_has_templates(deb)
-            || resolution
-                .downloads
+            || dep_debs
                 .iter()
-                .any(|d| DebFile::open(&d.dest).is_ok_and(|dep| deb_has_templates(&dep)));
+                .any(|p| DebFile::open(p).is_ok_and(|dep| deb_has_templates(&dep)));
         let batch = InstallBatch {
             local: item.path.clone(),
             local_stamp: item.stamp,
-            dep_debs: resolution
-                .downloads
-                .iter()
-                .map(|d| d.dest.clone())
-                .collect(),
+            dep_debs,
             remove: resolution.changes.remove.clone(),
             conf_policy: *conf_policy,
             // 依赖标记对齐 apt:只把本次新装的依赖标为 auto(升级已装包
             // 不改动其手动标记),本地包标为 manual
-            auto_mark: aptmark::dependency_names(&resolution.changes.install, &local_key)
+            auto_mark: install::dependency_names(&resolution.changes.install, &local_key)
                 .into_iter()
-                .filter(|key| sys.installed_version(key).is_none())
+                .filter(|key| {
+                    apt.installed_version(key)
+                        .map(|v| v.is_empty())
+                        .unwrap_or(false)
+                })
                 .collect(),
             local_package: local_key,
             interactive,
@@ -834,7 +837,7 @@ fn run_install(
 
     // 4. 装后健康检查:dpkg 退出码为 0 也可能留下未配置的依赖方
     //    (例如 Provides 丢失或 Postinst 依赖未满足)。只报告新增问题。
-    let broken_after = broken_snapshot();
+    let broken_after = broken_snapshot(apt_opts);
     let new_broken: Vec<&str> = broken_after
         .iter()
         .filter(|p| !broken_before.contains(p))
@@ -935,18 +938,22 @@ impl InstallProgress for TxnProgress {
     }
 }
 
-impl DownloadProgress for TxnProgress {
-    fn item_start(&self, name: &str, idx: usize, total: usize) {
+/// 仓库归档下载进度(apt 获取回调 → D-Bus 进度信号)
+impl TxnProgress {
+    fn fetch_start(&self, name: &str, idx: usize, total: usize) {
         emit_progress(
             &self.conn,
             self.id,
             -1.0,
-            &tf("Fetching file {0} of {1}", &[name, &total.to_string()]),
+            &tf(
+                "Fetching file {0} of {1}",
+                &[&idx.to_string(), &total.to_string()],
+            ),
         );
-        let _ = idx;
+        let _ = name;
     }
 
-    fn item_progress(&self, name: &str, received: u64, size: u64) {
+    fn fetch_progress(&self, name: &str, received: u64, size: u64) {
         let percent = if size > 0 {
             received as f64 * 100.0 / size as f64
         } else {
@@ -955,7 +962,32 @@ impl DownloadProgress for TxnProgress {
         emit_progress(&self.conn, self.id, percent, name);
     }
 
-    fn item_done(&self, _name: &str) {}
+    fn fetch_done(&self, _name: &str) {}
+}
+
+/// 下载全部仓库依赖(逐项回调进度);返回本地归档路径
+fn fetch_all(
+    apt: &mut Apt,
+    downloads: &[DownloadSpec],
+    progress: &TxnProgress,
+    cancel: &CancelHandle,
+) -> Result<Vec<PathBuf>, FdebiError> {
+    let total = downloads.len();
+    let mut paths = Vec::with_capacity(total);
+    for (idx, spec) in downloads.iter().enumerate() {
+        if cancel.is_cancelled() {
+            return Err(FdebiError::Cancelled);
+        }
+        progress.fetch_start(&spec.name, idx + 1, total);
+        let name = spec.name.clone();
+        let path = apt.fetch(&spec.name, &spec.version, |received, size| {
+            progress.fetch_progress(&name, received, size);
+            cancel.is_cancelled()
+        })?;
+        progress.fetch_done(&spec.name);
+        paths.push(path);
+    }
+    Ok(paths)
 }
 
 /// 守护进程无交互界面:告警转为输出行;确认类回调一律拒绝

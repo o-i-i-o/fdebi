@@ -36,11 +36,12 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      # GTK4 开发头(gtk4-rs 经 pkg-config 探测)+ gettext 工具链(po 构建/校验)
+      # GTK4 开发头(gtk4-rs 经 pkg-config 探测)+ libapt-pkg 开发头
+      # (apt shim C++ 编译)+ gettext 工具链(po 构建/校验)
       - name: 安装系统依赖
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends libgtk-4-dev gettext
+          sudo apt-get install -y --no-install-recommends libgtk-4-dev libapt-pkg-dev gettext
 
       # 翻译校验:头部字段(Language/Plural-Forms)、占位符 {N} 一致性、
       # HTML 标签、fuzzy/废弃条目残留;内含 msgfmt --check
@@ -72,7 +73,7 @@ jobs:
       - name: 安装系统依赖
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends libgtk-4-dev gettext
+          sudo apt-get install -y --no-install-recommends libgtk-4-dev libapt-pkg-dev gettext
 
       - name: 构建 .deb
         run: ./scripts/build-deb.sh

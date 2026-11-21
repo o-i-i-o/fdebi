@@ -1,14 +1,12 @@
 //! 批量安装的纯逻辑:按本地 deb 之间的 Depends/Pre-Depends 关系排定顺序。
 //!
 //! 逐包执行(而非一次 `dpkg -i` 全部)才能做到失败隔离与逐包状态;
-//! 但若 A 依赖同批的 B,必须先把 B 装进系统,求解器处理 A 时才能看到
+//! 但若 A 依赖同批的 B,必须先把 B 装进系统,后续求解/安装才能看到
 //! 满足者。这里按依赖图拓扑排序,同层保持用户选择顺序;环按输入顺序
 //! 追加(交给 dpkg 报错,不做猜测)。
 
 use std::cmp::Reverse;
 use std::collections::{BinaryHeap, HashMap, HashSet};
-
-use crate::sysstate::{base_name, parse_depends, provided_names};
 
 /// 批量条目参与排序的 control 字段(空串表示无)
 pub struct LocalMeta<'a> {
@@ -18,15 +16,51 @@ pub struct LocalMeta<'a> {
     pub provides: &'a str,
 }
 
+/// 包名去掉 :arch 后缀
+pub fn base_name(name: &str) -> &str {
+    name.split(':').next().unwrap_or(name)
+}
+
+/// 依赖字段 → or 组列表(组内为候选名;排序只关心名字,不解析版本约束)
+fn dep_group_names(s: &str) -> Vec<Vec<&str>> {
+    s.split(',')
+        .filter(|g| !g.trim().is_empty())
+        .map(|group| {
+            group
+                .split('|')
+                .map(|d| base_name(d.trim()))
+                .filter(|n| !n.is_empty())
+                .collect()
+        })
+        .collect()
+}
+
+/// Provides 字段 → 虚拟名列表(排序只关心名字)
+fn provided_names(field: &str) -> Vec<&str> {
+    field
+        .split(',')
+        .filter_map(|e| {
+            let e = e.trim();
+            if e.is_empty() {
+                return None;
+            }
+            // 丢弃 "(= ver)" 部分,再去掉架构限定
+            let name = e.find('(' ).map(|i| &e[..i]).unwrap_or(e);
+            let name = base_name(name.trim());
+            (!name.is_empty()).then_some(name)
+        })
+        .collect()
+}
+
 /// 返回安装顺序(输入下标):被依赖者在前,依赖者在其后
 pub fn order_by_dependencies(metas: &[LocalMeta<'_>]) -> Vec<usize> {
     let n = metas.len();
 
     // 名字(含 Provides 虚拟名)→ 条目下标;同名取先出现者
-    let mut by_name: HashMap<String, usize> = HashMap::new();
+    let mut by_name: HashMap<&str, usize> = HashMap::new();
     for (i, m) in metas.iter().enumerate() {
-        by_name.entry(m.name.to_string()).or_insert(i);
-        for (provided, _) in provided_names(m.provides) {
+        by_name.entry(m.name).or_insert(i);
+        for provided in provided_names(m.provides) {
             by_name.entry(provided).or_insert(i);
         }
     }
@@ -36,12 +70,12 @@ pub fn order_by_dependencies(metas: &[LocalMeta<'_>]) -> Vec<usize> {
     let mut indeg = vec![0usize; n];
     for (i, m) in metas.iter().enumerate() {
         let mut seen = HashSet::new();
-        for group in parse_depends(m.depends)
+        for group in dep_group_names(m.depends)
             .into_iter()
-            .chain(parse_depends(m.pre_depends))
+            .chain(dep_group_names(m.pre_depends))
         {
             for dep in group {
-                let Some(&dep_idx) = by_name.get(base_name(&dep.name)) else {
+                let Some(&dep_idx) = by_name.get(dep) else {
                     continue;
                 };
                 if dep_idx != i && seen.insert(dep_idx) {
@@ -129,6 +163,13 @@ mod tests {
             provides: "",
         };
         let metas = [consumer, meta("base", "")];
+        assert_eq!(order_by_dependencies(&metas), vec![1, 0]);
+    }
+
+    #[test]
+    fn arch_qualified_names_match_base_names() {
+        // 依赖名可能带 :arch 限定;排序按基名匹配
+        let metas = [meta("app", "libfoo:amd64 (>= 1)"), meta("libfoo", "")];
         assert_eq!(order_by_dependencies(&metas), vec![1, 0]);
     }
 }

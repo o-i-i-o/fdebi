@@ -19,10 +19,8 @@ pub enum FdebiError {
     Io(io::Error),
     /// 子进程(dpkg 系统能力调用)执行失败:命令 + stderr 摘要
     Subprocess(String, String),
-    /// 仓库索引解压失败:文件 + 原因
-    ListDecompress(String, String),
-    /// 下载失败:URL + 原因
-    Download(String, String),
+    /// libapt-pkg 层失败(缓存构建/求解/下载/标记):用户可读原因
+    Apt(String),
     /// 求解/下载期间文件被替换或删除(TOCTOU):路径
     FileChanged(PathBuf),
     /// 用户请求取消
@@ -56,11 +54,8 @@ impl fmt::Display for FdebiError {
             Self::Subprocess(cmd, stderr) => {
                 tf("subprocess {0} failed: {1}", &[cmd, stderr.trim()])
             }
-            Self::ListDecompress(path, reason) => tf(
-                "cannot decompress repository index {0}: {1}",
-                &[path, reason],
-            ),
-            Self::Download(url, reason) => tf("cannot download {0}: {1}", &[url, reason]),
+            // apt 层文案已按用户可读语义组装,原样输出
+            Self::Apt(message) => return write!(f, "{message}"),
             Self::FileChanged(path) => tf(
                 "package file {0} changed or disappeared before installation",
                 &[&path.display().to_string()],

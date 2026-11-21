@@ -15,21 +15,17 @@ use std::io::{BufRead, Write};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::SystemTime;
 
 use clap::Parser;
 
-use fdebi_core::aptmark;
+use fdebi_core::apt::{self, Apt};
 use fdebi_core::batch::{self, LocalMeta};
 use fdebi_core::conffile;
-use fdebi_core::download::{self, DownloadProgress};
-use fdebi_core::health;
 use fdebi_core::i18n::{gettext, ngettext, tf};
 use fdebi_core::install::{self, CancelHandle, ConfPolicy, FileStamp, InstallBatch};
 use fdebi_core::lock;
 use fdebi_core::pty::InputHandle;
-use fdebi_core::solver::{self, Resolution, Verdict};
-use fdebi_core::sysstate::SysState;
+use fdebi_core::solver::{ChangeKind, DownloadSpec, Resolution, Verdict};
 use fdebi_core::ui::{AlertKind, InstallProgress, Ui};
 use fdebi_core::{DebFile, FdebiError};
 
@@ -100,11 +96,15 @@ fn spawn_signal_watcher(cancel: Arc<CancelHandle>) {
 
 fn run(args: &Args, conf_policy: ConfPolicy, cancel: &CancelHandle) -> i32 {
     let items = open_items(&args.debs);
-    let mut sys_cache: Option<(SystemTime, SystemTime, Arc<SysState>)> = None;
 
-    // ---- 分析:快照系统状态,逐包求解并打印方案 ----
-    let sys = match sys_cached(&mut sys_cache, &args.apt_opt) {
-        Ok(s) => s,
+    // ---- 分析:一次 apt 会话加载全部本地包(volatile 源),逐包求解 ----
+    let opened: Vec<PathBuf> = items
+        .iter()
+        .filter(|it| it.deb.is_some())
+        .map(|it| it.path.clone())
+        .collect();
+    let mut apt = match Apt::with_debs(&args.apt_opt, &opened) {
+        Ok(a) => a,
         Err(e) => {
             eprintln!("fdebi-core: {e}");
             return 1;
@@ -114,20 +114,25 @@ fn run(args: &Args, conf_policy: ConfPolicy, cancel: &CancelHandle) -> i32 {
     let mut unauthenticated: Vec<String> = Vec::new();
     // 系统已有未完成操作时先提示(gdebi 用 apt broken_count 拒绝继续;
     // 这里只警告,用户仍可尝试安装/修复)
-    if let Ok(broken) = health::broken_packages()
-        && !broken.is_empty()
-    {
-        eprintln!(
-            "{}: {}",
-            gettext("Warning: some packages are not fully installed"),
-            broken.join(", ")
-        );
-        eprintln!(
-            "    {}",
-            gettext("Run 'sudo apt-get install -f' to repair.")
-        );
+    match apt.broken() {
+        Ok(broken) if !broken.is_empty() => {
+            eprintln!(
+                "{}: {}",
+                gettext("Warning: some packages are not fully installed"),
+                broken.join(", ")
+            );
+            eprintln!(
+                "    {}",
+                gettext("Run 'sudo apt-get install -f' to repair.")
+            );
+        }
+        Ok(_) => {}
+        Err(e) => {
+            eprintln!("fdebi-core: {e}");
+            return 1;
+        }
     }
-    if fdebi_core::sysstate::lists_stale(&args.apt_opt) {
+    if apt::lists_stale(&args.apt_opt) {
         eprintln!(
             "{}",
             gettext(
@@ -136,7 +141,7 @@ fn run(args: &Args, conf_policy: ConfPolicy, cancel: &CancelHandle) -> i32 {
         );
     }
     for item in &items {
-        match analyze_item(&sys, item) {
+        match analyze_item(&mut apt, item) {
             Ok(res) => unauthenticated.extend(res.changes.unauthenticated.iter().cloned()),
             Err(_) => analysis_failed = true,
         }
@@ -169,38 +174,11 @@ fn run(args: &Args, conf_policy: ConfPolicy, cancel: &CancelHandle) -> i32 {
         }
     }
 
-    install_phase(args, conf_policy, cancel, &items, &mut sys_cache)
-}
-
-/// mtime 缓存的系统状态加载(与守护进程 sys_state 同策略):
-/// dpkg status 与 apt 列表目录的 mtime 未变时直接复用,免去重复解析
-/// 全部仓库索引(真实索引规模下单次加载约 0.8s)
-fn sys_cached(
-    cache: &mut Option<(SystemTime, SystemTime, Arc<SysState>)>,
-    apt_opts: &[String],
-) -> Result<Arc<SysState>, FdebiError> {
-    if apt_opts.is_empty() {
-        let st_mtime = std::fs::metadata(fdebi_core::sysstate::DPKG_STATUS)
-            .and_then(|m| m.modified())
-            .unwrap_or(SystemTime::UNIX_EPOCH);
-        let li_mtime = std::fs::metadata(fdebi_core::sysstate::LISTS_DIR)
-            .and_then(|m| m.modified())
-            .unwrap_or(SystemTime::UNIX_EPOCH);
-        if let Some((st, li, state)) = cache
-            && *st == st_mtime
-            && *li == li_mtime
-        {
-            return Ok(state.clone());
-        }
-        let state = Arc::new(SysState::load(apt_opts)?);
-        *cache = Some((st_mtime, li_mtime, state.clone()));
-        return Ok(state);
-    }
-    Ok(Arc::new(SysState::load(apt_opts)?))
+    install_phase(args, conf_policy, cancel, &items)
 }
 
 /// 打印单个 deb 的分析方案;可安装时返回其求解结果
-fn analyze_item(sys: &SysState, item: &Item) -> Result<Resolution, String> {
+fn analyze_item(apt: &mut Apt, item: &Item) -> Result<Resolution, String> {
     println!("==> {}", item.path_str);
     if let Some(reason) = &item.error {
         eprintln!("    {reason}");
@@ -213,34 +191,36 @@ fn analyze_item(sys: &SysState, item: &Item) -> Result<Resolution, String> {
         .field_trimmed("Architecture")
         .unwrap_or("all")
         .to_string();
-    let key = if arch == "all" || arch == sys.native_arch {
-        name.clone()
-    } else {
-        format!("{name}:{arch}")
+    let key = apt.key_for(deb);
+    let installed = match apt.installed_version(&key) {
+        Ok(v) if !v.is_empty() => v,
+        Ok(_) => gettext("not installed"),
+        Err(e) => return Err(e.to_string()),
     };
-    let installed = sys
-        .installed_version(&key)
-        .map(String::from)
-        .unwrap_or_else(|| gettext("not installed"));
     println!("    {}: {name} {version} [{arch}]", gettext("Package"));
     println!("    {}: {installed}", gettext("Installed version"));
-    if let Some(repo) = sys.candidate_version(&key) {
-        println!("    {}: {repo}", gettext("Repository version"));
+    match apt.repo_version(&key) {
+        Ok(repo) if !repo.is_empty() => {
+            println!("    {}: {repo}", gettext("Repository version"));
+        }
+        Ok(_) => {}
+        Err(e) => return Err(e.to_string()),
     }
 
-    let conflicts = conffile::conflicts(deb, sys);
-    match solver::resolve(sys, deb) {
+    let installed_conffiles = apt.conffiles(&key).unwrap_or_default();
+    let conflicts = conffile::conflicts(deb, &installed_conffiles);
+    match apt.solve(deb, &[]) {
         Ok(Verdict::Installable(res)) => {
             let install = res
                 .changes
                 .install_details
                 .iter()
                 .map(|c| match c.kind {
-                    solver::ChangeKind::New => c.name.clone(),
-                    solver::ChangeKind::Upgrade => {
+                    ChangeKind::New => c.name.clone(),
+                    ChangeKind::Upgrade => {
                         format!("{} ({} → {})", c.name, c.old_version, c.new_version)
                     }
-                    solver::ChangeKind::Downgrade => {
+                    ChangeKind::Downgrade => {
                         format!(
                             "{} ({} → {}, {})",
                             c.name,
@@ -249,7 +229,7 @@ fn analyze_item(sys: &SysState, item: &Item) -> Result<Resolution, String> {
                             gettext("downgrade")
                         )
                     }
-                    solver::ChangeKind::Reinstall => {
+                    ChangeKind::Reinstall => {
                         format!("{} ({})", c.name, gettext("reinstall"))
                     }
                 })
@@ -305,13 +285,7 @@ fn analyze_item(sys: &SysState, item: &Item) -> Result<Resolution, String> {
 
 /// 安装阶段:与守护进程 run_install 同管线(等锁 → 逐包重解 → 下载 →
 /// dpkg 批装 → apt 标记);批量一次确认,单包失败不中断其余包。
-fn install_phase(
-    args: &Args,
-    conf_policy: ConfPolicy,
-    cancel: &CancelHandle,
-    items: &[Item],
-    cache: &mut Option<(SystemTime, SystemTime, Arc<SysState>)>,
-) -> i32 {
+fn install_phase(args: &Args, conf_policy: ConfPolicy, cancel: &CancelHandle, items: &[Item]) -> i32 {
     let input = Arc::new(InputHandle::new());
     let ui = CliUi;
     let progress = CliProgress {
@@ -341,7 +315,13 @@ fn install_phase(
     let total = items.len();
     let mut installed = 0usize;
     let mut failures: Vec<String> = Vec::new();
-    let broken_before = health::broken_packages().unwrap_or_default();
+    // 安装前健康快照:装后只报告本次事务新增的异常包(避免把用户
+    // 本来就存在的未配置包算到 fdebi 头上)
+    let broken_before = match Apt::open(&args.apt_opt).and_then(|mut a| a.build().and_then(|_| a.broken()))
+    {
+        Ok(broken) => broken,
+        Err(e) => return flow_aborted(e, total, installed),
+    };
 
     for (step, &idx) in order.iter().enumerate() {
         if cancel.is_cancelled() {
@@ -376,12 +356,12 @@ fn install_phase(
             return flow_aborted(e, total, installed);
         }
 
-        // 每包重读系统状态(mtime 缓存):上一包可能改变了已装集合
-        let sys = match sys_cached(cache, &args.apt_opt) {
-            Ok(s) => s,
+        // 每包新建 apt 会话(mtime 已变,缓存失效):上一包可能改变了已装集合
+        let mut apt = match Apt::with_debs(&args.apt_opt, &[item.path.clone()]) {
+            Ok(a) => a,
             Err(e) => return flow_aborted(e, total, installed),
         };
-        let resolution = match solver::resolve(&sys, deb) {
+        let resolution = match apt.solve(deb, &[]) {
             Ok(Verdict::Installable(r)) => r,
             Ok(Verdict::Uninstallable(failure)) => {
                 eprintln!("    {failure}");
@@ -395,51 +375,48 @@ fn install_phase(
             }
         };
 
-        if !resolution.downloads.is_empty()
-            && let Err(e) = download::download_all(&resolution.downloads, &progress, cancel)
-        {
-            if matches!(e, FdebiError::Cancelled) {
-                eprintln!(
-                    "==> {}: {}",
-                    gettext("Cancelled"),
-                    progress_note(total, installed)
-                );
-                return 1;
+        let dep_debs = if !resolution.downloads.is_empty() {
+            match fetch_all(&mut apt, &resolution.downloads, &progress, cancel) {
+                Ok(paths) => paths,
+                Err(e) => {
+                    if matches!(e, FdebiError::Cancelled) {
+                        eprintln!(
+                            "==> {}: {}",
+                            gettext("Cancelled"),
+                            progress_note(total, installed)
+                        );
+                        return 1;
+                    }
+                    eprintln!("    {e}");
+                    failures.push(format!("{}: {e}", item.name));
+                    continue;
+                }
             }
-            eprintln!("    {e}");
-            failures.push(format!("{}: {e}", item.name));
-            continue;
-        }
+        } else {
+            Vec::new()
+        };
 
         // 本地包的 apt 键:外部架构带 :arch(与守护进程同规则)
-        let local_key = {
-            let arch = deb.field_trimmed("Architecture").unwrap_or("");
-            if arch.is_empty() || arch == "all" || arch == sys.native_arch {
-                item.name.clone()
-            } else {
-                format!("{}:{}", item.name, arch)
-            }
-        };
+        let local_key = apt.key_for(deb);
         // debconf 模板检测:本地包或任一依赖携带 templates → 交互式(PTY)
         let interactive = deb_has_templates(deb)
-            || resolution
-                .downloads
+            || dep_debs
                 .iter()
-                .any(|d| DebFile::open(&d.dest).is_ok_and(|dep| deb_has_templates(&dep)));
+                .any(|p| DebFile::open(p).is_ok_and(|dep| deb_has_templates(&dep)));
         let batch = InstallBatch {
             local: item.path.clone(),
             local_stamp: item.stamp,
-            dep_debs: resolution
-                .downloads
-                .iter()
-                .map(|d| d.dest.clone())
-                .collect(),
+            dep_debs,
             remove: resolution.changes.remove.clone(),
             conf_policy,
             // 依赖标记对齐 apt:新装依赖标 auto,本地包标 manual
-            auto_mark: aptmark::dependency_names(&resolution.changes.install, &local_key)
+            auto_mark: install::dependency_names(&resolution.changes.install, &local_key)
                 .into_iter()
-                .filter(|key| sys.installed_version(key).is_none())
+                .filter(|key| {
+                    apt.installed_version(key)
+                        .map(|v| v.is_empty())
+                        .unwrap_or(false)
+                })
                 .collect(),
             local_package: local_key,
             interactive,
@@ -459,7 +436,11 @@ fn install_phase(
     }
 
     // 装后健康检查:只报告本次事务新增的异常包(与守护进程同语义)
-    let broken_after = health::broken_packages().unwrap_or_default();
+    let broken_after = match Apt::open(&args.apt_opt).and_then(|mut a| a.build().and_then(|_| a.broken()))
+    {
+        Ok(broken) => broken,
+        Err(e) => return flow_aborted(e, total, installed),
+    };
     let new_broken: Vec<&str> = broken_after
         .iter()
         .filter(|p| !broken_before.contains(p))
@@ -484,6 +465,31 @@ fn install_phase(
         eprintln!("    {f}");
     }
     1
+}
+
+/// 下载全部仓库依赖(逐项回调进度);返回本地归档路径
+fn fetch_all(
+    apt: &mut Apt,
+    downloads: &[DownloadSpec],
+    progress: &CliProgress,
+    cancel: &CancelHandle,
+) -> Result<Vec<PathBuf>, FdebiError> {
+    let total = downloads.len();
+    let mut paths = Vec::with_capacity(total);
+    for (idx, spec) in downloads.iter().enumerate() {
+        if cancel.is_cancelled() {
+            return Err(FdebiError::Cancelled);
+        }
+        progress.fetch_start(&spec.name, idx + 1, total);
+        let name = spec.name.clone();
+        let path = apt.fetch(&spec.name, &spec.version, |received, size| {
+            progress.fetch_progress(&name, received, size);
+            cancel.is_cancelled()
+        })?;
+        progress.fetch_done(&spec.name);
+        paths.push(path);
+    }
+    Ok(paths)
 }
 
 /// 批量中止/取消时的进度摘要(与守护进程同 msgid)
@@ -649,8 +655,9 @@ impl InstallProgress for CliProgress {
     }
 }
 
-impl DownloadProgress for CliProgress {
-    fn item_start(&self, name: &str, idx: usize, total: usize) {
+/// 仓库归档下载进度(apt 获取回调 → 终端行)
+impl CliProgress {
+    fn fetch_start(&self, name: &str, idx: usize, total: usize) {
         println!(
             "==> {} [{name}]",
             tf(
@@ -660,7 +667,7 @@ impl DownloadProgress for CliProgress {
         );
     }
 
-    fn item_progress(&self, name: &str, received: u64, size: u64) {
+    fn fetch_progress(&self, name: &str, received: u64, size: u64) {
         // size 未知(0)或溢出时退化为字节数显示
         match received.checked_mul(100).and_then(|v| v.checked_div(size)) {
             Some(percent) => print!("\r    {name}: {percent}%"),
@@ -669,7 +676,7 @@ impl DownloadProgress for CliProgress {
         let _ = std::io::stdout().flush();
     }
 
-    fn item_done(&self, name: &str) {
+    fn fetch_done(&self, name: &str) {
         println!("\r    {name}: {}", gettext("done"));
     }
 }
