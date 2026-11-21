@@ -368,6 +368,9 @@ struct BatchItem {
     row: gtk::ListBoxRow,
 }
 
+/// 存活的 lintian 子进程槽位:后台线程持有 Arc<Mutex<>>,主线程经 RefCell 取走并 kill
+type SharedLintianChild = Rc<RefCell<Option<Arc<Mutex<Option<Child>>>>>>;
+
 /// window_main 的控件集合(Rc 共享给菜单动作)
 struct MainWindow {
     window: gtk::ApplicationWindow,
@@ -401,7 +404,7 @@ struct MainWindow {
     lintian_gen: Cell<u64>,
     /// 存活的 lintian 子进程句柄:新一次运行前由主线程 kill 上一次,
     /// 避免大包上 lintian 跑数分钟且无界 channel 持续积压输出
-    lintian_child: Rc<RefCell<Option<Arc<Mutex<Option<Child>>>>>>,
+    lintian_child: SharedLintianChild,
     /// 事务运行中:外部 GApplication Open 事件不受窗口 insensitive 保护,
     /// 此期间拒收新文件,避免与运行中的信号泵产生状态错位
     txn_active: Cell<bool>,
@@ -944,11 +947,10 @@ fn fill_files(gui: &MainWindow, deb: &DebFile) {
 fn kill_lintian(gui: &MainWindow) {
     if let Some(slot) = gui.lintian_child.borrow_mut().take()
         && let Ok(mut guard) = slot.lock()
+        && let Some(mut child) = guard.take()
     {
-        if let Some(mut child) = guard.take() {
-            let _ = child.kill();
-            let _ = child.wait();
-        }
+        let _ = child.kill();
+        let _ = child.wait();
     }
 }
 

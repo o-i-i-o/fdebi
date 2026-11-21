@@ -8,7 +8,7 @@
 //! 非 Linux 平台编译等签名错误桩以通过 cargo check):
 //! - [`debfile`]:.deb 打开与 control 提取(原始字节保留,lossy 字段访问)
 //! - [`apt`]:libapt-pkg 会话(缓存构建、依赖求解、仓库下载、标记写入)
-//! - [`solver`]:求解结果的数据类型(Verdict/Resolution/Changes,无求解逻辑)
+//! - [`solver`][]:求解结果的数据类型(Verdict/Resolution/Changes,无求解逻辑)
 //! - [`batch`]:批量本地 deb 的安装顺序(批内依赖拓扑排序)
 //! - [`conffile`]:安装前 conffile 冲突预检
 //! - [`lock`]:包管理前端占锁探测与等待(ps comm 列,含 apt 系交互前端)

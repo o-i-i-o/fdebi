@@ -10,10 +10,11 @@
 #   usr/share/locale/*/LC_MESSAGES/      fdebi.mo(po/Makefile install)
 #   usr/share/applications/              org.fdebi.gtk.desktop(桌面入口)
 #   usr/share/icons/hicolor/scalable/apps/ org.fdebi.gtk.svg(应用图标)
+#   usr/share/metainfo/                  org.fdebi.gtk.metainfo.xml(AppStream)
 #   usr/share/doc/fdebi/copyright        LICENSE
 #
-# 注:crates/fdebi-core 另产出同名测试 CLI(target/release/fdebi-core,
-#     命令行直跑 deb 安装管线,验证安装流程用),仅供开发,不装进包。
+# 注:纯 GUI 项目——fdebi-core 是同名测试 CLI(命令行直跑 deb 安装管线,
+#     验证安装流程用),仅开发用,不构建、不装进包。
 #
 # 不引入 cargo-deb;依赖:cargo、dpkg-deb、msgfmt(gettext)、strip(binutils)。
 # 产物:dist/fdebi_<版本>_<架构>.deb
@@ -29,8 +30,8 @@ DEB="dist/${NAME}_${VERSION}_${ARCH}.deb"
 
 [[ -n "$VERSION" ]] || { echo "错误:无法从 Cargo.toml 解析版本" >&2; exit 1; }
 
-echo "==> cargo build --release"
-cargo build --release --workspace --locked
+echo "==> cargo build --release(-p 仅生产二进制,fdebi-core CLI 不构建)"
+cargo build --release --locked -p fdebi-gtk -p fdebi-daemon
 
 echo "==> 编译翻译(po/*.po → locale/*/LC_MESSAGES/fdebi.mo)"
 make -C po mo
@@ -44,6 +45,7 @@ install -d "$STAGE/DEBIAN" \
     "$STAGE/usr/share/polkit-1/actions" \
     "$STAGE/usr/share/applications" \
     "$STAGE/usr/share/icons/hicolor/scalable/apps" \
+    "$STAGE/usr/share/metainfo" \
     "$STAGE/usr/share/doc/$NAME"
 
 install -m755 target/release/fdebi-daemon      "$STAGE/usr/local/bin/"
@@ -53,6 +55,7 @@ install -m644 data/dbus/org.fdebi.service      "$STAGE/usr/share/dbus-1/system-s
 install -m644 data/polkit/org.fdebi.policy     "$STAGE/usr/share/polkit-1/actions/"
 install -m644 data/applications/org.fdebi.gtk.desktop "$STAGE/usr/share/applications/"
 install -m644 data/icons/org.fdebi.gtk.svg     "$STAGE/usr/share/icons/hicolor/scalable/apps/"
+install -m644 data/metainfo/org.fdebi.gtk.metainfo.xml "$STAGE/usr/share/metainfo/"
 install -m644 LICENSE                          "$STAGE/usr/share/doc/$NAME/copyright"
 
 # 翻译:复用 po/Makefile 的 install 目标(DESTDIR 指向 staging)

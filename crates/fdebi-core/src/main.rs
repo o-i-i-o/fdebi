@@ -366,7 +366,7 @@ fn install_phase(
         }
 
         // 每包新建 apt 会话(mtime 已变,缓存失效):上一包可能改变了已装集合
-        let mut apt = match Apt::with_debs(&args.apt_opt, &[item.path.clone()]) {
+        let mut apt = match Apt::with_debs(&args.apt_opt, std::slice::from_ref(&item.path)) {
             Ok(a) => a,
             Err(e) => return flow_aborted(e, total, installed),
         };

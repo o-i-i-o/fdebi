@@ -1,0 +1,55 @@
+# fdebi flatpak 构建清单(app-id: org.fdebi.gtk)
+#
+# 沙箱内只装 GUI 客户端:deb 解析/展示用纯 Rust 实现(构建期以
+# FDEBI_APT_STUB=1 启用 apt 桩,GNOME Sdk 无 libapt-pkg-dev);依赖求解、
+# 下载与特权安装全部委托宿主机的 org.fdebi 系统守护进程,因此宿主机需
+# 先安装 fdebi .deb(scripts/build-deb.sh)提供守护进程。
+#
+# 本地构建(需 flatpak 与 org.gnome.Platform//48、org.gnome.Sdk//48):
+#   flatpak-builder --force-clean --user --install \
+#       builddir/flatpak packaging/flatpak/org.fdebi.gtk.yml
+#
+# 注:构建期经 share: network 联网拉取 crates.io 依赖;提交 Flathub 时
+# 需改用 flatpak-cargo-generator 生成 vendor 源清单以支持离线构建。
+app-id: org.fdebi.gtk
+runtime: org.gnome.Platform
+runtime-version: '48'
+sdk: org.gnome.Sdk
+command: fdebi-gtk
+finish-args:
+  # 图形与输入
+  - --share=ipc
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --device=dri
+  # 读取任意位置的 .deb(解析在沙箱内完成,安装路径交给宿主守护进程)
+  - --filesystem=host
+  # 连接宿主机 org.fdebi 特权守护进程(系统总线)
+  - --talk-name=org.fdebi
+modules:
+  - name: fdebi
+    buildsystem: simple
+    build-options:
+      env:
+        FDEBI_APT_STUB: '1'
+      share:
+        - network
+    build-commands:
+      # -p 只构建 GUI 客户端;fdebi-core CLI 仅用于开发测试,不进包
+      - cargo build --release --locked -p fdebi-gtk
+      - install -Dm755 target/release/fdebi-gtk -t /app/bin
+      - install -Dm644 data/applications/org.fdebi.gtk.desktop
+        /app/share/applications/org.fdebi.gtk.desktop
+      - install -Dm644 data/icons/org.fdebi.gtk.svg
+        /app/share/icons/hicolor/scalable/apps/org.fdebi.gtk.svg
+      - install -Dm644 data/metainfo/org.fdebi.gtk.metainfo.xml
+        /app/share/metainfo/org.fdebi.gtk.metainfo.xml
+      - |
+        for po in po/*.po; do
+          lang=$(basename "$po" .po)
+          mkdir -p "/app/share/locale/$lang/LC_MESSAGES"
+          msgfmt --check -o "/app/share/locale/$lang/LC_MESSAGES/fdebi.mo" "$po"
+        done
+    sources:
+      - type: dir
+        path: ../..

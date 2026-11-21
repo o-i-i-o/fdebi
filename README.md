@@ -60,10 +60,29 @@ fdebi-core -y --keep a.deb b.deb   # 脚本化批量安装（按依赖排序）
 cargo build --release
 ```
 
-完整 deb 打包（编译 release、编译翻译、组装 D-Bus / Polkit / desktop / 图标文件并生成 `.deb`）：
+生产构建入口是 meson（编译两个生产二进制、编译翻译，并按标准目录布局安装
+D-Bus / Polkit / desktop / 图标 / AppStream 元数据）：
+
+```bash
+meson setup builddir
+meson compile -C builddir
+sudo meson install -C builddir
+```
+
+完整 deb 打包（release 构建、编译翻译、组装安装目录并生成 `.deb`）：
 
 ```bash
 scripts/build-deb.sh
+```
+
+## Flatpak
+
+沙箱内只装 GUI 客户端（构建期以 `FDEBI_APT_STUB=1` 启用 apt 桩），依赖求解、
+下载与特权安装委托宿主机的 org.fdebi 守护进程——宿主机需先安装 fdebi .deb：
+
+```bash
+flatpak-builder --force-clean --user --install \
+    builddir/flatpak packaging/flatpak/org.fdebi.gtk.yml
 ```
 
 ## 国际化

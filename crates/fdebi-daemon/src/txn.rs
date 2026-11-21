@@ -717,7 +717,7 @@ fn run_install(
         }
 
         // 每包新建 apt 会话:上一包可能改变了已装集合,旧缓存已失效
-        let mut apt = match Apt::with_debs(apt_opts, &[item.path.clone()]) {
+        let mut apt = match Apt::with_debs(apt_opts, std::slice::from_ref(&item.path)) {
             Ok(a) => a,
             Err(e) => {
                 finalize(conn, txn, FAILED, &e.to_string(), id, false);

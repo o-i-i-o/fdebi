@@ -33,6 +33,10 @@ __pycache__/
 # 打包产物(scripts/build-deb.sh:staging 目录与 .deb)
 dist/
 
+# meson / flatpak 本地构建目录
+builddir/
+.flatpak-builder/
+
 fdebm/
 
 uos-apt-gui/

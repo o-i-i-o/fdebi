@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- AppStream 元数据:meson 安装到 share/metainfo/,deb 与 flatpak 共用 -->
+<component type="desktop-application">
+  <id>org.fdebi.gtk</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <developer_name translatable="no">fdebi contributors</developer_name>
+  <name translatable="no">Fdebi</name>
+  <summary>Install local .deb packages with dependency resolving</summary>
+  <name xml:lang="zh_CN">Fdebi</name>
+  <summary xml:lang="zh_CN">可视化安装本地 .deb 软件包并解析依赖</summary>
+  <description>
+    <p>
+      fdebi installs local .deb packages with a GTK4 interface: it shows
+      package metadata and file lists, checks dependencies against the system
+      apt cache, previews conffile changes and installs via dpkg with live
+      progress.
+    </p>
+    <p>
+      Dependency solving, downloading and the privileged installation run in
+      the org.fdebi system daemon (authorized via polkit), so the frontend
+      itself never runs with elevated privileges.
+    </p>
+    <p xml:lang="zh_CN">
+      fdebi 以 GTK4 界面安装本地 .deb 软件包:展示包元数据与文件列表,依据系统
+      apt 缓存检查依赖,预览配置文件变更,并通过 dpkg 安装、实时呈现进度。
+    </p>
+    <p xml:lang="zh_CN">
+      依赖求解、下载与特权安装均在 org.fdebi 系统守护进程内完成(经 polkit
+      授权),前端自身不以特权运行。
+    </p>
+  </description>
+  <launchable type="desktop-id">org.fdebi.gtk.desktop</launchable>
+  <provides>
+    <binary>fdebi-gtk</binary>
+    <mediatype>application/vnd.debian.binary-package</mediatype>
+    <mediatype>application/x-deb</mediatype>
+  </provides>
+  <content_rating type="oars-1.1" />
+  <releases>
+    <release version="0.3.0" date="2026-11-21">
+      <description>
+        <p>依赖求解切换到系统 libapt-pkg(C++ FFI),与系统包管理器行为一致;新增批量安装与 conffile 冲突预检。</p>
+      </description>
+    </release>
+  </releases>
+</component>
