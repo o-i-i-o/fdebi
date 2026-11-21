@@ -36,7 +36,9 @@ custom_target(
   command: [
     cargo_build_sh,
     meson.project_source_root(),
-    '@OUTDIR@',
+    # @OUTDIR@ 会展开为相对路径且 custom command 的 cwd 是源码根,产物会写错位置;
+    # 这里必须用绝对路径
+    meson.current_build_dir(),
     join_paths(meson.current_build_dir(), 'cargo-target'),
   ],
   build_always_stale: true,

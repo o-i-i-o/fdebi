@@ -1,5 +1,5 @@
 # gettext 翻译:编译 po/*.po → <localedir>/<lang>/LC_MESSAGES/fdebi.mo 并安装。
-# i18n.gettext 同时创建 pot 更新目标;参数与 po/Makefile 的 XGETTEXT_ARGS 一致
+# 语言清单取自本目录 LINGUAS;pot 目标参数与 po/Makefile 的 XGETTEXT_ARGS 一致
 # (源码 msgid 经 gettext()/ngettext()/tf() 标注)。
 i18n = import('i18n')
 
@@ -18,6 +18,5 @@ gettext_args = [
 
 i18n.gettext(
   'fdebi',
-  po_dir: meson.current_source_dir(),
   args: gettext_args,
 )
