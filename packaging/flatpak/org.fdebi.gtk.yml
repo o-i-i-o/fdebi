@@ -9,12 +9,17 @@
 #   flatpak-builder --force-clean --user --install \
 #       builddir/flatpak packaging/flatpak/org.fdebi.gtk.yml
 #
-# 注:构建期经 share: network 联网拉取 crates.io 依赖;提交 Flathub 时
-# 需改用 flatpak-cargo-generator 生成 vendor 源清单以支持离线构建。
+# 注:构建沙箱默认无网络,经 build-args --share=network 开放以拉取 crates.io
+# 依赖;提交 Flathub 时需改用 flatpak-cargo-generator 生成 vendor 源清单以
+# 支持离线构建。
 app-id: org.fdebi.gtk
 runtime: org.gnome.Platform
 runtime-version: '49'
 sdk: org.gnome.Sdk
+# GNOME Sdk 不含 Rust 工具链:声明 rust 扩展(GNOME 49 基于 freedesktop 25.08,
+# 扩展分支取 25.08),构建时经 build-args 把其 bin 追加进 PATH
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
 command: fdebi-gtk
 finish-args:
   # 图形与输入
@@ -32,9 +37,14 @@ modules:
     build-options:
       env:
         FDEBI_APT_STUB: '1'
-      share:
-        - network
+      # rust 扩展工具链加入 PATH
+      append-path: /usr/lib/sdk/rust-stable/bin
+      # build-args 透传给 flatpak build:构建沙箱开放网络(cargo 拉依赖)
+      build-args:
+        - --share=network
     build-commands:
+      # cargo 源走 USTC 镜像(见 cargo-config.toml,仅本地网络环境用)
+      - install -Dm644 packaging/flatpak/cargo-config.toml .cargo/config.toml
       # -p 只构建 GUI 客户端;fdebi-core CLI 仅用于开发测试,不进包
       - cargo build --release --locked -p fdebi-gtk
       - install -Dm755 target/release/fdebi-gtk -t /app/bin

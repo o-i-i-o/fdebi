@@ -1,0 +1,9 @@
+# 构建沙箱内 cargo 走 USTC 镜像:直连 static.crates.io 单文件约 37KB/s,
+# USTC 约 254KB/s;crate 下载地址由镜像 sparse index 的 config.json 提供。
+# 注:此镜像配置仅服务于本地网络环境,提交 Flathub 时应删除该文件与
+# 对应 build-command(改为 vendor 离线构建)。
+[source.crates-io]
+replace-with = 'ustc'
+
+[source.ustc]
+registry = 'sparse+https://mirrors.ustc.edu.cn/crates.io-index/'
