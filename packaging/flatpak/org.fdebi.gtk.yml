@@ -5,7 +5,7 @@
 # 下载与特权安装全部委托宿主机的 org.fdebi 系统守护进程,因此宿主机需
 # 先安装 fdebi .deb(scripts/build-deb.sh)提供守护进程。
 #
-# 本地构建(需 flatpak 与 org.gnome.Platform//48、org.gnome.Sdk//48):
+# 本地构建(需 flatpak 与 org.gnome.Platform//49、org.gnome.Sdk//49):
 #   flatpak-builder --force-clean --user --install \
 #       builddir/flatpak packaging/flatpak/org.fdebi.gtk.yml
 #
@@ -13,7 +13,7 @@
 # 需改用 flatpak-cargo-generator 生成 vendor 源清单以支持离线构建。
 app-id: org.fdebi.gtk
 runtime: org.gnome.Platform
-runtime-version: '48'
+runtime-version: '49'
 sdk: org.gnome.Sdk
 command: fdebi-gtk
 finish-args:
