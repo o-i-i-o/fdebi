@@ -463,8 +463,8 @@ fn ensure_window(
     let window = ApplicationWindow::builder()
         .application(app)
         .title(gettext("Package Installer").as_str())
-        .default_width(640)
-        .default_height(500)
+        .default_width(760)
+        .default_height(620)
         //GTK4 默认不渲染 app menubar
         .show_menubar(true)
         .build();
@@ -1738,7 +1738,7 @@ fn run_txn_dialog(
         .modal(true)
         .title(gettext("Applying changes").as_str())
         .default_width(760)
-        .default_height(560)
+        .default_height(620)
         .build();
     dialog.add_button(&gettext("Close"), ResponseType::Close);
     dialog.set_default_response(ResponseType::Close);
@@ -1762,8 +1762,8 @@ fn run_txn_dialog(
         .child(&textview)
         .hexpand(true)
         .vexpand(true)
-        .min_content_height(280)
-        .max_content_height(460)
+        .min_content_height(320)
+        .max_content_height(640)
         .propagate_natural_height(true)
         .build();
     let exp = gtk::Expander::new(Some(gettext("Terminal").as_str()));
