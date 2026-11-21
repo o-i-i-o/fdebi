@@ -14,6 +14,10 @@ use std::process::Command;
 use crate::control::parse_control;
 use crate::error::FdebiError;
 
+/// 成员内容预读上限:文本预览足够,二进制只需探测 MIME;
+/// 超出部分流式丢弃仅计数,避免 GB 级 data 成员整读进内存
+pub const PREVIEW_MAX: usize = 1 << 20;
+
 /// 已打开的 .deb:control 内容与解析结果
 pub struct DebFile {
     path: PathBuf,
@@ -87,17 +91,29 @@ impl DebFile {
 
     /// data.tar 成员名列表(按 tar 流顺序)
     pub fn data_filelist(&self) -> Result<Vec<String>, FdebiError> {
-        let child = Command::new("dpkg-deb")
+        Self::data_filelist_at(&self.path)
+    }
+
+    /// data.tar 成员名列表(按路径;独立函数便于后台线程调用,不必整包打开)
+    pub fn data_filelist_at(path: &Path) -> Result<Vec<String>, FdebiError> {
+        let mut child = Command::new("dpkg-deb")
             .arg("--fsys-tarfile")
-            .arg(&self.path)
+            .arg(path)
             .stdout(std::process::Stdio::piped())
             .spawn()?;
-        let mut out = Vec::new();
-        for entry in tar::Archive::new(child.stdout.expect("piped stdout")).entries()? {
-            let entry = entry?;
-            out.push(normalize_member(&entry.path()?.to_string_lossy()));
-        }
-        Ok(out)
+        let stdout = child.stdout.take().expect("piped stdout");
+        let result = (|| {
+            let mut out = Vec::new();
+            for entry in tar::Archive::new(stdout).entries()? {
+                let entry = entry?;
+                out.push(normalize_member(&entry.path()?.to_string_lossy()));
+            }
+            Ok(out)
+        })();
+        // 无论成败都收割子进程:提前退出时 dpkg-deb 因管道关闭而结束,
+        // 不 wait 会留下僵尸进程(常驻 GUI 进程会被逐渐拖垮)
+        let _ = child.wait();
+        result
     }
 
     /// control.tar 内单文件内容(name 为去前缀后的展示名)
@@ -116,20 +132,56 @@ impl DebFile {
 
     /// data.tar 内单文件内容(name 为去前缀后的展示名)
     pub fn data_content(&self, name: &str) -> Result<Vec<u8>, FdebiError> {
-        let child = Command::new("dpkg-deb")
+        Ok(self.data_content_capped(name, usize::MAX)?.0)
+    }
+
+    /// data.tar 内单文件内容,流式限量读取:最多保留 `max_keep` 字节,
+    /// 超出部分丢弃仅计数,返回 (保留内容, 成员总字节数)。
+    /// GB 级成员不再整读进内存;`max_keep` 取 [`PREVIEW_MAX`] 即预览所需
+    pub fn data_content_capped(
+        &self,
+        name: &str,
+        max_keep: usize,
+    ) -> Result<(Vec<u8>, u64), FdebiError> {
+        let mut child = Command::new("dpkg-deb")
             .arg("--fsys-tarfile")
             .arg(&self.path)
             .stdout(std::process::Stdio::piped())
             .spawn()?;
-        for entry in tar::Archive::new(child.stdout.expect("piped stdout")).entries()? {
+        let stdout = child.stdout.take().expect("piped stdout");
+        let result = Self::extract_member_capped(stdout, name, max_keep);
+        // 收割子进程,避免僵尸(见 data_filelist_at)
+        let _ = child.wait();
+        result
+    }
+
+    /// 从 tar 流中定位成员并限量读取;未找到返回空内容
+    fn extract_member_capped(
+        stdout: std::process::ChildStdout,
+        name: &str,
+        max_keep: usize,
+    ) -> Result<(Vec<u8>, u64), FdebiError> {
+        for entry in tar::Archive::new(stdout).entries()? {
             let mut entry = entry?;
             if normalize_member(&entry.path()?.to_string_lossy()) == name {
-                let mut bytes = Vec::new();
-                entry.read_to_end(&mut bytes)?;
-                return Ok(bytes);
+                let mut kept: Vec<u8> = Vec::new();
+                let mut total: u64 = 0;
+                let mut buf = [0u8; 64 * 1024];
+                loop {
+                    let n = entry.read(&mut buf)?;
+                    if n == 0 {
+                        break;
+                    }
+                    total += n as u64;
+                    if kept.len() < max_keep {
+                        let take = (max_keep - kept.len()).min(n);
+                        kept.extend_from_slice(&buf[..take]);
+                    }
+                }
+                return Ok((kept, total));
             }
         }
-        Ok(Vec::new())
+        Ok((Vec::new(), 0))
     }
 
     /// 包声明的 conffiles 列表(DEBIAN/conffiles 成员,每行一个绝对路径;
@@ -245,6 +297,33 @@ mod tests {
         assert_eq!(bin.len(), 904);
         assert!(bin.contains(&0));
         assert_eq!(deb.data_content(".deb").unwrap().len(), 1396);
+    }
+
+    #[test]
+    fn data_content_capped_keeps_prefix_and_total() {
+        // 限量读取:保留字节为完整内容的前缀,total 报告成员完整大小;
+        // 上限足够大时与 data_content 等价
+        let deb = test4();
+        let (kept, total) = deb.data_content_capped("..deb", 100).unwrap();
+        assert_eq!(kept.len(), 100);
+        assert_eq!(total, 904);
+        let (all, total) = deb.data_content_capped("..deb", PREVIEW_MAX).unwrap();
+        assert_eq!(total, 904);
+        assert_eq!(all, deb.data_content("..deb").unwrap());
+        // 缺失成员返回空内容与零计数
+        assert_eq!(
+            deb.data_content_capped("no-such-file", 10).unwrap(),
+            (Vec::new(), 0)
+        );
+    }
+
+    #[test]
+    fn data_filelist_at_matches_method() {
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../tests/gdebi-test4.deb");
+        assert_eq!(
+            DebFile::data_filelist_at(&path).unwrap(),
+            test4().data_filelist().unwrap()
+        );
     }
 
     #[test]

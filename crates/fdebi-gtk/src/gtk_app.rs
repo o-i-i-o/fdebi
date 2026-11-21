@@ -377,6 +377,8 @@ struct MainWindow {
     changes: Rc<RefCell<Option<Changes>>>,
     /// 分析代际号:文件切换/刷新后丢弃过期的守护进程结论
     analysis_gen: Cell<u64>,
+    /// 内容提取代际号:后台读取成员内容后丢弃过期回填(快速连点防乱序)
+    content_gen: Cell<u64>,
     /// 当前文件的 conffile 冲突(包名, 路径);安装前呈现覆盖决策对话框
     conffiles: Rc<RefCell<Vec<(String, String)>>>,
     /// 批量包列表(单文件模式下隐藏)
@@ -705,6 +707,7 @@ fn build_window(window: &gtk::ApplicationWindow, apt_opts: Vec<String>) -> Rc<Ma
         current_file: Rc::new(RefCell::new(None)),
         changes: Rc::new(RefCell::new(None)),
         analysis_gen: Cell::new(0),
+        content_gen: Cell::new(0),
         conffiles: Rc::new(RefCell::new(Vec::new())),
         batch_scroll,
         batch_list,
@@ -770,7 +773,10 @@ fn build_window(window: &gtk::ApplicationWindow, apt_opts: Vec<String>) -> Rc<Ma
     gui
 }
 
-/// 文件树选中回调:组(0=control,1=data)与成员名决定内容来源
+/// 文件树选中回调:组(0=control,1=data)与成员名决定内容来源。
+/// 提取移出主线程:dpkg-deb --fsys-tarfile 需全量解压 data.tar,
+/// 大包可达秒级,同步执行会把界面卡死;代际号丢弃过期回填,
+/// 快速连点不同成员时后台结果可能乱序返回
 fn on_file_selected(gui: &MainWindow, sel: &gtk::TreeSelection) {
     let Some((model, iter)) = sel.selected() else {
         return;
@@ -798,36 +804,55 @@ fn on_file_selected(gui: &MainWindow, sel: &gtk::TreeSelection) {
             .set_text(&gettext("Selection is a directory"));
         return;
     }
-    let content = match group {
-        0 => DebFile::open(
-            gui.current_file
-                .borrow()
-                .as_deref()
-                .unwrap_or(Path::new("")),
-        )
-        .and_then(|deb| deb.control_content(&name)),
-        1 => DebFile::open(
-            gui.current_file
-                .borrow()
-                .as_deref()
-                .unwrap_or(Path::new("")),
-        )
-        .and_then(|deb| deb.data_content(&name)),
-        _ => return,
-    };
-    // 文本原样显示;二进制显示文件类型(core 统一判定,规避内嵌 NUL)
-    let text = match content {
-        Ok(bytes) if !bytes.is_empty() => flow::content_preview(&bytes),
-        Ok(_) => gettext("File content can not be extracted"),
-        Err(e) => tf("Error reading file content '{0}'", &[&e.to_string()]),
-    };
-    gui.file_content.buffer().set_text(&text);
+    if group > 1 {
+        return;
+    }
+
+    let generation = gui.content_gen.get() + 1;
+    gui.content_gen.set(generation);
+    gui.file_content.buffer().set_text("");
+    let file = gui.current_file.borrow().clone().unwrap_or_default();
+    let (tx, rx) = async_channel::bounded(1);
+    let member = name;
+    std::thread::spawn(move || {
+        let res = DebFile::open(&file).and_then(|deb| match group {
+            // control 成员很小,整读;data 成员限量预读(1 MiB + 总长计数)
+            0 => deb
+                .control_content(&member)
+                .map(|b| {
+                    let len = b.len();
+                    (b, len as u64)
+                }),
+            1 => deb.data_content_capped(&member, fdebi_core::debfile::PREVIEW_MAX),
+            _ => Ok((Vec::new(), 0)),
+        });
+        let _ = tx.send_blocking(res);
+    });
+    let view = gui.file_content.clone();
+    let gen_watch = gui.content_gen.clone();
+    glib::spawn_future_local(async move {
+        let content = match rx.recv().await {
+            Ok(r) => r,
+            Err(_) => return, // 发送端已消失(主窗口销毁),无需回填
+        };
+        if gen_watch.get() != generation {
+            return; // 过期结果:期间已选中其他成员/文件
+        }
+        let text = match content {
+            Ok((bytes, total)) if !bytes.is_empty() => flow::content_preview(&bytes, total),
+            Ok(_) => gettext("File content can not be extracted"),
+            Err(e) => tf("Error reading file content '{0}'", &[&e.to_string()]),
+        };
+        view.buffer().set_text(&text);
+    });
 }
 
-/// Included files 页签填充
+/// Included files 页签填充:control 组轻量(内存解压)同步填;
+/// data 组需 dpkg-deb 全量解压 data.tar(大包秒级),后台线程列出后
+/// 回填主线程 store,期间界面保持可操作
 fn fill_files(gui: &MainWindow, deb: &DebFile) {
     let store = gtk::TreeStore::new(&[glib::Type::STRING]);
-    let res = (|| -> Result<(), FdebiError> {
+    let res = (|| -> Result<gtk::TreeIter, FdebiError> {
         // 组 0:Package control data;组 1:Upstream data
         let control_header = store.append(None);
         store.set(&control_header, &[(0, &gettext("Package control data"))]);
@@ -837,20 +862,51 @@ fn fill_files(gui: &MainWindow, deb: &DebFile) {
         }
         let data_header = store.append(None);
         store.set(&data_header, &[(0, &gettext("Upstream data"))]);
-        for n in deb.data_filelist()? {
+        Ok(data_header)
+    })();
+    let data_header = match res {
+        Ok(header) => Some(header),
+        Err(e) => {
+            eprintln!("Exception while reading the filelist: '{e}'");
+            store.clear();
+            let iter = store.append(None);
+            store.set(&iter, &[(0, &gettext("Error reading filelist"))]);
+            None
+        }
+    };
+    gui.tree_files.set_model(Some(&store));
+    gui.tree_files.expand_all();
+
+    let Some(data_header) = data_header else {
+        return;
+    };
+    let (tx, rx) = async_channel::bounded::<Result<Vec<String>, String>>(1);
+    let path = deb.path().to_path_buf();
+    let list_path = path.clone();
+    std::thread::spawn(move || {
+        let res = DebFile::data_filelist_at(&list_path).map_err(|e| e.to_string());
+        let _ = tx.send_blocking(res);
+    });
+    // 回填:文件已切换则丢弃过期列表
+    let watch = gui.current_file.clone();
+    let watched = path;
+    glib::spawn_future_local(async move {
+        let names = match rx.recv().await {
+            Ok(Ok(names)) => names,
+            Ok(Err(e)) => {
+                eprintln!("Exception while reading the filelist: '{e}'");
+                vec![gettext("Error reading filelist")]
+            }
+            Err(_) => return, // 发送端已消失(主窗口销毁),无需回填
+        };
+        if watch.borrow().as_deref() != Some(watched.as_path()) {
+            return;
+        }
+        for n in names {
             let child = store.append(Some(&data_header));
             store.set(&child, &[(0, &n)]);
         }
-        Ok(())
-    })();
-    if let Err(e) = res {
-        eprintln!("Exception while reading the filelist: '{e}'");
-        store.clear();
-        let iter = store.append(None);
-        store.set(&iter, &[(0, &gettext("Error reading filelist"))]);
-    }
-    gui.tree_files.set_model(Some(&store));
-    gui.tree_files.expand_all();
+    });
 }
 
 /// 后台运行 lintian 并流式回填

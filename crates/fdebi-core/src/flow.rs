@@ -80,16 +80,24 @@ pub fn description_parts(raw: &str) -> (String, String) {
 const MIME_PROBE_LEN: usize = 64 * 1024;
 
 /// 成员内容 → 展示文本:文本原样显示,二进制显示文件类型。
+/// `total` 为成员完整字节数(可能大于 `bytes`,限量预读时即发生截断)。
 /// 内嵌 NUL 的字节流经 glib 的 &str→C 字符串转换非法
 /// (debug 构建直接 panic),且二进制内容塞入文本视图本就是乱码,
 /// 判定后展示 MIME 类型更可读。
-pub fn content_preview(bytes: &[u8]) -> String {
+pub fn content_preview(bytes: &[u8], total: u64) -> String {
     // 含 NUL 即视为二进制(git 同款启发式);无 NUL 时 lossy 结果
     // 不会含 NUL,保证前端 set_text 路径安全
     if !bytes.contains(&0) {
-        return String::from_utf8_lossy(bytes).into_owned();
+        let text = String::from_utf8_lossy(bytes).into_owned();
+        if total > bytes.len() as u64 {
+            return format!(
+                "{text}\n\n{}",
+                tf("… preview truncated ({0} bytes total)", &[&total.to_string()])
+            );
+        }
+        return text;
     }
-    let size = bytes.len();
+    let size = if total > 0 { total } else { bytes.len() as u64 };
     match mime_type(bytes) {
         Some(mime) => tf("Binary file ({0}), {1} bytes", &[&mime, &size.to_string()]),
         None => tf("Binary file, {0} bytes", &[&size.to_string()]),
@@ -158,14 +166,22 @@ mod tests {
 
     #[test]
     fn text_content_shown_verbatim() {
-        assert_eq!(content_preview(b"hello world"), "hello world");
+        assert_eq!(content_preview(b"hello world", 11), "hello world");
+    }
+
+    #[test]
+    fn truncated_text_gets_total_size_note() {
+        // total 大于保留字节数即限量预读发生截断,须提示完整大小
+        let preview = content_preview(b"hello", 999);
+        assert!(preview.starts_with("hello"), "{preview}");
+        assert!(preview.contains("999"), "{preview}");
     }
 
     #[test]
     fn binary_content_shows_mime_type() {
         // ELF 头:file 应识别为可执行/目标文件
         let elf = b"\x7fELF\x02\x01\x01\x00\x00binary";
-        let preview = content_preview(elf);
+        let preview = content_preview(elf, elf.len() as u64);
         assert!(preview.starts_with("Binary file ("), "{preview}");
         assert!(!preview.contains('\0'));
     }
@@ -174,7 +190,7 @@ mod tests {
     fn binary_content_never_contains_nul() {
         // file 可用时给 MIME 类型,不可用时回退纯字节数;两种分支
         // 均以 "Binary file" 开头且不含 NUL(前端 set_text 安全)
-        let preview = content_preview(&[0x00, 0x01, 0x02]);
+        let preview = content_preview(&[0x00, 0x01, 0x02], 3);
         assert!(preview.starts_with("Binary file"), "{preview}");
         assert!(!preview.contains('\0'));
     }

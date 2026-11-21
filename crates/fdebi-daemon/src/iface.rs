@@ -45,6 +45,27 @@ impl FdebiIface {
     }
 }
 
+/// apt_opts 白名单:只放行行为(apt::)/网络(Acquire::)/调试(Debug::)三类键。
+/// AnalyzeLocalFile 免 Polkit 授权,任意本地用户可调用,守护进程以 root
+/// 运行 libapt;不限键名的 Key=Value 可重定向 root 的读写路径
+/// (Dir::Etc::sourcelist 等)或下载执行点(Dir::Bin::methods 等),
+/// 等于把 root 能力开放给普通用户,必须在此收紧。
+/// libapt 配置键大小写不敏感,故统一小写比较;
+/// apt-cli 的 AptCli::Hooks::* 顶层键不匹配 "apt::" 前缀,同样被拒。
+fn validate_apt_opts(opts: &[String]) -> zbus::fdo::Result<()> {
+    const ALLOWED: [&str; 3] = ["apt::", "acquire::", "debug::"];
+    for opt in opts {
+        let key = opt.split('=').next().unwrap_or(opt);
+        let ok = ALLOWED.iter().any(|p| key.to_ascii_lowercase().starts_with(p));
+        if !ok {
+            return Err(zbus::fdo::Error::AccessDenied(format!(
+                "apt option '{key}' is not allowed"
+            )));
+        }
+    }
+    Ok(())
+}
+
 #[zbus::interface(name = "org.fdebi")]
 impl FdebiIface {
     async fn analyze_local_file(
@@ -52,6 +73,7 @@ impl FdebiIface {
         path: String,
         apt_opts: Vec<String>,
     ) -> zbus::fdo::Result<fdebi_core::AnalyzeResult> {
+        validate_apt_opts(&apt_opts)?;
         // 求解是重活(索引解析),放独立线程避免阻塞总线 executor
         let manager = self.manager.clone();
         let (tx, rx) = async_channel::bounded(1);
@@ -72,6 +94,7 @@ impl FdebiIface {
         paths: Vec<String>,
         apt_opts: Vec<String>,
     ) -> zbus::fdo::Result<Vec<fdebi_core::AnalyzeItem>> {
+        validate_apt_opts(&apt_opts)?;
         let manager = self.manager.clone();
         let (tx, rx) = async_channel::bounded(1);
         std::thread::spawn(move || {
@@ -109,6 +132,7 @@ impl FdebiIface {
                 "no package files given".to_string(),
             ));
         }
+        validate_apt_opts(&apt_opts)?;
         let caller = Self::caller(&header)
             .ok_or_else(|| zbus::fdo::Error::Failed("unknown caller".to_string()))?;
         Ok(txn::start_install(
@@ -160,5 +184,38 @@ impl FdebiIface {
         self.manager
             .status(id, &caller)
             .ok_or_else(|| zbus::fdo::Error::Failed(format!("unknown transaction {id}")))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::validate_apt_opts;
+
+    fn allowed(opt: &str) -> bool {
+        validate_apt_opts(&[opt.to_string()]).is_ok()
+    }
+
+    #[test]
+    fn whitelist_allows_behavior_network_debug_keys() {
+        assert!(allowed("APT::Get::AllowUnauthenticated=true"));
+        assert!(allowed("apt::Sandbox::User=_apt")); // 键大小写不敏感
+        assert!(allowed("Acquire::http::Proxy=http://proxy:3128"));
+        assert!(allowed("Debug::pkgProblemResolver=1"));
+    }
+
+    #[test]
+    fn whitelist_rejects_path_and_exec_redirection() {
+        // Dir:: 可重定向 root 读写路径;Bin::methods 是下载执行点
+        assert!(!allowed("Dir::Etc::sourcelist=/tmp/evil.list"));
+        assert!(!allowed("dir::bin::methods=/tmp/evil")); // 小写亦拒
+        assert!(!allowed("Dpkg::Options::=--force-confnew"));
+        assert!(!allowed("AptCli::Hooks::Install=/tmp/evil.sh"));
+        // 格式不合法的裸键(缺 Key=Value)一并拒绝
+        assert!(!allowed("Dir::State::status"));
+    }
+
+    #[test]
+    fn whitelist_accepts_empty_list() {
+        assert!(validate_apt_opts(&[]).is_ok());
     }
 }
