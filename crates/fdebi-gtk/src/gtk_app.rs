@@ -1657,8 +1657,12 @@ fn fill_changes_details(gui: &MainWindow, changes: &Changes) {
 
 /// Details 页签与描述的静态填充
 fn fill_static(gui: &MainWindow, info: &PackageInfo, deb: &DebFile) {
-    gui.label_name
-        .set_markup(&format!("<b><big>{}</big></b>", info.package));
+    // Package 字段由 deb 作者任意控制,进 markup 前必须转义,
+    // 否则恶意包可注入 Pango 标记伪造/干扰标题区显示
+    gui.label_name.set_markup(&format!(
+        "<b><big>{}</big></b>",
+        glib::markup_escape_text(&info.package)
+    ));
 
     // Debian long description:摘要加粗,正文按段落/项目符号排版
     let (summary, body) = flow::description_parts(&info.description);
@@ -2280,9 +2284,15 @@ fn confirm_conffiles(parent: &gtk::Window, conflicts: &[(String, String)]) -> Op
 
 fn on_install_clicked(gui: &Rc<MainWindow>) {
     // 提权由守护进程侧 Polkit 发起(认证对话框自动弹出),客户端无需 root
-    if let Some(c) = gui.changes.borrow().as_ref()
-        && !c.unauthenticated.is_empty()
-    {
+    // 先取走未认证包列表并立即释放借用:confirm 内嵌套迭代主循环,期间
+    // 任何 load_deb/load_files 事件(菜单 Open、拖放、GApplication 转发)
+    // 都会 borrow_mut 同一字段,守卫横跨对话框会触发 BorrowMutError 崩溃;
+    // 批量路径(on_batch_install_clicked)已是先收拢后借用的安全写法
+    let unauthenticated = match gui.changes.borrow().as_ref() {
+        Some(c) if !c.unauthenticated.is_empty() => c.unauthenticated.clone(),
+        _ => Vec::new(),
+    };
+    if !unauthenticated.is_empty() {
         // 未认证包安装前确认
         let ui = GtkUi {
             parent: gui.window.clone().upcast(),
@@ -2291,7 +2301,7 @@ fn on_install_clicked(gui: &Rc<MainWindow>) {
             &gettext("Install unauthenticated software?"),
             Some(&tf(
                 "The following packages are UNAUTHENTICATED: {0}",
-                &[&c.unauthenticated.join(" ")],
+                &[&unauthenticated.join(" ")],
             )),
         );
         match ok {
