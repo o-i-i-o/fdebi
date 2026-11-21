@@ -149,6 +149,10 @@ fn run(args: &Args, conf_policy: ConfPolicy, cancel: &CancelHandle) -> i32 {
     unauthenticated.sort();
     unauthenticated.dedup();
 
+    // 分析会话持有 shim 的进程级 apt 互斥锁(见 native/apt_shim.cc);
+    // 安装阶段要开新会话,必须先释放,否则第二次 Apt::open 死锁
+    drop(apt);
+
     if args.dry_run {
         return i32::from(analysis_failed);
     }
@@ -421,6 +425,8 @@ fn install_phase(args: &Args, conf_policy: ConfPolicy, cancel: &CancelHandle, it
             local_package: local_key,
             interactive,
         };
+        // install 内部 mark_installed 会新开 apt 会话(install.rs),须先释放本会话
+        drop(apt);
         match install::install(&ui, &progress, cancel, &input, &batch) {
             Ok(report) if report.code == 0 => {
                 installed += 1;

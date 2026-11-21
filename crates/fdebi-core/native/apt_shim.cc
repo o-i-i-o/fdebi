@@ -20,6 +20,7 @@
 #include <apt-pkg/pkgsystem.h>
 #include <apt-pkg/policy.h>
 #include <apt-pkg/sourcelist.h>
+#include <apt-pkg/version.h>
 
 #include <algorithm>
 #include <cstdlib>
@@ -27,6 +28,7 @@
 #include <memory>
 #include <mutex>
 #include <new>
+#include <optional>
 #include <set>
 #include <sstream>
 #include <string>
@@ -34,15 +36,17 @@
 #include <utility>
 #include <vector>
 
-namespace {
-
+/* Global scope: apt_shim.h forward-declares FdebiApt at file scope, so the
+ * definition must live outside the anonymous namespace to stay unambiguous. */
 std::mutex &apt_mutex() {
    static std::mutex mutex;
    return mutex;
 }
 
 struct FdebiApt {
-   std::unique_lock<std::mutex> lock;
+   /* Held for the whole session lifetime; std::optional so construction can
+    * back out when the mutex is already owned by another live session. */
+   std::optional<std::unique_lock<std::mutex>> lock;
    std::unique_ptr<pkgCacheFile> cache;
    std::vector<std::pair<std::string, std::string>> options;
    std::vector<std::string> volatile_files;
@@ -54,9 +58,9 @@ struct FdebiApt {
    std::string result_remove;
    std::string result_unauth;
    std::string result_downloads;
-
-   FdebiApt() : lock(apt_mutex()) {}
 };
+
+namespace {
 
 std::string take_errors() {
    std::string out;
@@ -192,7 +196,7 @@ std::string kind_for(pkgCache &cache, std::string const &old_version,
                      std::string const &new_version) {
    if (old_version.empty())
       return "new";
-   int cmp = cache.VS->CompareVersions(old_version.c_str(), new_version.c_str());
+   int cmp = cache.VS->CmpVersion(old_version.c_str(), new_version.c_str());
    if (cmp == 0)
       return "reinstall";
    return cmp < 0 ? "upgrade" : "downgrade";
@@ -279,16 +283,19 @@ bool solve_depcache(FdebiApt *ctx, pkgDepCache &depcache,
    std::set<std::string> seen;
    for (pkgCache::PkgIterator pkg = cache->PkgBegin(); !pkg.end(); ++pkg) {
       pkgDepCache::StateCache &state = depcache[pkg];
-      if (state.Install() && !state.InstallVer.end()) {
-         std::string key = version_key(pkg);
-         if (prior_keys.count(key) == 0 && seen.insert(key).second) {
-            std::string old_version =
-                pkg.CurrentVer().end() ? "" : pkg.CurrentVer().VerStr();
-            std::string new_version = state.InstallVer.VerStr();
-            installs.push_back(InstallEntry{pkg, state.InstallVer, key,
-                                            old_version, new_version,
-                                            kind_for(*cache, old_version,
-                                                     new_version)});
+      if (state.Install()) {
+         pkgCache::VerIterator install_ver = state.InstVerIter(*cache);
+         if (!install_ver.end()) {
+            std::string key = version_key(pkg);
+            if (prior_keys.count(key) == 0 && seen.insert(key).second) {
+               std::string old_version =
+                   pkg.CurrentVer().end() ? "" : pkg.CurrentVer().VerStr();
+               std::string new_version = install_ver.VerStr();
+               installs.push_back(InstallEntry{pkg, install_ver, key,
+                                               old_version, new_version,
+                                               kind_for(*cache, old_version,
+                                                        new_version)});
+            }
          }
       }
       if (state.Delete() && !pkg.CurrentVer().end()) {
@@ -305,8 +312,9 @@ bool solve_depcache(FdebiApt *ctx, pkgDepCache &depcache,
    if (prior_keys.count(requested_key) == 0 &&
        seen.insert(requested_key).second) {
       pkgDepCache::StateCache &state = depcache[requested];
-      pkgCache::VerIterator ver =
-          state.InstallVer.end() ? state.CandidateVer : state.InstallVer;
+      pkgCache::VerIterator ver = state.InstVerIter(*cache);
+      if (ver.end())
+         ver = state.CandidateVerIter(*cache);
       if (!ver.end()) {
          std::string old_version =
              requested.CurrentVer().end() ? "" : requested.CurrentVer().VerStr();
@@ -324,9 +332,17 @@ bool solve_depcache(FdebiApt *ctx, pkgDepCache &depcache,
 extern "C" {
 
 FdebiApt *fdebi_apt_open(void) {
+   /* try_lock: a second live session on this thread would otherwise deadlock
+    * forever in the blocking constructor (std::mutex is not reentrant).
+    * Failing fast turns caller bugs into a recoverable open error. */
+   std::unique_lock<std::mutex> lock(apt_mutex(), std::try_to_lock);
+   if (!lock.owns_lock())
+      return nullptr;
+
    FdebiApt *ctx = new (std::nothrow) FdebiApt();
    if (ctx == nullptr)
       return nullptr;
+   ctx->lock.emplace(std::move(lock));
 
    _error->Discard();
    _config->Clear();
@@ -460,7 +476,7 @@ const char *fdebi_apt_repo_version(FdebiApt *ctx, const char *key) {
          if (!version_has_repository_file(ver))
             continue;
          if (best.end() ||
-             cache->VS->CompareVersions(ver.VerStr(), best.VerStr()) > 0)
+             cache->VS->CmpVersion(ver.VerStr(), best.VerStr()) > 0)
             best = ver;
       }
    }
@@ -589,7 +605,7 @@ int fdebi_apt_solve(FdebiApt *ctx, const char *name, const char *version,
       return -1;
    }
    if (!requested.CurrentVer().end() &&
-       cache->VS->CompareVersions(requested.CurrentVer().VerStr(),
+       cache->VS->CmpVersion(requested.CurrentVer().VerStr(),
                                   package_version.c_str()) > 0)
       return 4;
 

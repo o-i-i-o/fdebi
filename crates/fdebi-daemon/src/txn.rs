@@ -25,7 +25,7 @@ use fdebi_core::i18n::{gettext, ngettext, tf};
 use fdebi_core::install::{self, CancelHandle, ConfPolicy, FileStamp, InstallBatch};
 use fdebi_core::lock;
 use fdebi_core::pty::InputHandle;
-use fdebi_core::solver::{ChangeKind, DownloadSpec, Verdict};
+use fdebi_core::solver::{DownloadSpec, Verdict};
 use fdebi_core::ui::{AlertKind, InstallProgress, Ui};
 use fdebi_core::{DebFile, FdebiError};
 
@@ -402,7 +402,8 @@ pub fn analyze_batch(
         .collect();
     let order = batch::order_by_dependencies(&metas);
 
-    let mut verdicts: Vec<Option<Result<Verdict, FdebiError>>> = vec![None; debs.len()];
+    let mut verdicts: Vec<Option<Result<Verdict, FdebiError>>> =
+        (0..debs.len()).map(|_| None).collect();
     let mut priors: Vec<Prior> = Vec::new();
     for &idx in &order {
         let deb = debs[idx];
@@ -806,6 +807,8 @@ fn run_install(
             id,
             conn: conn.clone(),
         };
+        // install 内部 mark_installed 会新开 apt 会话(install.rs),须先释放本会话
+        drop(apt);
         match install::install(&ui, &progress, &txn.cancel, &txn.input, &batch) {
             Ok(report) if report.code == 0 => {
                 installed += 1;

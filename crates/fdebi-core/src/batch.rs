@@ -28,7 +28,12 @@ fn dep_group_names(s: &str) -> Vec<Vec<&str>> {
         .map(|group| {
             group
                 .split('|')
-                .map(|d| base_name(d.trim()))
+                .map(|d| {
+                    // 丢弃 "(>= ver)" 版本约束部分,再去掉架构限定
+                    let d = d.trim();
+                    let name = d.find('(').map(|i| &d[..i]).unwrap_or(d);
+                    base_name(name.trim())
+                })
                 .filter(|n| !n.is_empty())
                 .collect()
         })

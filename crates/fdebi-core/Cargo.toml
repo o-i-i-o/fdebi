@@ -22,3 +22,7 @@ lzma-rs.workspace = true
 ruzstd.workspace = true
 # 仅 bin target(main.rs)引用;库不使用,不影响 daemon/gtk 链接产物
 clap.workspace = true
+
+[build-dependencies]
+# build.rs:Linux 编译 native/apt_shim.cc,非 Linux 编译 apt_stub.c
+cc = "1"
