@@ -257,14 +257,11 @@ fn installed_version_of(apt: &Apt, deb: &DebFile) -> String {
 
 /// deb 在软件源中的最高候选版本(源中没有该包为空串)
 fn repo_version_of(apt: &Apt, deb: &DebFile) -> String {
-    apt.repo_version(&deb_key(apt, deb))
-        .unwrap_or_default()
+    apt.repo_version(&deb_key(apt, deb)).unwrap_or_default()
 }
 
 fn conffile_conflicts_of(apt: &Apt, deb: &DebFile) -> Vec<(String, String)> {
-    let records = apt
-        .conffiles(&deb_key(apt, deb))
-        .unwrap_or_default();
+    let records = apt.conffiles(&deb_key(apt, deb)).unwrap_or_default();
     conffile::conflicts(deb, &records)
         .into_iter()
         .map(|c| (c.package, c.path))
@@ -413,7 +410,10 @@ pub fn analyze_batch(
                 priors.push(Prior {
                     key: apt.key_for(deb),
                     version: deb.field_trimmed("Version").unwrap_or("").to_string(),
-                    arch: deb.field_trimmed("Architecture").unwrap_or("all").to_string(),
+                    arch: deb
+                        .field_trimmed("Architecture")
+                        .unwrap_or("all")
+                        .to_string(),
                     path: deb.path().to_string_lossy().into_owned(),
                 });
                 verdicts[idx] = Some(Ok(v));

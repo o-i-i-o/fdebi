@@ -92,7 +92,10 @@ pub fn content_preview(bytes: &[u8], total: u64) -> String {
         if total > bytes.len() as u64 {
             return format!(
                 "{text}\n\n{}",
-                tf("… preview truncated ({0} bytes total)", &[&total.to_string()])
+                tf(
+                    "… preview truncated ({0} bytes total)",
+                    &[&total.to_string()]
+                )
             );
         }
         return text;

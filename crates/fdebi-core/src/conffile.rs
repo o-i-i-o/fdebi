@@ -24,10 +24,7 @@ pub struct ConffileConflict {
 ///
 /// `installed_conffiles` 为已装版本的 Conffiles 记录 `(path, md5)`,
 /// 来自 [`crate::apt::Apt::conffiles`](调用方按 deb 的 apt 键查询)。
-pub fn conflicts(
-    deb: &DebFile,
-    installed_conffiles: &[(String, String)],
-) -> Vec<ConffileConflict> {
+pub fn conflicts(deb: &DebFile, installed_conffiles: &[(String, String)]) -> Vec<ConffileConflict> {
     let pkg = deb.field_trimmed("Package").unwrap_or("").to_string();
     if pkg.is_empty() || installed_conffiles.is_empty() {
         return Vec::new();

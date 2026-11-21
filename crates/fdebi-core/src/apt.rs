@@ -19,9 +19,7 @@ use std::rc::Rc;
 use crate::debfile::DebFile;
 use crate::error::FdebiError;
 use crate::i18n::{gettext, tf};
-use crate::solver::{
-    ChangeKind, Changes, DownloadSpec, InstallChange, Resolution, Verdict,
-};
+use crate::solver::{ChangeKind, Changes, DownloadSpec, InstallChange, Resolution, Verdict};
 use crate::version::cmp_version;
 
 /// apt archives downloaded by fdebi ([`Apt::fetch`] creates it on demand;
@@ -35,17 +33,12 @@ struct FdebiApt {
     _private: [u8; 0],
 }
 
-type FetchCb =
-    Option<unsafe extern "C" fn(user: *mut c_void, current: u64, total: u64) -> c_int>;
+type FetchCb = Option<unsafe extern "C" fn(user: *mut c_void, current: u64, total: u64) -> c_int>;
 
 unsafe extern "C" {
     fn fdebi_apt_open() -> *mut FdebiApt;
     fn fdebi_apt_close(ctx: *mut FdebiApt);
-    fn fdebi_apt_set_option(
-        ctx: *mut FdebiApt,
-        key: *const c_char,
-        value: *const c_char,
-    ) -> c_int;
+    fn fdebi_apt_set_option(ctx: *mut FdebiApt, key: *const c_char, value: *const c_char) -> c_int;
     fn fdebi_apt_add_volatile(ctx: *mut FdebiApt, path: *const c_char) -> c_int;
     fn fdebi_apt_build(ctx: *mut FdebiApt) -> c_int;
     fn fdebi_apt_native_arch(ctx: *mut FdebiApt) -> *const c_char;
@@ -173,15 +166,13 @@ impl Apt {
     }
 
     fn set_option(&mut self, key: &str, value: &str) -> Result<(), FdebiError> {
-        let key = CString::new(key)
-            .map_err(|_| FdebiError::Apt(gettext("invalid apt option name")))?;
+        let key =
+            CString::new(key).map_err(|_| FdebiError::Apt(gettext("invalid apt option name")))?;
         let value = CString::new(value)
             .map_err(|_| FdebiError::Apt(gettext("invalid apt option value")))?;
         let rc = unsafe { fdebi_apt_set_option(self.raw, key.as_ptr(), value.as_ptr()) };
         if rc != 0 {
-            return Err(FdebiError::Apt(gettext(
-                "could not configure libapt-pkg",
-            )));
+            return Err(FdebiError::Apt(gettext("could not configure libapt-pkg")));
         }
         Ok(())
     }
@@ -269,8 +260,7 @@ impl Apt {
         key: &str,
     ) -> Result<String, FdebiError> {
         self.ensure_built()?;
-        let key = CString::new(key)
-            .map_err(|_| FdebiError::Apt(gettext("invalid package key")))?;
+        let key = CString::new(key).map_err(|_| FdebiError::Apt(gettext("invalid package key")))?;
         let ptr = unsafe { f(self.raw, key.as_ptr()) };
         if ptr.is_null() {
             return Ok(String::new());
@@ -299,8 +289,7 @@ impl Apt {
             .filter_map(|line| {
                 let (path, md5) = line.split_once('\t')?;
                 let (path, md5) = (path.trim(), md5.trim());
-                (!path.is_empty() && !md5.is_empty())
-                    .then(|| (path.to_string(), md5.to_string()))
+                (!path.is_empty() && !md5.is_empty()).then(|| (path.to_string(), md5.to_string()))
             })
             .collect())
     }
@@ -364,15 +353,9 @@ impl Apt {
         let c_path = cstring(&deb.path().to_string_lossy())?;
         let prior_lines: Vec<CString> = priors
             .iter()
-            .map(|p| {
-                cstring(&format!(
-                    "{}\t{}\t{}\t{}",
-                    p.key, p.version, p.arch, p.path
-                ))
-            })
+            .map(|p| cstring(&format!("{}\t{}\t{}\t{}", p.key, p.version, p.arch, p.path)))
             .collect::<Result<_, _>>()?;
-        let prior_ptrs: Vec<*const c_char> =
-            prior_lines.iter().map(|line| line.as_ptr()).collect();
+        let prior_ptrs: Vec<*const c_char> = prior_lines.iter().map(|line| line.as_ptr()).collect();
 
         let rc = unsafe {
             fdebi_apt_solve(
@@ -553,10 +536,7 @@ fn cstring(value: &str) -> Result<CString, FdebiError> {
     CString::new(value).map_err(|_| FdebiError::Apt(gettext("invalid string for libapt-pkg")))
 }
 
-fn text(
-    f: unsafe extern "C" fn(*mut FdebiApt) -> *const c_char,
-    raw: *mut FdebiApt,
-) -> String {
+fn text(f: unsafe extern "C" fn(*mut FdebiApt) -> *const c_char, raw: *mut FdebiApt) -> String {
     let ptr = unsafe { f(raw) };
     if ptr.is_null() {
         String::new()

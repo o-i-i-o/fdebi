@@ -216,7 +216,9 @@ async fn daemon(gui: &MainWindow) -> Result<zbus::Connection, String> {
     if let Some(conn) = gui.bus.borrow().as_ref() {
         return Ok(conn.clone());
     }
-    let conn = zbus::Connection::system().await.map_err(|e| e.to_string())?;
+    let conn = zbus::Connection::system()
+        .await
+        .map_err(|e| e.to_string())?;
     *gui.bus.borrow_mut() = Some(conn.clone());
     Ok(conn)
 }
@@ -847,12 +849,10 @@ fn on_file_selected(gui: &MainWindow, sel: &gtk::TreeSelection) {
     std::thread::spawn(move || {
         let res = DebFile::open(&file).and_then(|deb| match group {
             // control 成员很小,整读;data 成员限量预读(1 MiB + 总长计数)
-            0 => deb
-                .control_content(&member)
-                .map(|b| {
-                    let len = b.len();
-                    (b, len as u64)
-                }),
+            0 => deb.control_content(&member).map(|b| {
+                let len = b.len();
+                (b, len as u64)
+            }),
             1 => deb.data_content_capped(&member, fdebi_core::debfile::PREVIEW_MAX),
             _ => Ok((Vec::new(), 0)),
         });
@@ -1026,8 +1026,7 @@ fn run_lintian(gui: &MainWindow, file: &Path) {
     let gen_watch = gui.lintian_gen.clone();
     glib::spawn_future_local(async move {
         while let Ok(ev) = rx.recv().await {
-            if gen_watch.get() != generation
-                || watch.borrow().as_deref() != Some(watched.as_path())
+            if gen_watch.get() != generation || watch.borrow().as_deref() != Some(watched.as_path())
             {
                 break;
             }
@@ -2159,7 +2158,10 @@ fn run_txn_dialog(
                                             if !lines.is_empty() {
                                                 let buf = view.buffer();
                                                 let mut end = buf.end_iter();
-                                                buf.insert(&mut end, &format!("{}\n", lines.join("\n")));
+                                                buf.insert(
+                                                    &mut end,
+                                                    &format!("{}\n", lines.join("\n")),
+                                                );
                                                 view.scroll_to_iter(&mut end, 0.0, false, 0.0, 0.0);
                                             }
                                             glib::ControlFlow::Break

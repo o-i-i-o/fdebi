@@ -56,7 +56,9 @@ fn validate_apt_opts(opts: &[String]) -> zbus::fdo::Result<()> {
     const ALLOWED: [&str; 3] = ["apt::", "acquire::", "debug::"];
     for opt in opts {
         let key = opt.split('=').next().unwrap_or(opt);
-        let ok = ALLOWED.iter().any(|p| key.to_ascii_lowercase().starts_with(p));
+        let ok = ALLOWED
+            .iter()
+            .any(|p| key.to_ascii_lowercase().starts_with(p));
         if !ok {
             return Err(zbus::fdo::Error::AccessDenied(format!(
                 "apt option '{key}' is not allowed"

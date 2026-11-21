@@ -289,7 +289,12 @@ fn analyze_item(apt: &mut Apt, item: &Item) -> Result<Resolution, String> {
 
 /// 安装阶段:与守护进程 run_install 同管线(等锁 → 逐包重解 → 下载 →
 /// dpkg 批装 → apt 标记);批量一次确认,单包失败不中断其余包。
-fn install_phase(args: &Args, conf_policy: ConfPolicy, cancel: &CancelHandle, items: &[Item]) -> i32 {
+fn install_phase(
+    args: &Args,
+    conf_policy: ConfPolicy,
+    cancel: &CancelHandle,
+    items: &[Item],
+) -> i32 {
     let input = Arc::new(InputHandle::new());
     let ui = CliUi;
     let progress = CliProgress {
@@ -321,11 +326,11 @@ fn install_phase(args: &Args, conf_policy: ConfPolicy, cancel: &CancelHandle, it
     let mut failures: Vec<String> = Vec::new();
     // 安装前健康快照:装后只报告本次事务新增的异常包(避免把用户
     // 本来就存在的未配置包算到 fdebi 头上)
-    let broken_before = match Apt::open(&args.apt_opt).and_then(|mut a| a.build().and_then(|_| a.broken()))
-    {
-        Ok(broken) => broken,
-        Err(e) => return flow_aborted(e, total, installed),
-    };
+    let broken_before =
+        match Apt::open(&args.apt_opt).and_then(|mut a| a.build().and_then(|_| a.broken())) {
+            Ok(broken) => broken,
+            Err(e) => return flow_aborted(e, total, installed),
+        };
 
     for (step, &idx) in order.iter().enumerate() {
         if cancel.is_cancelled() {
@@ -442,11 +447,11 @@ fn install_phase(args: &Args, conf_policy: ConfPolicy, cancel: &CancelHandle, it
     }
 
     // 装后健康检查:只报告本次事务新增的异常包(与守护进程同语义)
-    let broken_after = match Apt::open(&args.apt_opt).and_then(|mut a| a.build().and_then(|_| a.broken()))
-    {
-        Ok(broken) => broken,
-        Err(e) => return flow_aborted(e, total, installed),
-    };
+    let broken_after =
+        match Apt::open(&args.apt_opt).and_then(|mut a| a.build().and_then(|_| a.broken())) {
+            Ok(broken) => broken,
+            Err(e) => return flow_aborted(e, total, installed),
+        };
     let new_broken: Vec<&str> = broken_after
         .iter()
         .filter(|p| !broken_before.contains(p))

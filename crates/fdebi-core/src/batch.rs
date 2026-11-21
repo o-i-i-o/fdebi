@@ -50,7 +50,7 @@ fn provided_names(field: &str) -> Vec<&str> {
                 return None;
             }
             // 丢弃 "(= ver)" 部分,再去掉架构限定
-            let name = e.find('(' ).map(|i| &e[..i]).unwrap_or(e);
+            let name = e.find('(').map(|i| &e[..i]).unwrap_or(e);
             let name = base_name(name.trim());
             (!name.is_empty()).then_some(name)
         })

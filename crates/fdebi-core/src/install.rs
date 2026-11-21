@@ -410,8 +410,10 @@ fn mark_installed(progress: &dyn InstallProgress, cancel: &CancelHandle, batch: 
             "Marking dependencies as automatically installed...",
         ));
     }
-    let result = Apt::open(&[])
-        .and_then(|mut apt| apt.build().and_then(|_| apt.mark(&batch.auto_mark, &batch.local_package)));
+    let result = Apt::open(&[]).and_then(|mut apt| {
+        apt.build()
+            .and_then(|_| apt.mark(&batch.auto_mark, &batch.local_package))
+    });
     if let Err(e) = result
         && !matches!(e, FdebiError::Cancelled)
     {
