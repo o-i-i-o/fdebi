@@ -17,9 +17,10 @@
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Child, Command};
 use std::rc::Rc;
 use std::sync::mpsc as std_mpsc;
+use std::sync::{Arc, Mutex};
 
 use clap::{CommandFactory, FromArgMatches, Parser};
 use futures_lite::StreamExt;
@@ -208,9 +209,16 @@ trait Fdebi {
     fn check_removal(&self, name: &str) -> zbus::Result<Vec<(String, String)>>;
 }
 
-/// 系统总线连接(事务与信号须在同一连接上:信号按唯一名投递)
-async fn daemon() -> Result<zbus::Connection, String> {
-    zbus::Connection::system().await.map_err(|e| e.to_string())
+/// 系统总线连接(事务与信号须在同一连接上:信号按唯一名投递)。
+/// 缓存在主窗口:GUI 的每次分析/预检/事务复用同一条连接,
+/// 连接随主窗口存活,事务期间的 Polkit 调用者解析也因此稳定
+async fn daemon(gui: &MainWindow) -> Result<zbus::Connection, String> {
+    if let Some(conn) = gui.bus.borrow().as_ref() {
+        return Ok(conn.clone());
+    }
+    let conn = zbus::Connection::system().await.map_err(|e| e.to_string())?;
+    *gui.bus.borrow_mut() = Some(conn.clone());
+    Ok(conn)
 }
 
 /// D-Bus 分析结果 → GUI 内部结构
@@ -254,8 +262,12 @@ fn analysis_from_result(result: fdebi_core::AnalyzeResult) -> Analysis {
 }
 
 /// 守护进程侧依赖分析(重活在守护进程线程执行,客户端只等结果)
-async fn analyze_via_daemon(opts: &[String], file: &Path) -> Result<Analysis, String> {
-    let conn = daemon().await?;
+async fn analyze_via_daemon(
+    gui: &MainWindow,
+    opts: &[String],
+    file: &Path,
+) -> Result<Analysis, String> {
+    let conn = daemon(gui).await?;
     let client = FdebiProxy::builder(&conn)
         .build()
         .await
@@ -270,10 +282,11 @@ async fn analyze_via_daemon(opts: &[String], file: &Path) -> Result<Analysis, St
 
 /// 批量分析(一次 D-Bus 调用,守护进程按批内依赖顺序求解并让前序包可见)
 async fn analyze_batch_via_daemon(
+    gui: &MainWindow,
     opts: &[String],
     files: &[PathBuf],
 ) -> Result<Vec<Analysis>, String> {
-    let conn = daemon().await?;
+    let conn = daemon(gui).await?;
     let client = FdebiProxy::builder(&conn)
         .build()
         .await
@@ -323,8 +336,11 @@ async fn analyze_batch_via_daemon(
 }
 
 /// 卸载前反向依赖预检(只读;失败按“无告警”处理,不阻断卸载)
-async fn check_removal_via_daemon(name: &str) -> Result<Vec<(String, String)>, String> {
-    let conn = daemon().await?;
+async fn check_removal_via_daemon(
+    gui: &MainWindow,
+    name: &str,
+) -> Result<Vec<(String, String)>, String> {
+    let conn = daemon(gui).await?;
     let client = FdebiProxy::builder(&conn)
         .build()
         .await
@@ -379,6 +395,16 @@ struct MainWindow {
     analysis_gen: Cell<u64>,
     /// 内容提取代际号:后台读取成员内容后丢弃过期回填(快速连点防乱序)
     content_gen: Cell<u64>,
+    /// lintian 运行代际号:文件切换/行连选后丢弃过期回填
+    lintian_gen: Cell<u64>,
+    /// 存活的 lintian 子进程句柄:新一次运行前由主线程 kill 上一次,
+    /// 避免大包上 lintian 跑数分钟且无界 channel 持续积压输出
+    lintian_child: Rc<RefCell<Option<Arc<Mutex<Option<Child>>>>>>,
+    /// 事务运行中:外部 GApplication Open 事件不受窗口 insensitive 保护,
+    /// 此期间拒收新文件,避免与运行中的信号泵产生状态错位
+    txn_active: Cell<bool>,
+    /// 系统总线连接缓存:分析/预检/事务复用同一条连接,避免反复建连
+    bus: Rc<RefCell<Option<zbus::Connection>>>,
     /// 当前文件的 conffile 冲突(包名, 路径);安装前呈现覆盖决策对话框
     conffiles: Rc<RefCell<Vec<(String, String)>>>,
     /// 批量包列表(单文件模式下隐藏)
@@ -708,6 +734,10 @@ fn build_window(window: &gtk::ApplicationWindow, apt_opts: Vec<String>) -> Rc<Ma
         changes: Rc::new(RefCell::new(None)),
         analysis_gen: Cell::new(0),
         content_gen: Cell::new(0),
+        lintian_gen: Cell::new(0),
+        lintian_child: Rc::new(RefCell::new(None)),
+        txn_active: Cell::new(false),
+        bus: Rc::new(RefCell::new(None)),
         conffiles: Rc::new(RefCell::new(Vec::new())),
         batch_scroll,
         batch_list,
@@ -909,7 +939,21 @@ fn fill_files(gui: &MainWindow, deb: &DebFile) {
     });
 }
 
-/// 后台运行 lintian 并流式回填
+/// kill 上一次 lintian 运行:子进程收尾后管道关闭,读取线程随之结束,
+/// 不会继续向无界 channel 积压输出(大包上 lintian 可能跑数分钟)
+fn kill_lintian(gui: &MainWindow) {
+    if let Some(slot) = gui.lintian_child.borrow_mut().take()
+        && let Ok(mut guard) = slot.lock()
+    {
+        if let Some(mut child) = guard.take() {
+            let _ = child.kill();
+            let _ = child.wait();
+        }
+    }
+}
+
+/// 后台运行 lintian 并流式回填;每次调用都终止上一次运行
+/// (文件切换与行连选都经过 preview_deb → 此处,天然防抖)
 fn run_lintian(gui: &MainWindow, file: &Path) {
     let buf = gui.lintian_output.buffer();
     if !Path::new("/usr/bin/lintian").exists() {
@@ -918,6 +962,9 @@ fn run_lintian(gui: &MainWindow, file: &Path) {
         ));
         return;
     }
+    kill_lintian(gui);
+    let generation = gui.lintian_gen.get() + 1;
+    gui.lintian_gen.set(generation);
     buf.set_text(&gettext("Running lintian..."));
 
     enum LintianEvent {
@@ -926,6 +973,8 @@ fn run_lintian(gui: &MainWindow, file: &Path) {
     }
     let (tx, rx) = async_channel::unbounded::<LintianEvent>();
     let path = file.to_path_buf();
+    let child_slot = Arc::new(Mutex::new(None::<Child>));
+    *gui.lintian_child.borrow_mut() = Some(child_slot.clone());
     std::thread::spawn(move || {
         let child = Command::new("/usr/bin/lintian")
             .arg(&path)
@@ -945,6 +994,8 @@ fn run_lintian(gui: &MainWindow, file: &Path) {
         };
         let out = child.stdout.take().expect("piped stdout");
         let err = child.stderr.take().expect("piped stderr");
+        // 注册句柄供主线程在文件切换/新运行时 kill;主线程 wait 后槽位为空
+        *child_slot.lock().unwrap() = Some(child);
         let tx2 = tx.clone();
         let t = std::thread::spawn(move || {
             use std::io::BufRead;
@@ -957,17 +1008,27 @@ fn run_lintian(gui: &MainWindow, file: &Path) {
             let _ = tx.send_blocking(LintianEvent::Line(line));
         }
         let _ = t.join();
-        let code = child.wait().ok().and_then(|s| s.code()).unwrap_or(-1);
+        // 若主线程已 kill 并 wait,这里槽位为空(返回 -1,过期回填被丢弃)
+        let code = child_slot
+            .lock()
+            .unwrap()
+            .take()
+            .and_then(|mut c| c.wait().ok())
+            .and_then(|s| s.code())
+            .unwrap_or(-1);
         let _ = tx.send_blocking(LintianEvent::Finished(code));
     });
 
-    // 回填:文件已切换则丢弃过期输出
+    // 回填:文件已切换或已有新运行则丢弃过期输出
     let watch = gui.current_file.clone();
     let watched = file.to_path_buf();
     let view = gui.lintian_output.clone();
+    let gen_watch = gui.lintian_gen.clone();
     glib::spawn_future_local(async move {
         while let Ok(ev) = rx.recv().await {
-            if watch.borrow().as_deref() != Some(watched.as_path()) {
+            if gen_watch.get() != generation
+                || watch.borrow().as_deref() != Some(watched.as_path())
+            {
                 break;
             }
             match ev {
@@ -1151,7 +1212,7 @@ fn load_deb(gui: &Rc<MainWindow>, file: &Path) {
     let opts = gui.apt_opts.clone();
     let version = info.version.clone();
     glib::spawn_future_local(async move {
-        let analysis = analyze_via_daemon(&opts, &file2).await;
+        let analysis = analyze_via_daemon(&gui_wait, &opts, &file2).await;
         if gui_wait.analysis_gen.get() != generation {
             return; // 过期结果:期间已打开别的文件
         }
@@ -1163,17 +1224,15 @@ fn load_deb(gui: &Rc<MainWindow>, file: &Path) {
 fn preview_deb(gui: &Rc<MainWindow>, file: &Path) -> Option<PackageInfo> {
     *gui.current_file.borrow_mut() = Some(file.to_path_buf());
 
-    // 文件不存在直接提示
+    // 文件不存在直接提示;复位标题/状态,避免残留上一个包的信息
     if !file.exists() {
-        show_alert(
-            &gui.window,
-            AlertKind::Error,
-            &tf(
-                "fdebi error, file not found: {0}",
-                &[&file.display().to_string()],
-            ),
-            None,
+        let msg = tf(
+            "fdebi error, file not found: {0}",
+            &[&file.display().to_string()],
         );
+        show_alert(&gui.window, AlertKind::Error, &msg, None);
+        gui.label_name.set_markup("<b><big>   </big></b>");
+        gui.label_status.set_text(&msg);
         return None;
     }
 
@@ -1186,6 +1245,8 @@ fn preview_deb(gui: &Rc<MainWindow>, file: &Path) -> Option<PackageInfo> {
                 &gettext("Could not open the software package"),
                 Some(&e.to_string()),
             );
+            gui.label_name.set_markup("<b><big>   </big></b>");
+            gui.label_status.set_text(&e.to_string());
             return None;
         }
     };
@@ -1200,6 +1261,17 @@ fn preview_deb(gui: &Rc<MainWindow>, file: &Path) -> Option<PackageInfo> {
 
 /// 打开文件列表:单文件走单文件模式,多文件进入批量模式
 fn load_files(gui: &Rc<MainWindow>, files: Vec<PathBuf>) {
+    // 事务运行中拒收新文件:外部进程经 GApplication 转发的 Open 事件
+    // 不受窗口 insensitive 保护,此时重建批量列表会与运行中的信号泵错位
+    if gui.txn_active.get() {
+        show_alert(
+            &gui.window,
+            AlertKind::Warning,
+            &gettext("A package operation is in progress"),
+            None,
+        );
+        return;
+    }
     let files = dedup_files(files);
     if files.len() <= 1 {
         if let Some(f) = files.first() {
@@ -1289,7 +1361,7 @@ fn load_files(gui: &Rc<MainWindow>, files: Vec<PathBuf>) {
             }
         }
 
-        let analysis = analyze_batch_via_daemon(&opts, &files).await;
+        let analysis = analyze_batch_via_daemon(&gui_all, &opts, &files).await;
         if gui_all.analysis_gen.get() != generation {
             return; // 过期结果:期间已打开别的文件
         }
@@ -1397,6 +1469,9 @@ fn remove_batch_item(gui: &Rc<MainWindow>, path: &Path) {
 
 /// 列表清空后的空状态(没有文件选择页,复位主要控件)
 fn reset_empty_ui(gui: &MainWindow) {
+    // 递增代际号:丢弃可能在途的后台回填(成员内容/lintian 输出)
+    gui.content_gen.set(gui.content_gen.get() + 1);
+    gui.lintian_gen.set(gui.lintian_gen.get() + 1);
     *gui.current_file.borrow_mut() = None;
     *gui.changes.borrow_mut() = None;
     gui.conffiles.borrow_mut().clear();
@@ -1468,11 +1543,12 @@ fn update_batch_summary(gui: &MainWindow) {
     let bad: Vec<&BatchItem> = items.iter().filter(|i| !i.failure.is_empty()).collect();
     let pending = items.iter().any(|i| i.failure.is_empty() && !i.installable);
     if !bad.is_empty() {
+        // 复数形式跟随出错的 {0}(gettext 惯例,"N of M" 以 N 定复数)
         let mut lines = vec![tf(
             &ngettext(
                 "{0} of {1} package cannot be installed",
                 "{0} of {1} packages cannot be installed",
-                items.len() as u32,
+                bad.len() as u32,
             ),
             &[&bad.len().to_string(), &items.len().to_string()],
         )];
@@ -1915,6 +1991,8 @@ fn run_txn_dialog(
     // (下载停滞/无 polkit agent/维护脚本等待)整个应用无法关闭。
     // 标题栏 X 发出的 DeleteEvent 响应与 Close 按钮同路处理
     gui.window.set_sensitive(false);
+    // 外部 Open 事件在事务期间被拒收(见 load_files)
+    gui.txn_active.set(true);
 
     // pulse 定时器(dpkg 行输出无精确百分比;收到数值进度后切换为 fraction,
     // 完成后置 1.0)
@@ -1951,11 +2029,12 @@ fn run_txn_dialog(
     let footer_status = gui.footer_status.clone();
     let window = gui.window.clone();
     let gui_reload = gui.clone();
+    let gui_txn = gui.clone();
     let apt_opts = gui.apt_opts.clone();
     glib::spawn_future_local(async move {
         // 连接 + 订阅 + 发起事务;任一步失败即恢复界面并告警
         let started = async {
-            let conn = daemon().await?;
+            let conn = daemon(&gui_txn).await?;
             let proxy = FdebiProxy::builder(&conn)
                 .build()
                 .await
@@ -2002,6 +2081,10 @@ fn run_txn_dialog(
                 if let Some(pid) = pulse_id.take() {
                     pid.remove();
                 }
+                // 启动失败:关闭空进度对话框(否则残留一个无事可做的窗口),
+                // 恢复界面并告警
+                dialog.destroy();
+                gui_reload.txn_active.set(false);
                 bar.set_fraction(1.0);
                 window.set_sensitive(true);
                 set_footer_status(&footer_status, &failed);
@@ -2029,6 +2112,10 @@ fn run_txn_dialog(
         let mut finished = false;
         let mut user_closed = false;
         let mut failed_rows: Vec<gtk::ListBoxRow> = Vec::new();
+        // dpkg 高频输出:行先进缓冲,每 100ms 一次 flush + 滚动,
+        // 避免逐行 insert/scroll_to_iter 的渲染开销
+        let pending = Rc::new(RefCell::new(Vec::<String>::new()));
+        let flush_scheduled = Rc::new(Cell::new(false));
         loop {
             let ev = futures_lite::future::race(async { Ev::Sig(sigs.next().await) }, async {
                 let _ = close_rx.recv().await;
@@ -2053,10 +2140,27 @@ fn run_txn_dialog(
                                 && sid == id
                             {
                                 label_status.set_text(&line);
-                                let buf = textview.buffer();
-                                let mut end = buf.end_iter();
-                                buf.insert(&mut end, &format!("{line}\n"));
-                                textview.scroll_to_iter(&mut end, 0.0, false, 0.0, 0.0);
+                                pending.borrow_mut().push(line);
+                                if !flush_scheduled.get() {
+                                    flush_scheduled.set(true);
+                                    let pending = pending.clone();
+                                    let view = textview.clone();
+                                    let scheduled = flush_scheduled.clone();
+                                    glib::timeout_add_local(
+                                        std::time::Duration::from_millis(100),
+                                        move || {
+                                            scheduled.set(false);
+                                            let lines = std::mem::take(&mut *pending.borrow_mut());
+                                            if !lines.is_empty() {
+                                                let buf = view.buffer();
+                                                let mut end = buf.end_iter();
+                                                buf.insert(&mut end, &format!("{}\n", lines.join("\n")));
+                                                view.scroll_to_iter(&mut end, 0.0, false, 0.0, 0.0);
+                                            }
+                                            glib::ControlFlow::Break
+                                        },
+                                    );
+                                }
                             }
                         }
                         "ProgressChanged" => {
@@ -2172,6 +2276,9 @@ fn run_txn_dialog(
                 }
             }
         }
+
+        // 信号泵已结束:无论成功/取消/流中断,事务不再活跃
+        gui_reload.txn_active.set(false);
 
         // 成功:安装任务已结束,不再回到预览页。
         // - 勾选自动关闭:立即退出,两个窗口一起关闭;
@@ -2465,7 +2572,9 @@ fn on_remove_clicked(gui: &Rc<MainWindow>) {
     // dpkg -r 会因反向依赖失败,提前列出受影响包供用户决定;预检失败不阻断
     let gui_check = gui.clone();
     glib::spawn_future_local(async move {
-        let affected = check_removal_via_daemon(&pkgname).await.unwrap_or_default();
+        let affected = check_removal_via_daemon(&gui_check, &pkgname)
+            .await
+            .unwrap_or_default();
         if !affected.is_empty() {
             let list = affected
                 .iter()
